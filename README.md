@@ -91,11 +91,17 @@ cp .env.example .env.local
   [coingecko.com](https://www.coingecko.com/en/api) raises the rate
   limit for crypto prices. Without a key, requests go through
   anonymously (lower limit, fine at this traffic level).
-- `METALS_API_KEY` (optional, but recommended) — a key from
+- `METALS_API_KEY` (optional) — a key from
   [metals-api.com](https://metals-api.com/) enables live gold/silver/
-  platinum/palladium spot prices. There's no free keyless tier for
-  metals, so without a key the route uses static fallback prices for
-  that asset class only — fiat and crypto stay live either way.
+  platinum/palladium spot prices from that provider. If it's missing, or
+  the call fails for any reason (wrong plan, a `base` currency
+  restriction, bad/expired key, quota spent), the route automatically
+  falls back to [api.gold-api.com](https://api.gold-api.com/), a free,
+  keyless provider, so metal prices stay **live** either way. Only if
+  both providers are unreachable does it drop to static fallback
+  numbers for that asset class — fiat and crypto are unaffected
+  regardless. See "Notes on the unified rates API" below for how to
+  read the `metalsDebug` field when diagnosing a METALS_API_KEY issue.
 - `ANTHROPIC_API_KEY` (not required yet) — once added, wire it into the
   `TODO` in `app/api/news-ai/route.js` to generate a `summary` for each
   headline via the Claude API. Until then, `summary` is `null` and the
@@ -168,6 +174,17 @@ Each of the three provider calls:
   route — this is also what was crashing static prerendering once
   before (see the `formatAmount`/`maximumFractionDigits` fix below);
   the timeout guards against a *different*, request-level failure mode.
+- **Metals specifically** has a 3-tier chain, not just keyed → static:
+  `fetchFromMetalsApi()` (metals-api.com, needs `METALS_API_KEY`) →
+  `fetchFromGoldApi()` (api.gold-api.com, free, no key) → `METAL_FALLBACK_USD`
+  (static). A metals-api.com failure that gets rescued by gold-api.com is
+  still **live** data, so it does **not** add to `warnings` (which the
+  UI treats as "showing stale numbers") — instead the reason
+  metals-api.com was skipped is put in a separate, non-UI `metalsDebug`
+  field on the response (e.g. `curl your-deployment.vercel.app/api/rates`
+  or the Vercel function logs), so a misconfigured key is diagnosable
+  without the Gold Calculator ever showing an incorrect "fallback" badge
+  for data that's actually live.
 
 ## Notes on the Universal Currency Converter
 
