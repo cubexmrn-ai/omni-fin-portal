@@ -3,17 +3,18 @@
 import { useState } from "react";
 import TradingChart from "@/components/TradingChart";
 
-// NSE:NIFTY and PSX:KSE100 show "This symbol is only available on
-// TradingView" in the free, anonymous embed widget — that data vendor
-// gates those direct exchange feeds behind a logged-in TradingView
-// account for guest embeds. Swapped for the same open, anonymous-embed-
-// safe proxies used in MarketOverviewBoard.jsx's Indices group (see the
-// comment there for the full explanation of each substitute).
+// NSE:NIFTY / PSX:KSE100 ("only available on TradingView" — gated to
+// logged-in accounts for guest embeds) and their first replacements,
+// AMEX:PAK / AMEX:INDY ("Invalid Symbol" — those specific tickers
+// aren't in TradingView's database at all), both failed. Swapped for
+// the same TVC/AMEX:INDA symbols used in MarketOverviewBoard.jsx's
+// Indices group — see the comment there for why those are safe.
 const SYMBOLS = [
   { code: "OANDA:XAUUSD", label: "Gold (XAU/USD)" },
   { code: "FOREXCOM:SPXUSD", label: "S&P 500 (US)" },
-  { code: "AMEX:PAK", label: "Pakistan (KSE-100 proxy)" },
-  { code: "AMEX:INDY", label: "India 50 (Nifty 50 proxy)" },
+  { code: "TVC:UKX", label: "FTSE 100 (UK)" },
+  { code: "AMEX:INDA", label: "India (Nifty 50 proxy)" },
+  { code: "TVC:NI225", label: "Nikkei 225 (Japan)" },
   { code: "OANDA:EURUSD", label: "EUR/USD" },
   { code: "OANDA:GBPUSD", label: "GBP/USD" },
   { code: "BITSTAMP:BTCUSD", label: "Bitcoin (BTC/USD)" },
