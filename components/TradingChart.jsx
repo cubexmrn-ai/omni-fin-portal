@@ -61,7 +61,7 @@ export default function TradingChart({
 
   return (
     <div
-      className="relative h-full min-h-[500px] w-full overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+      className="relative h-full min-h-[500px] w-full overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
       style={{ height }}
     >
       {/* TradingView requires its own container element to size against;

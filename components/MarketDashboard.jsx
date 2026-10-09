@@ -14,25 +14,25 @@ const SYMBOLS = [
   { code: "TVC:USOIL", label: "Crude Oil (WTI)" },
 ];
 
-export default function MarketDashboard() {
+export default function MarketDashboard({ theme = "light" }) {
   const [symbol, setSymbol] = useState(SYMBOLS[0].code);
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-        <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-brand-50 via-white to-slate-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-brand-50 via-white to-slate-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
               Live Market Chart
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Real-time TradingView chart — pick a symbol or search for any
               other instrument inside the chart itself.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-b border-slate-100 px-6 py-3">
+        <div className="flex flex-wrap gap-2 border-b border-slate-100 px-6 py-3 dark:border-slate-700">
           {SYMBOLS.map((s) => {
             const active = s.code === symbol;
             return (
@@ -43,7 +43,7 @@ export default function MarketDashboard() {
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   active
                     ? "bg-brand-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
                 }`}
               >
                 {s.label}
@@ -53,7 +53,7 @@ export default function MarketDashboard() {
         </div>
 
         <div className="p-4 sm:p-6">
-          <TradingChart symbol={symbol} height={520} />
+          <TradingChart symbol={symbol} height={520} theme={theme} />
         </div>
       </div>
     </section>

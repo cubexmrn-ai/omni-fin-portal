@@ -10,11 +10,14 @@ A Next.js 14 (App Router) + Tailwind CSS finance portal.
   digital storage, temperature — including Tola, Maund, Seer, Marla and
   Kanal), all tabbed together with programmatic SEO routes for both
   currency pairs and unit pairs.
-- **Module 2 — Market AI & News**: real-time TradingView charts
-  (gold, forex, global indices including PSX KSE-100 and India's Nifty
-  50, crude oil, crypto) and a multi-source finance news aggregator
-  (AI summaries are a placeholder until an Anthropic API key is
-  configured).
+- **Module 2 — Market AI & News**: a Global Markets Overview of live,
+  lightweight TradingView widgets grouped by Indices (S&P 500, Nasdaq
+  100, Nifty 50, PSX KSE-100, Nikkei 225), major Forex pairs and top
+  Crypto assets, plus a detailed full chart with a symbol picker — all
+  with a light/dark toggle — and a categorized Financial News page
+  (Forex / Crypto / Commodities / Stocks) with search and category
+  filters, aggregated from multiple public RSS sources (AI summaries
+  are a placeholder until an Anthropic API key is configured).
 
 ## Stack
 
@@ -24,9 +27,15 @@ A Next.js 14 (App Router) + Tailwind CSS finance portal.
   (CoinGecko) and Metals (metals-api.com) **in parallel** via
   `Promise.all()`, each with its own timeout and fallback, cached with
   ISR-style 3600s (1 hour) revalidation (`app/api/rates/route.js`)
-- A separate RSS news aggregator route with the same timeout/fallback
+- A separate RSS news aggregator route spanning 7 feeds across 4
+  categories (Stocks, Forex, Crypto, Commodities), same timeout/fallback
   pattern, cached for 900s (`app/api/news-ai/route.js`)
-- TradingView public embed widget (no API key required)
+- TradingView public embed widgets (no API key required) — the
+  "Advanced Chart" widget for the detailed chart and the lighter-weight
+  "Mini Symbol Overview" widget for the Global Markets Overview grid
+- Tailwind's class-based dark mode (`darkMode: "class"`) opted into
+  locally by the Market Analysis page's own light/dark toggle, rather
+  than site-wide
 
 ## Getting started
 
@@ -49,8 +58,10 @@ app/
     [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
     unit/[slug]/page.jsx      # Programmatic SEO routes, e.g. sqft-to-marla
   market-analysis/
-    page.jsx                  # Live TradingView chart dashboard
-    ai-news/page.jsx          # Headline feed (AI summary coming soon)
+    page.jsx                  # Global Markets Overview + detailed chart (light/dark)
+    ai-news/page.jsx          # Redirects to /ai-news (legacy path, kept for old links)
+  ai-news/
+    page.jsx                  # Categorized Financial News page (search + category pills)
   layout.jsx                  # Header, nav, footer
   page.jsx                    # Homepage dashboard
   globals.css
@@ -60,7 +71,10 @@ components/
   GoldCalculator.jsx          # Gold calculator (auto-fills live XAU; uses lib/conversionMath)
   UnitConverter.jsx           # Universal multi-category unit converter
   TradingChart.jsx            # TradingView "Advanced Chart" embed wrapper
+  MiniSymbolWidget.jsx        # TradingView "Mini Symbol Overview" embed wrapper (lightweight)
+  MarketOverviewBoard.jsx     # Indices/Forex/Crypto grid + light/dark toggle + detailed chart
   MarketDashboard.jsx         # Symbol picker (incl. PSX, Nifty) + TradingChart
+  NewsFeed.jsx                 # Client-side search + category filter over fetched headlines
 lib/
   conversionMath.js           # All conversion math (gold + units + temperature)
   currencies.js                # Master fiat currency list + fallback rates
@@ -226,22 +240,48 @@ Each of the three provider calls:
 
 ## Notes on Market Analysis & AI News
 
-- `components/TradingChart.jsx` embeds TradingView's free, public
-  "Advanced Chart" widget (`s3.tradingview.com/external-embedding/...`)
-  — no API key or account required. `components/MarketDashboard.jsx`'s
-  symbol picker covers gold, global indices (S&P 500, Pakistan's
-  KSE-100 via `PSX:KSE100`, India's Nifty 50 via `NSE:NIFTY`), major FX
-  pairs, crude oil and Bitcoin — add more by appending to its `SYMBOLS`
-  array with any valid TradingView ticker.
-- `app/api/news-ai/route.js` fetches and merges several finance RSS
-  feeds (Yahoo Finance, MarketWatch, CNBC) in parallel with a small
-  dependency-free parser, each with its own `try/catch` (so one feed
-  going down never breaks the others) and the same 8-second
-  `AbortController` timeout guard used in `/api/rates`. Caches the
+- **`app/market-analysis/page.jsx`** renders `components/MarketOverviewBoard.jsx`,
+  which has its own local light/dark toggle (not tied to OS preference
+  or any site-wide setting — see `darkMode: "class"` in
+  `tailwind.config.js`) driving three categorized grids of
+  `components/MiniSymbolWidget.jsx` (TradingView's free "Mini Symbol
+  Overview" widget — much lighter than the full Advanced Chart, which
+  matters when rendering 15 of them on one page):
+  - **Indices**: S&P 500, Nasdaq 100, Nifty 50 (`NSE:NIFTY`), KSE-100
+    (`PSX:KSE100`), Nikkei 225 (`TVC:NI225`)
+  - **Forex**: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD
+  - **Crypto**: Bitcoin, Ethereum, BNB, Solana, XRP
+
+  Add/remove symbols by editing the `INDEX_SYMBOLS` / `FOREX_SYMBOLS` /
+  `CRYPTO_SYMBOLS` arrays at the top of `MarketOverviewBoard.jsx` with
+  any valid TradingView ticker. Below the grid, the same toggle also
+  drives `components/MarketDashboard.jsx` (the original full-size,
+  symbol-picker chart via `TradingChart.jsx`) so the whole page is
+  consistently themed rather than a dark grid sitting above a chart
+  that's still light, or vice versa.
+- **`app/api/news-ai/route.js`** fetches 7 finance RSS feeds in
+  parallel across 4 categories — **Stocks** (Yahoo Finance,
+  MarketWatch, CNBC Markets), **Forex** (FXStreet), **Crypto**
+  (CoinDesk, Cointelegraph) and **Commodities** (OilPrice.com) — with a
+  small dependency-free parser, each with its own `try/catch` (so one
+  feed going down never breaks the others) and the same 8-second
+  `AbortController` timeout guard used in `/api/rates`. Reuters' and
+  Bloomberg's own RSS feeds were discontinued/blocked (confirmed: both
+  now return robots-disallowed or access-blocked responses), so these
+  are their closest still-live, freely-embeddable equivalents per
+  category. Each item is tagged with its feed's `category`. Caches the
   result for 900s (15 min) and returns each headline with
   `summary: null` and `summaryStatus: "pending_ai_key"`. Wiring in
   `ANTHROPIC_API_KEY` and calling the Claude API per-headline is the
   next step (see the `TODO` comment in that file).
+- **`app/ai-news/page.jsx`** (the new top-level route — the nav's
+  "News" link and the old `app/market-analysis/ai-news/page.jsx`, now
+  just a redirect, both point here) fetches the full headline list
+  server-side via `lib/fetchNews.js`, then hands it to
+  `components/NewsFeed.jsx`, a client component that does instant
+  client-side search (title/excerpt/source) and category-pill
+  filtering over that already-small, already-cached list — no
+  per-keystroke server round trip needed.
 
 ## Roadmap
 

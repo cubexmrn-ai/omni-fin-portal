@@ -1,5 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // "class" (not the default "media") so individual pages/sections can
+  // opt into dark mode via a local toggle (e.g. Market Analysis) without
+  // forcing it site-wide based on OS preference. Add the "dark" class to
+  // any wrapper to activate `dark:` variants underneath it.
+  darkMode: "class",
   content: [
     "./app/**/*.{js,jsx,ts,tsx,mdx}",
     "./components/**/*.{js,jsx,ts,tsx,mdx}",

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import MarketDashboard from "@/components/MarketDashboard";
+import MarketOverviewBoard from "@/components/MarketOverviewBoard";
 
 export const metadata = {
   title: "Live Market Charts | OmniFin Portal",
   description:
-    "Real-time TradingView charts for Gold, major forex pairs, indices, crude oil and Bitcoin — free, no login required.",
+    "Real-time TradingView charts for global stock indices (S&P 500, Nasdaq, Nifty 50, PSX, Nikkei 225), major forex pairs and top crypto assets — free, no login required.",
 };
 
 export default function MarketAnalysisPage() {
@@ -19,16 +19,16 @@ export default function MarketAnalysisPage() {
             Market Analysis
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-600">
-            Track gold, forex, indices, crude oil and crypto with
-            real-time TradingView charts, and catch up on the latest
-            finance headlines.
+            Track global stock indices, major forex pairs and top crypto
+            assets with real-time TradingView charts, and catch up on the
+            latest finance headlines.
           </p>
           <div className="mt-5">
             <Link
-              href="/market-analysis/ai-news"
+              href="/ai-news"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
             >
-              View AI News Feed
+              View Financial News
               <svg
                 width="14"
                 height="14"
@@ -50,7 +50,7 @@ export default function MarketAnalysisPage() {
         </div>
       </section>
 
-      <MarketDashboard />
+      <MarketOverviewBoard />
     </>
   );
 }

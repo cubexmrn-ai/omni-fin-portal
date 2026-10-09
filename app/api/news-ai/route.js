@@ -2,7 +2,10 @@
 //
 // Serverless route for Module 2 (Market AI & News Aggregator).
 //
-// CURRENT PHASE: fetches finance RSS feeds and returns plain headlines.
+// CURRENT PHASE: fetches finance RSS feeds across four categories
+// (Stocks, Forex, Crypto, Commodities — see FEEDS below) and returns
+// plain headlines, each tagged with its feed's `category` so the
+// /ai-news page can render category pills and filter client-side.
 // No Anthropic API key is configured yet, so each item's `summary` field
 // is intentionally null and carries a `summaryStatus: "pending_ai_key"`
 // flag — the UI renders this as a "AI summary coming soon" placeholder.
@@ -15,18 +18,50 @@
 // the RSS fetch/parse/caching plumbing here does not need to change.
 
 const REVALIDATE_SECONDS = 900;
-const MAX_ITEMS = 20;
+const MAX_ITEMS_PER_FEED = 20;
+const MAX_ITEMS = 60;
 
-// Public, no-auth-required finance RSS feeds.
+// Public, no-auth-required finance RSS feeds, each tagged with the
+// category shown in the AI News page's filter pills. Reuters' and
+// Bloomberg's own RSS feeds were discontinued/blocked years ago (both
+// now return robots-disallowed or access-blocked responses), so these
+// are their closest still-live, freely-embeddable equivalents per
+// category — verified reachable before wiring them in here.
 const FEEDS = [
-  { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/rssindex" },
+  {
+    name: "Yahoo Finance",
+    url: "https://finance.yahoo.com/news/rssindex",
+    category: "Stocks",
+  },
   {
     name: "MarketWatch",
     url: "https://feeds.marketwatch.com/marketwatch/topstories/",
+    category: "Stocks",
   },
   {
     name: "CNBC Markets",
     url: "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    category: "Stocks",
+  },
+  {
+    name: "FXStreet",
+    url: "https://www.fxstreet.com/rss/news",
+    category: "Forex",
+  },
+  {
+    name: "CoinDesk",
+    url: "https://www.coindesk.com/arc/outboundfeeds/rss/",
+    category: "Crypto",
+  },
+  {
+    name: "Cointelegraph",
+    url: "https://cointelegraph.com/rss",
+    category: "Crypto",
+  },
+  {
+    name: "OilPrice.com",
+    url: "https://oilprice.com/rss/main",
+    category: "Commodities",
   },
 ];
 
@@ -57,11 +92,11 @@ function stripHtml(text) {
  * <item> feeds; not a full XML parser, but avoids pulling in an extra
  * package for a handful of regex-extractable fields.
  */
-function parseRssItems(xml, sourceName) {
+function parseRssItems(xml, sourceName, category) {
   const items = [];
   const itemBlocks = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
 
-  for (const block of itemBlocks) {
+  for (const block of itemBlocks.slice(0, MAX_ITEMS_PER_FEED)) {
     const title = extractTag(block, "title");
     const link = extractTag(block, "link") || extractTag(block, "guid");
     const pubDate = extractTag(block, "pubDate") || extractTag(block, "dc:date");
@@ -70,11 +105,21 @@ function parseRssItems(xml, sourceName) {
 
     if (!title) continue;
 
+    // Guard against an unparseable pubDate throwing on .toISOString()
+    // (new Date("garbage") is an "Invalid Date", not null) — one bad
+    // date shouldn't take down this feed's whole item list.
+    const parsedDate = pubDate ? new Date(pubDate) : null;
+    const publishedAt =
+      parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate.toISOString()
+        : null;
+
     items.push({
       title,
       link: link.trim(),
       source: sourceName,
-      publishedAt: pubDate ? new Date(pubDate).toISOString() : null,
+      category,
+      publishedAt,
       excerpt: stripHtml(rawDescription).slice(0, 220),
       // --- Placeholder for Phase 2 AI summarization ---
       summary: null,
@@ -110,7 +155,7 @@ async function fetchFeed(feed) {
     if (!res.ok) throw new Error(`${feed.name} responded with ${res.status}`);
 
     const xml = await res.text();
-    return parseRssItems(xml, feed.name);
+    return parseRssItems(xml, feed.name, feed.category);
   } catch (err) {
     // A single failing feed should never break the whole aggregator.
     return { error: `${feed.name}: ${err.message}` };

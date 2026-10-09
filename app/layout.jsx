@@ -24,7 +24,7 @@ const NAV_LINKS = [
   { label: "Gold Calculator", href: "/#gold-calculator" },
   { label: "Converters", href: "/converters" },
   { label: "Market Analysis", href: "/market-analysis" },
-  { label: "AI News", href: "/market-analysis/ai-news" },
+  { label: "News", href: "/ai-news" },
   { label: "About", href: "/#about" },
 ];
 
@@ -87,7 +87,7 @@ function SiteHeader() {
         <div className="flex items-center gap-2">
           <span className="hidden items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 sm:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Live rates · 15 min cache
+            Live rates · hourly cache
           </span>
           <Link
             href="/#gold-calculator"
