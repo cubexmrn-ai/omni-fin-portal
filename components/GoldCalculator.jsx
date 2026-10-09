@@ -41,9 +41,20 @@ const DEFAULT_BASE_USD_PRICE = 2650; // Approx. USD per troy ounce, 24K spot.
 
 function formatNumber(value, maximumFractionDigits = 2) {
   if (!Number.isFinite(value)) return "—";
+
+  // Guard against Intl.NumberFormat's RangeError when a future call site
+  // passes fewer than 2 max digits (minimumFractionDigits was hardcoded
+  // to 2 here, which throws if maximumFractionDigits is ever lower —
+  // see the identical, previously-crashing pattern fixed in
+  // CurrencyConverter.jsx's formatAmount).
+  const safeMax = Number.isFinite(maximumFractionDigits)
+    ? Math.max(0, Math.min(100, maximumFractionDigits))
+    : 2;
+  const minimumFractionDigits = Math.min(2, safeMax);
+
   return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits,
-    minimumFractionDigits: 2,
+    maximumFractionDigits: safeMax,
+    minimumFractionDigits,
   }).format(value);
 }
 

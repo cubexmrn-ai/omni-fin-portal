@@ -8,9 +8,22 @@ const MATRIX_MULTIPLIERS = [1, 10, 100, 1000];
 
 function formatAmount(value, maximumFractionDigits = 2) {
   if (!Number.isFinite(value)) return "—";
+
+  // Intl.NumberFormat throws a RangeError ("maximumFractionDigits value
+  // is out of range") if minimumFractionDigits ends up greater than
+  // maximumFractionDigits — which happened here whenever a caller asked
+  // for fewer than 2 max digits (e.g. formatAmount(multiplier, 0) in the
+  // rate matrix below) while this always hardcoded a minimum of 2.
+  // Clamping the minimum to never exceed the requested maximum keeps
+  // every call site safe, including ones added later.
+  const safeMax = Number.isFinite(maximumFractionDigits)
+    ? Math.max(0, Math.min(100, maximumFractionDigits))
+    : 2;
+  const minimumFractionDigits = Math.min(2, safeMax);
+
   return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits,
-    minimumFractionDigits: 2,
+    maximumFractionDigits: safeMax,
+    minimumFractionDigits,
   }).format(value);
 }
 
