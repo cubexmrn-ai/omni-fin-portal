@@ -15,21 +15,21 @@ export default function TradingChart({
   symbol = "OANDA:XAUUSD",
   interval = "D",
   theme = "light",
-  height = 500,
+  height = 600,
   allowSymbolChange = true,
 }) {
-  const containerRef = useRef(null);
+  const widgetContainerRef = useRef(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const widgetContainer = widgetContainerRef.current;
+    if (!widgetContainer) return;
 
     // Clear any previous widget before re-mounting (e.g. on symbol change).
-    container.innerHTML = "";
+    widgetContainer.innerHTML = "";
 
     const widgetDiv = document.createElement("div");
     widgetDiv.className = "tradingview-widget-container__widget";
-    widgetDiv.style.height = "calc(100% - 32px)";
+    widgetDiv.style.height = "100%";
     widgetDiv.style.width = "100%";
 
     const script = document.createElement("script");
@@ -38,6 +38,8 @@ export default function TradingChart({
     script.async = true;
     script.text = JSON.stringify({
       autosize: true,
+      height: "100%",
+      width: "100%",
       symbol,
       interval,
       timezone: "Etc/UTC",
@@ -49,19 +51,25 @@ export default function TradingChart({
       support_host: "https://www.tradingview.com",
     });
 
-    container.appendChild(widgetDiv);
-    container.appendChild(script);
+    widgetContainer.appendChild(widgetDiv);
+    widgetContainer.appendChild(script);
 
     return () => {
-      container.innerHTML = "";
+      widgetContainer.innerHTML = "";
     };
   }, [symbol, interval, theme, allowSymbolChange]);
 
   return (
     <div
-      className="tradingview-widget-container overflow-hidden rounded-xl border border-slate-200"
-      style={{ height, width: "100%" }}
-      ref={containerRef}
-    />
+      className="relative h-full min-h-[500px] w-full overflow-hidden rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+      style={{ height }}
+    >
+      {/* TradingView requires its own container element to size against;
+          this inner div fills the padded wrapper above completely. */}
+      <div
+        className="tradingview-widget-container h-full w-full"
+        ref={widgetContainerRef}
+      />
+    </div>
   );
 }
