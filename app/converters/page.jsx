@@ -5,9 +5,9 @@ import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { FEATURED_FX_PAIRS } from "@/lib/fxSlugs";
 
 export const metadata = {
-  title: "Currency, Crypto, Gold & Unit Converter | OmniFin Portal",
+  title: "Currency, Crypto, Metals & Commodities, Unit Converter | OmniFin Portal",
   description:
-    "Convert between fiat currencies, crypto and precious metals, gold rates, and worldwide units (length, area, weight, volume, speed, temperature) — including Tola, Maund, Marla and Kanal — instantly and for free.",
+    "Convert between fiat currencies, crypto and metals & commodities (gold, silver, platinum, palladium, copper, crude oil), and worldwide units (length, area, weight, volume, speed, temperature) — including Tola, Maund, Marla and Kanal — instantly and for free.",
 };
 
 const CATEGORY_SUMMARY = [
@@ -29,14 +29,16 @@ export default function ConvertersPage() {
             Module 1 · Converters
           </span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Currency, Crypto, Gold &amp; Unit Converter
+            Currency, Crypto, Metals &amp; Commodities, Unit Converter
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-600">
             Three tools, one dashboard: a cross-asset converter spanning
-            fiat currencies, crypto and precious metals, a gold rate
-            calculator by karat and weight unit, and a universal
-            converter for length, area, weight, volume, speed, digital
-            storage and temperature — worldwide and regional units alike.
+            fiat currencies, crypto and precious metals, a metals &amp;
+            commodities calculator covering gold, silver, platinum,
+            palladium, copper and crude oil by karat and weight unit (or
+            barrel for oil), and a universal converter for length, area,
+            weight, volume, speed, digital storage and temperature —
+            worldwide and regional units alike.
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

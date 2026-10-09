@@ -2,7 +2,7 @@
   "name": "omnifin-portal",
   "version": "1.0.0",
   "private": true,
-  "description": "OmniFin Portal - Universal Currency & Gold Rates Calculator",
+  "description": "OmniFin Portal - Universal Currency, Metals & Commodities Calculator",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -3,10 +3,12 @@
 A Next.js 14 (App Router) + Tailwind CSS finance portal.
 
 - **Module 1 — Converters**: a cross-asset Universal Currency Converter
-  (36 fiat currencies + 12 cryptocurrencies + 4 precious metals, any
-  asset to any other, searchable pickers, rate matrix), a gold rate
-  calculator (auto-filled from the live XAU spot price), and a
-  worldwide unit converter (length, area, weight, volume, speed,
+  (36 fiat currencies + 12 cryptocurrencies + 5 precious/base metals,
+  any asset to any other, searchable pickers, rate matrix), a Metals &
+  Commodities Calculator covering Gold, Silver, Platinum, Palladium,
+  Copper (all auto-filled from live spot prices, by weight unit and —
+  for gold — karat) and Crude Oil (auto-filled, priced per barrel), and
+  a worldwide unit converter (length, area, weight, volume, speed,
   digital storage, temperature — including Tola, Maund, Seer, Marla and
   Kanal), all tabbed together with programmatic SEO routes for both
   currency pairs and unit pairs.
@@ -24,9 +26,11 @@ A Next.js 14 (App Router) + Tailwind CSS finance portal.
 - Next.js 14 (App Router, React 18)
 - Tailwind CSS 3
 - A unified rates API fetching Fiat (ExchangeRate-API), Crypto
-  (CoinGecko) and Metals (metals-api.com) **in parallel** via
-  `Promise.all()`, each with its own timeout and fallback, cached with
-  ISR-style 3600s (1 hour) revalidation (`app/api/rates/route.js`)
+  (CoinGecko), Metals (metals-api.com, 5 assets incl. Copper) and
+  Commodities (Crude Oil, static reference price for now) **in
+  parallel** via `Promise.all()`, each with its own timeout and
+  fallback, cached with ISR-style 3600s (1 hour) revalidation
+  (`app/api/rates/route.js`)
 - A separate RSS news aggregator route spanning 7 feeds across 4
   categories (Stocks, Forex, Crypto, Commodities), same timeout/fallback
   pattern, cached for 900s (`app/api/news-ai/route.js`)
@@ -51,10 +55,10 @@ Open http://localhost:3000.
 ```
 app/
   api/
-    rates/route.js            # Unified Fiat+Crypto+Metals rates (3600s cache)
+    rates/route.js            # Unified Fiat+Crypto+Metals+Commodities rates (3600s cache)
     news-ai/route.js          # Thin JSON wrapper around lib/newsAggregator.js
   converters/
-    page.jsx                  # Tabbed directory (Currency / Gold / Units) + featured pairs
+    page.jsx                  # Tabbed directory (Currency / Metals & Commodities / Units) + featured pairs
     [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
     unit/[slug]/page.jsx      # Programmatic SEO routes, e.g. sqft-to-marla
   market-analysis/
@@ -67,19 +71,23 @@ app/
   globals.css
 components/
   CurrencyConverter.jsx       # Cross-asset converter: Fiat/Crypto/Metals, swap, rate matrix
-  ConvertersTabs.jsx          # Tab shell switching Currency / Gold / Units
-  GoldCalculator.jsx          # Gold calculator (auto-fills live XAU; uses lib/conversionMath)
+  ConvertersTabs.jsx          # Tab shell switching Currency / Metals & Commodities / Units
+  GoldCalculator.jsx          # Metals & Commodities calculator (6-asset selector; auto-fills
+                                # live spot prices; uses lib/conversionMath) — filename kept
+                                # for history, the component/UI is no longer gold-only
   UnitConverter.jsx           # Universal multi-category unit converter
   TradingChart.jsx            # TradingView "Advanced Chart" embed wrapper
   MiniSymbolWidget.jsx        # TradingView "Mini Symbol Overview" embed wrapper (lightweight)
-  MarketOverviewBoard.jsx     # Indices/Forex/Crypto grid + light/dark toggle + detailed chart
-  MarketDashboard.jsx         # Symbol picker (incl. PSX, Nifty) + TradingChart
+  MarketOverviewBoard.jsx     # Indices/Forex/Crypto grid + AI Insights card + light/dark toggle + detailed chart
+  MarketDashboard.jsx         # Symbol picker (global indices) + TradingChart
   NewsFeed.jsx                 # Client-side search + category filter over fetched headlines
 lib/
-  conversionMath.js           # All conversion math (gold + units + temperature)
+  conversionMath.js           # All conversion math (weight/karat metals pricing,
+                                # flat-unit commodity pricing, units + temperature)
   currencies.js                # Master fiat currency list + fallback rates
   crypto.js                    # Master cryptocurrency list + fallback USD prices
-  metals.js                    # Master precious-metal list + fallback USD/troy-oz prices
+  metals.js                    # Master metals list (incl. Copper) + fallback USD/troy-oz prices
+  commodities.js               # Crude Oil (barrel-priced) — deliberately separate from metals.js
   assetConversion.js           # Cross-asset "convert anything to anything" engine
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
   fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes
@@ -110,30 +118,64 @@ cp .env.example .env.local
   anonymously (lower limit, fine at this traffic level).
 - `METALS_API_KEY` (optional) — a key from
   [metals-api.com](https://metals-api.com/) enables live gold/silver/
-  platinum/palladium spot prices from that provider. If it's missing, or
-  the call fails for any reason (wrong plan, a `base` currency
-  restriction, bad/expired key, quota spent), the route automatically
-  falls back to [api.gold-api.com](https://api.gold-api.com/), a free,
-  keyless provider, so metal prices stay **live** either way. Only if
-  both providers are unreachable does it drop to static fallback
-  numbers for that asset class — fiat and crypto are unaffected
+  platinum/palladium/copper spot prices from that provider. If it's
+  missing, or the call fails for any reason (wrong plan, a `base`
+  currency restriction, bad/expired key, quota spent), the route
+  automatically falls back to [api.gold-api.com](https://api.gold-api.com/),
+  a free, keyless provider, so metal prices stay **live** either way —
+  note that gold-api.com itself doesn't support copper (`XCU`), so a
+  metals-api.com outage with no key configured drops copper specifically
+  to its static fallback even while gold/silver/platinum/palladium stay
+  live. Only if both providers are unreachable does it drop to static
+  fallback numbers for that asset class — fiat and crypto are unaffected
   regardless. See "Notes on the unified rates API" below for how to
   read the `metalsDebug` field when diagnosing a METALS_API_KEY issue.
+- Crude oil (`WTI`, in `commodities`) has **no live provider wired in
+  yet** — no free, keyless spot-price API was found for it, and the
+  usual providers (e.g. oilpriceapi.com) require a paid/trial key. It
+  always returns a static reference price (`lib/commodities.js`), and
+  the response's `commodityNote` field says so explicitly — this is
+  surfaced separately from the top-level `warnings` array so it never
+  falsely flips the Metals & Commodities Calculator's "live rates
+  connected" badge to "fallback" when fiat/crypto/metals are all
+  genuinely live. Add an `OIL_API_KEY`-style variable and a
+  `fetchFromOilApi()` tier in `fetchCommodityPrices()`
+  (`app/api/rates/route.js`) to wire in a real feed later.
 - `ANTHROPIC_API_KEY` (not required yet) — once added, wire it into the
   `TODO` in `app/api/news-ai/route.js` to generate a `summary` for each
   headline via the Claude API. Until then, `summary` is `null` and the
   UI shows an "AI summary coming soon" placeholder.
 
-## Notes on the gold calculator math
+## Notes on the Metals & Commodities Calculator math
 
-- Base input is USD price per troy ounce at 24K purity.
-- Weight units convert via grams: 1 troy oz = 31.1034768 g, 1 tola =
-  11.6638038 g.
-- Karat purity is applied as a fraction of 24K (22K = 22/24).
-- Local price = (USD/oz ÷ 31.1034768) × karat purity × exchange rate ×
-  grams-per-unit × quantity.
-- All of the above lives in `lib/conversionMath.js` so both the Gold
-  Calculator and any future component can reuse the same formulas.
+- Covers 6 assets via a single "Metal / Commodity" dropdown: Gold
+  (XAU), Silver (XAG), Platinum (XPT), Palladium (XPD), Copper (XCU)
+  and Crude Oil (WTI) — `components/GoldCalculator.jsx`'s
+  `ASSET_OPTIONS`. Switching assets re-syncs the base price field to
+  that asset's live spot price (`data.metals[code]` or
+  `data.commodities.WTI`) and discards any value the user had typed in
+  for the previous asset, since a manually-edited gold price has no
+  meaning once silver is selected.
+- **Gold/Silver/Platinum/Palladium/Copper** (weight-based, via
+  `calculateGoldPrice()`):
+  - Base input is USD price per troy ounce.
+  - Weight units convert via grams: 1 troy oz = 31.1034768 g, 1 tola =
+    11.6638038 g, 1 kg = 1000 g.
+  - Karat purity (24K / 22K) only applies to Gold — the other four
+    assets are always priced at full/100% purity; the Karat selector
+    is hidden for them.
+  - Local price = (USD/oz ÷ 31.1034768) × karat purity × exchange rate ×
+    grams-per-unit × quantity.
+- **Crude Oil** (barrel-based, via `calculateFlatUnitPrice()`): no
+  weight unit or karat step at all — local price = USD/barrel ×
+  exchange rate × quantity (in barrels). The weight-unit dropdown is
+  hidden when Crude Oil is selected.
+- All of the above lives in `lib/conversionMath.js` so the Metals &
+  Commodities Calculator and any future component can reuse the same
+  formulas. Crude oil's "USD per unit" is intentionally a *different*
+  convention (per barrel, not per troy ounce) from the metals — see the
+  comment at the top of `lib/commodities.js` for why it's kept in its
+  own registry rather than merged into `lib/metals.js`.
 
 ## Notes on the unit converter
 
@@ -151,7 +193,7 @@ cp .env.example .env.local
 
 ## Notes on the unified rates API
 
-`app/api/rates/route.js` fetches three independent sources **in
+`app/api/rates/route.js` fetches four independent sources **in
 parallel** with `Promise.all()` and returns one unified JSON shape:
 
 ```json
@@ -159,11 +201,13 @@ parallel** with `Promise.all()` and returns one unified JSON shape:
   "base": "USD",
   "fiat":   { "USD": 1, "PKR": 278.5, "EUR": 0.92, "...": "..." },
   "crypto": { "BTC": 65234.12, "ETH": 3456.78, "SOL": 142.33, "...": "..." },
-  "metals": { "XAU": 2634.50, "XAG": 30.85, "XPT": 912.40, "XPD": 985.10 },
-  "sources": { "fiat": "exchangerate-api.com (v6)", "crypto": "coingecko.com", "metals": "metals-api.com" },
+  "metals": { "XAU": 2634.50, "XAG": 30.85, "XPT": 912.40, "XPD": 985.10, "XCU": 0.31 },
+  "commodities": { "WTI": 75 },
+  "sources": { "fiat": "exchangerate-api.com (v6)", "crypto": "coingecko.com", "metals": "metals-api.com", "commodities": "static-fallback" },
   "fetchedAt": "2026-10-09T18:00:00.000Z",
   "revalidateSeconds": 3600,
-  "warnings": ["Metal prices unavailable (...); using fallback values."]
+  "warnings": ["Metal prices unavailable (...); using fallback values."],
+  "commodityNote": "Live crude oil pricing isn't wired in yet (no provider configured) — showing a static reference price."
 }
 ```
 
@@ -176,16 +220,26 @@ Conventions (see the long comment at the top of the route file and in
   (1 BTC in USD; 1 troy ounce of gold in USD) — metals-api.com actually
   quotes metals the same way fiat does (ounces per 1 USD), so the route
   inverts it server-side before returning, specifically so metals and
-  crypto share one convention and the Gold Calculator can use
-  `metals.XAU` directly as "USD per troy ounce, 24K" with no extra math.
+  crypto share one convention and the Metals & Commodities Calculator
+  can use `metals.XAU` directly as "USD per troy ounce" with no extra
+  math.
+- **`commodities`** is also "direct USD value of 1 unit," but the unit
+  is a **barrel**, not a troy ounce — a deliberately different meaning
+  from `metals`, which is why crude oil lives in its own
+  `lib/commodities.js` registry and response field rather than being
+  folded into `metals` (that would silently break the Currency
+  Converter's cross-asset math, which assumes every `metals.*` value is
+  per troy ounce).
 
-Each of the three provider calls:
+Each provider call:
 
-- Has its **own** `try/catch` and **own** static fallback (`lib/currencies.js`'s
-  `FALLBACK_RATES`, `lib/crypto.js`'s `CRYPTO_FALLBACK_USD`, `lib/metals.js`'s
-  `METAL_FALLBACK_USD`) — one provider being down or rate-limited never
-  breaks the other two, it just adds an entry to the top-level `warnings`
-  array and keeps serving fallback numbers for that asset class only.
+- Has its **own** `try/catch` and **own** static fallback
+  (`lib/currencies.js`'s `FALLBACK_RATES`, `lib/crypto.js`'s
+  `CRYPTO_FALLBACK_USD`, `lib/metals.js`'s `METAL_FALLBACK_USD`,
+  `lib/commodities.js`'s `COMMODITY_FALLBACK_USD`) — one provider being
+  down or rate-limited never breaks the others, it just adds an entry
+  to the top-level `warnings` array and keeps serving fallback numbers
+  for that asset class only.
 - Has an 8-second hard timeout via `AbortController` (`cachedFetch()` in
   the route file), so a slow/hanging upstream can't stall the whole
   route — this is also what was crashing static prerendering once
@@ -193,15 +247,25 @@ Each of the three provider calls:
   the timeout guards against a *different*, request-level failure mode.
 - **Metals specifically** has a 3-tier chain, not just keyed → static:
   `fetchFromMetalsApi()` (metals-api.com, needs `METALS_API_KEY`) →
-  `fetchFromGoldApi()` (api.gold-api.com, free, no key) → `METAL_FALLBACK_USD`
+  `fetchFromGoldApi()` (api.gold-api.com, free, no key — supports
+  gold/silver/platinum/palladium but *not* copper) → `METAL_FALLBACK_USD`
   (static). A metals-api.com failure that gets rescued by gold-api.com is
   still **live** data, so it does **not** add to `warnings` (which the
   UI treats as "showing stale numbers") — instead the reason
   metals-api.com was skipped is put in a separate, non-UI `metalsDebug`
   field on the response (e.g. `curl your-deployment.vercel.app/api/rates`
   or the Vercel function logs), so a misconfigured key is diagnosable
-  without the Gold Calculator ever showing an incorrect "fallback" badge
-  for data that's actually live.
+  without the Metals & Commodities Calculator ever showing an incorrect
+  "fallback" badge for data that's actually live.
+- **Commodities specifically** (`fetchCommodityPrices()`) is, for now,
+  *always* a static reference price — no live crude-oil provider is
+  wired in (see the Environment Variables section above). This is a
+  by-design, permanent state rather than a degradation, so unlike the
+  other three sources it does **not** contribute to the top-level
+  `warnings` array (that would falsely show "fallback" on every single
+  request even when fiat/crypto/metals are all genuinely live). Instead
+  it's surfaced as its own `commodityNote` field — the same
+  separation-of-concerns pattern as `metalsDebug` above.
 
 ## Notes on the Universal Currency Converter
 
@@ -212,10 +276,15 @@ Each of the three provider calls:
   `convertBetweenAssets()`. This is how Fiat→Fiat, Crypto→Fiat,
   Metal→Crypto, etc. all work through one code path.
 - `lib/currencies.js` (36 fiat currencies), `lib/crypto.js` (12 major
-  cryptocurrencies, with their CoinGecko ids), and `lib/metals.js` (4
-  precious metals) are the three asset registries. Add an asset to any
-  one of them and it's immediately available in the converter's picker,
-  in `/api/rates`, and (for fiat) in the SEO routes.
+  cryptocurrencies, with their CoinGecko ids), and `lib/metals.js` (5
+  metals — gold, silver, platinum, palladium, copper) are the three
+  asset registries this converter draws on. Add an asset to any one of
+  them and it's immediately available in the converter's picker, in
+  `/api/rates`, and (for fiat) in the SEO routes. (Crude oil, in
+  `lib/commodities.js`, is deliberately **not** included here — it's
+  barrel-priced rather than weight-priced, so folding it into this
+  "USD per unit" cross-asset engine would need its own conversion path;
+  it's wired into the Metals & Commodities Calculator only, for now.)
 - `components/CurrencyConverter.jsx` implements its own searchable,
   **grouped** dropdown (a text input + filtered list with Fiat/Crypto/
   Metals section headers) rather than a native `<select>`, since plain
@@ -235,11 +304,14 @@ Each of the three provider calls:
   way. It sits safely alongside the separate `app/converters/unit/[slug]`
   route because Next.js always matches a literal folder name (`unit`)
   before a dynamic one at the same level.
-- `components/GoldCalculator.jsx` now auto-fills its "Base Gold Price"
-  field from the live `metals.XAU` value on load, but only until the
-  user types their own value (tracked via a ref to avoid a stale-closure
-  bug where the auto-fill could re-trigger after a manual edit); hitting
-  "Refresh rates" resets that and re-syncs to the live price.
+- `components/GoldCalculator.jsx` (the Metals & Commodities Calculator)
+  auto-fills its "Base Price" field from the selected asset's live spot
+  price (`metals.XAU`/`XAG`/`XPT`/`XPD`/`XCU` or `commodities.WTI`) on
+  load and whenever a different asset is selected, but only until the
+  user types their own value (tracked via a ref to avoid a
+  stale-closure bug where the auto-fill could re-trigger after a manual
+  edit); hitting "Refresh rates" resets that and re-syncs to the live
+  price.
 
 ## Notes on Market Analysis & AI News
 
@@ -251,33 +323,41 @@ Each of the three provider calls:
   Overview" widget — much lighter than the full Advanced Chart, which
   matters when rendering 15 of them on one page):
   - **Indices**: S&P 500 (`FOREXCOM:SPXUSD`), Nasdaq 100
-    (`FOREXCOM:NSXUSD`), India 50 / Nifty 50 proxy (`AMEX:INDY`),
-    Pakistan / KSE-100 proxy (`AMEX:PAK`), Nikkei 225 (`CME:NIY1!`)
+    (`FOREXCOM:NSXUSD`), FTSE 100 (`TVC:UKX`), DAX (`TVC:DAX`), Nikkei
+    225 (`TVC:NI225`)
   - **Forex**: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD
   - **Crypto**: Bitcoin, Ethereum, BNB, Solana, XRP
 
-  The Indices group doesn't use the direct exchange symbols
-  (`NSE:NIFTY`, `PSX:KSE100`, `TVC:NI225`) — in the free, anonymous
-  embed widget these show "This symbol is only available on
-  TradingView", because that specific message means the symbol's data
-  vendor gates it behind a logged-in TradingView account for guest/
-  third-party embeds (most commonly hit on direct NSE India and PSX
-  Pakistan feeds). It's not a malformed-ticker problem, so there's no
-  alternate string in the same vendor that fixes it. Swapped to
-  ordinary US-listed securities/futures instead (`AMEX:`/`CME:`),
-  which carry no extra data license and are never gated for anonymous
-  embeds: `AMEX:INDY` (iShares India 50 ETF, tracks Nifty 50),
-  `CME:NIY1!` (CME Nikkei 225/USD continuous futures), and `AMEX:PAK`
-  (Global X MSCI Pakistan ETF — there's no CFD/futures broker offering
-  a KSE-100 instrument at all, so this is the closest proxy available).
-  Add/remove symbols by editing the `INDEX_SYMBOLS` / `FOREX_SYMBOLS` /
-  `CRYPTO_SYMBOLS` arrays at the top of `MarketOverviewBoard.jsx` — the
-  same substitution was applied to `components/MarketDashboard.jsx`'s
-  `SYMBOLS` array for the same reason. Below the grid, the same toggle
+  The Indices group avoided two different TradingView failure modes
+  while landing on this set: (1) direct exchange symbols like
+  `NSE:NIFTY`/`PSX:KSE100` show "This symbol is only available on
+  TradingView" in the free, anonymous embed widget, because that data
+  vendor gates them behind a logged-in TradingView account for guest/
+  third-party embeds; and (2) a first attempt at working around that
+  with `AMEX:INDY`/`AMEX:PAK`/`CME:NIY1!` turned out to be invalid
+  tickers entirely ("Invalid Symbol" — a different failure mode, not
+  gating). The current set uses only broad, globally-recognized index
+  CFDs/benchmarks (`FOREXCOM:`/`TVC:`) that are never gated for
+  anonymous embeds and are confirmed valid TradingView symbols.
+  Pakistan/KSE-100 was dropped entirely rather than guess a third proxy
+  — no reliable free substitute was found. Add/remove symbols by
+  editing the `INDEX_SYMBOLS` / `FOREX_SYMBOLS` / `CRYPTO_SYMBOLS`
+  arrays at the top of `MarketOverviewBoard.jsx` — the same
+  substitution was applied to `components/MarketDashboard.jsx`'s
+  `SYMBOLS` array (which also keeps `AMEX:INDA`, a US-listed India ETF,
+  as its own detailed-chart option). Below the grid, the same toggle
   also drives `MarketDashboard.jsx` (the original full-size,
   symbol-picker chart via `TradingChart.jsx`) so the whole page is
   consistently themed rather than a dark grid sitting above a chart
   that's still light, or vice versa.
+- **`MarketInsightsCard`** (top of `MarketOverviewBoard.jsx`) is a
+  rule-based "AI Market Commentary & Technical Sentiment" summary card
+  generated from the same live `/api/rates` payload — USD strength vs.
+  EUR/GBP, gold sentiment, and BTC's position relative to a few round
+  price levels (`buildInsights()`). It's explicitly labeled "Live
+  snapshot · full AI analysis coming soon" rather than claiming to be
+  AI-generated, since the underlying logic is deterministic, not an LLM
+  call.
 - **`lib/newsAggregator.js`** is the actual news-fetching logic: it
   fetches 7 finance RSS feeds in parallel across 4 categories —
   **Stocks** (Yahoo Finance, MarketWatch, CNBC Markets), **Forex**

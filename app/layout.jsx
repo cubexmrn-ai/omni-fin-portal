@@ -2,11 +2,14 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata = {
-  title: "OmniFin Portal | Currency, Gold Rates & Unit Converters",
+  title: "OmniFin Portal | Currency, Metals & Commodities, and Unit Converters",
   description:
-    "OmniFin Portal — a universal currency and gold rates calculator, worldwide unit converter, and live market charts with AI news, for PKR, AUD, EUR, INR, AED and NGN.",
+    "OmniFin Portal — a universal currency converter, a metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), a worldwide unit converter, and live market charts with AI news, for PKR, AUD, EUR, INR, AED and NGN.",
   keywords: [
+    "metals and commodities calculator",
     "gold rate calculator",
+    "silver rate calculator",
+    "crude oil price calculator",
     "currency converter",
     "unit converter",
     "sq ft to marla",
@@ -21,7 +24,7 @@ export const metadata = {
 
 const NAV_LINKS = [
   { label: "Dashboard", href: "/" },
-  { label: "Gold Calculator", href: "/#gold-calculator" },
+  { label: "Metals & Commodities", href: "/#metals-calculator" },
   { label: "Converters", href: "/converters" },
   { label: "Market Analysis", href: "/market-analysis" },
   { label: "News", href: "/ai-news" },
@@ -90,7 +93,7 @@ function SiteHeader() {
             Live rates · hourly cache
           </span>
           <Link
-            href="/#gold-calculator"
+            href="/#metals-calculator"
             className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-700"
           >
             Open Calculator
@@ -131,8 +134,8 @@ function SiteFooter() {
             </p>
             <p className="mt-1 max-w-md text-sm text-slate-500">
               A finance utilities portal for traders, jewellers and
-              households — starting with a universal currency and gold
-              rate calculator.
+              households — starting with a universal currency converter
+              and a metals &amp; commodities calculator.
             </p>
           </div>
           <p className="text-xs text-slate-400">

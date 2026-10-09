@@ -1,10 +1,13 @@
 // app/api/rates/route.js
 //
-// Unified serverless rates endpoint for OmniFin Portal. Fetches three
+// Unified serverless rates endpoint for OmniFin Portal. Fetches four
 // independent data sources IN PARALLEL via Promise.all():
 //   1. Fiat exchange rates   — ExchangeRate-API (EXCHANGE_RATE_API_KEY)
 //   2. Crypto spot prices    — CoinGecko         (COINGECKO_API_KEY)
-//   3. Precious metal prices — metals-api.com    (METALS_API_KEY)
+//   3. Metal prices (precious + copper) — metals-api.com (METALS_API_KEY),
+//      falling back to gold-api.com (free, keyless)
+//   4. Commodity prices (crude oil) — static reference only for now,
+//      no live provider configured (see fetchCommodityPrices() below)
 //
 // Each provider has its own try/catch and static fallback, so one
 // provider being down/rate-limited never breaks the other two (or the
@@ -20,6 +23,7 @@
 import { CURRENCY_CODES, FALLBACK_RATES as FIAT_FALLBACK } from "@/lib/currencies";
 import { CRYPTO_ASSETS, CRYPTO_FALLBACK_USD } from "@/lib/crypto";
 import { METAL_CODES, METAL_FALLBACK_USD } from "@/lib/metals";
+import { COMMODITY_CODES, COMMODITY_FALLBACK_USD } from "@/lib/commodities";
 
 const REVALIDATE_SECONDS = 3600; // 1 hour — protects free-tier API limits.
 const FETCH_TIMEOUT_MS = 8000; // Don't let one slow provider hang the build.
@@ -151,7 +155,7 @@ async function fetchCryptoPrices() {
 // Rather than dropping straight to a frozen static price the moment that
 // happens (which is what was happening — hence the stuck $2650 / "Using
 // fallback rates" badge), we add a free, keyless secondary provider
-// (gold-api.com) so the Gold Calculator still gets a real live spot price
+// (gold-api.com) so the Metals & Commodities Calculator still gets a real live spot price
 // even when the paid provider's key is misconfigured. The *actual* reason
 // the keyed call failed is preserved in `metalsDebug` below so it's visible
 // in the API response while diagnosing the METALS_API_KEY setup, without
@@ -174,7 +178,7 @@ async function fetchFromMetalsApi(apiKey) {
   // same convention as fiat, base=USD) — e.g. rates.XAU ≈ 0.00038. We
   // invert to USD-per-troy-ounce so metals share crypto's "direct USD
   // value per unit" convention (see lib/assetConversion.js), which also
-  // matches what the Gold Calculator expects as its base price. Some
+  // matches what the Metals & Commodities Calculator expects as its base price. Some
   // responses also include a convenience "USD<SYMBOL>" key with that
   // inversion already done — prefer it when present.
   const subset = {};
@@ -273,14 +277,52 @@ async function fetchMetalPrices() {
 }
 
 // ---------------------------------------------------------------------------
+// 4. Commodities — crude oil (WTI); static-only for now
+// ---------------------------------------------------------------------------
+//
+// Deliberately NOT part of fetchMetalPrices()/metals: oil isn't priced
+// by weight, so it can't share METAL_ASSETS' "USD per troy ounce"
+// convention without corrupting the Currency Converter's cross-asset
+// math for anyone who picked it there (see the long comment at the top
+// of lib/commodities.js). Kept as its own small async function, in its
+// own Promise.all slot, so adding a real provider later is a drop-in
+// change exactly like fetchMetalPrices()'s keyed→free→static chain.
+//
+// TODO (once a provider is chosen, e.g. oilpriceapi.com or similar):
+// add an OIL_API_KEY-keyed fetch here, following the same
+// try/catch-with-static-fallback shape as fetchFiatRates()/
+// fetchMetalPrices() above — the rest of the response shape and the
+// Metals & Commodities Calculator's reading of `data.commodities.WTI`
+// do not need to change.
+async function fetchCommodityPrices() {
+  return {
+    rates: COMMODITY_FALLBACK_USD,
+    source: "static-fallback",
+    // Intentionally NOT a `warning` (see below): that field feeds the
+    // top-level `warnings` array, which the Metals & Commodities
+    // Calculator's status badge reads as "something that should be
+    // live is currently degraded." A permanently-unconfigured provider
+    // isn't a degradation — it's an expected, by-design state (same
+    // idea as the News page's "pending_ai_key" status) — so it would
+    // falsely flip the WHOLE payload to "fallback" on every request,
+    // even while fiat/crypto/metals are all genuinely live. Surfaced
+    // instead via its own `commodityNote` field below, the same way
+    // metals' `metalsDebug` stays out of `warnings` for an analogous
+    // "still fine, just worth knowing" case.
+    note: "Live crude oil pricing isn't wired in yet (no provider configured) — showing a static reference price.",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Route handler
 // ---------------------------------------------------------------------------
 
 export async function GET() {
-  const [fiat, crypto, metals] = await Promise.all([
+  const [fiat, crypto, metals, commodities] = await Promise.all([
     fetchFiatRates(),
     fetchCryptoPrices(),
     fetchMetalPrices(),
+    fetchCommodityPrices(),
   ]);
 
   const warnings = [fiat.warning, crypto.warning, metals.warning].filter(Boolean);
@@ -290,10 +332,12 @@ export async function GET() {
     fiat: fiat.rates,
     crypto: crypto.rates,
     metals: metals.rates,
+    commodities: commodities.rates,
     sources: {
       fiat: fiat.source,
       crypto: crypto.source,
       metals: metals.source,
+      commodities: commodities.source,
     },
     fetchedAt: new Date().toISOString(),
     revalidateSeconds: REVALIDATE_SECONDS,
@@ -304,6 +348,7 @@ export async function GET() {
     // response itself (e.g. via `curl /api/rates` or Vercel logs) without
     // the UI showing a misleading "fallback rates" state.
     ...(metals.metalsDebug ? { metalsDebug: metals.metalsDebug } : {}),
+    ...(commodities.note ? { commodityNote: commodities.note } : {}),
   };
 
   return Response.json(responseBody, {

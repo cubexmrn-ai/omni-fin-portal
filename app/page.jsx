@@ -8,7 +8,7 @@ const MODULES = [
     title: "Converters",
     tagline: "Module 1",
     description:
-      "Gold & currency pricing plus a universal unit converter — length, area, weight, volume, speed, temperature and more, including Tola, Maund, Marla & Kanal.",
+      "Currency pricing, a 6-asset metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), plus a universal unit converter — length, area, weight, volume, speed, temperature and more, including Tola, Maund, Marla & Kanal.",
     href: "/converters",
     cta: "Open Converters",
   },
@@ -33,14 +33,14 @@ const SUPPORTED_CURRENCIES = [
 
 const FEATURES = [
   {
-    title: "Live Fiat, Crypto & Metal Rates",
+    title: "Live Fiat, Crypto, Metal & Commodity Rates",
     description:
-      "One unified API route feeds Fiat, Crypto and Metals rates in parallel, cached hourly with per-provider fallback so no card ever shows a blank screen.",
+      "One unified API route feeds Fiat, Crypto, Metals and Commodities rates in parallel, cached hourly with per-provider fallback so no card ever shows a blank screen.",
   },
   {
-    title: "Karat-Accurate Gold Pricing",
+    title: "6-Asset Metals & Commodities Selector",
     description:
-      "Switch between 24K and 22K purity and the calculator instantly re-weights the live XAU spot price for you.",
+      "Switch between Gold, Silver, Platinum, Palladium, Copper and Crude Oil — karat purity adjusts automatically for gold, and oil switches to barrel-based pricing.",
   },
   {
     title: "Ounce, Gram & Tola",
@@ -58,20 +58,22 @@ function Hero() {
             Phase 2 · Finance Portal Dashboard
           </span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            OmniFin Portal — gold, currency &amp; crypto rates,
+            OmniFin Portal — metals, commodities, currency &amp; crypto
+            rates,
             <span className="text-brand-600"> instantly converted.</span>
           </h1>
           <p className="mt-4 text-base text-slate-600 sm:text-lg">
-            A clean, modern dashboard for converting live gold spot
-            prices, 36 world currencies and major crypto — by weight
-            unit, karat purity, or any asset you&rsquo;re pricing against.
+            A clean, modern dashboard for converting live gold, silver,
+            platinum, palladium, copper and crude oil spot prices, 36
+            world currencies and major crypto — by weight unit, karat
+            purity, or any asset you&rsquo;re pricing against.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
-              href="#gold-calculator"
+              href="#metals-calculator"
               className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-700"
             >
-              Launch Gold Calculator
+              Open Metals &amp; Commodities
             </a>
             <a
               href="#rates"
@@ -187,10 +189,10 @@ export default function HomePage() {
     <>
       <Hero />
       {/* id preserved here (rather than inside ConvertersTabs itself) so
-          the nav's "/#gold-calculator" link and the hero's CTA above
+          the nav's "/#metals-calculator" link and the hero's CTA above
           both still scroll to this section correctly. */}
-      <div id="gold-calculator">
-        <ConvertersTabs defaultTab="gold" />
+      <div id="metals-calculator">
+        <ConvertersTabs defaultTab="metals" />
       </div>
       <ModulesGrid />
       <SupportedCurrencies />

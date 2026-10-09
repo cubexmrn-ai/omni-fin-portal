@@ -66,7 +66,7 @@ const GROUPS = [
 
 // ---------------------------------------------------------------------------
 // Market Insights — a rule-based snapshot generated from the SAME live
-// /api/rates payload the Gold Calculator and Currency Converter use, not
+// /api/rates payload the Metals & Commodities Calculator and Currency Converter use, not
 // a hand-written placeholder. It deliberately does not claim to be true
 // AI-generated analysis (that would be misleading about what it is) —
 // it's clearly labeled as a live-data snapshot, matching the honest
