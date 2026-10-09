@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  WEIGHT_UNIT_LABELS,
+  KARAT_PURITY,
+  calculateGoldPrice,
+} from "@/lib/conversionMath";
+import { fetchRates } from "@/lib/fetchRates";
 
 // ---------------------------------------------------------------------------
-// Static reference data
+// Static reference data (UI-level — the math itself lives in lib/conversionMath.js)
 // ---------------------------------------------------------------------------
 
 const CURRENCIES = [
@@ -15,20 +21,12 @@ const CURRENCIES = [
   { code: "NGN", label: "Nigerian Naira", symbol: "₦" },
 ];
 
-// Grams per unit of weight.
-const WEIGHT_UNITS = [
-  { code: "OUNCE", label: "Troy Ounce (oz t)", grams: 31.1034768 },
-  { code: "GRAM", label: "Gram (g)", grams: 1 },
-  { code: "TOLA", label: "Tola", grams: 11.6638038 },
-];
+// Subset of WEIGHT_UNITS exposed in this calculator's UI, in display order.
+const UNIT_OPTIONS = ["troy_ounce", "gram", "tola"];
 
-// Purity fraction relative to 24K (pure gold).
-const KARATS = [
-  { code: "24K", label: "24K (99.9% pure)", purity: 1 },
-  { code: "22K", label: "22K (91.6% pure)", purity: 22 / 24 },
-];
+// Subset of KARAT_PURITY exposed in this calculator's UI.
+const KARAT_OPTIONS = ["24K", "22K"];
 
-// Used if the live /api/rates endpoint hasn't resolved yet.
 const FALLBACK_RATES = {
   USD: 1,
   PKR: 278.5,
@@ -40,47 +38,6 @@ const FALLBACK_RATES = {
 };
 
 const DEFAULT_BASE_USD_PRICE = 2650; // Approx. USD per troy ounce, 24K spot.
-
-// ---------------------------------------------------------------------------
-// Pure calculation helpers (kept outside the component so they're easy to
-// unit test in isolation and so re-renders don't recreate them).
-// ---------------------------------------------------------------------------
-
-function gramsForUnit(unitCode) {
-  const unit = WEIGHT_UNITS.find((u) => u.code === unitCode);
-  return unit ? unit.grams : 1;
-}
-
-function purityForKarat(karatCode) {
-  const karat = KARATS.find((k) => k.code === karatCode);
-  return karat ? karat.purity : 1;
-}
-
-/**
- * Converts a USD-per-troy-ounce (24K) spot price into a price for an
- * arbitrary weight unit, karat and local currency.
- */
-function computeLocalPrice({
-  baseUsdPricePerOunce,
-  exchangeRate,
-  unitCode,
-  karatCode,
-  quantity,
-}) {
-  const pricePerGramUsd24k = baseUsdPricePerOunce / WEIGHT_UNITS[0].grams;
-  const purity = purityForKarat(karatCode);
-  const pricePerGramUsdAtKarat = pricePerGramUsd24k * purity;
-  const pricePerGramLocal = pricePerGramUsdAtKarat * exchangeRate;
-  const gramsPerUnit = gramsForUnit(unitCode);
-  const pricePerUnitLocal = pricePerGramLocal * gramsPerUnit;
-  const totalLocal = pricePerUnitLocal * quantity;
-
-  return {
-    pricePerGramLocal,
-    pricePerUnitLocal,
-    totalLocal,
-  };
-}
 
 function formatNumber(value, maximumFractionDigits = 2) {
   if (!Number.isFinite(value)) return "—";
@@ -97,7 +54,7 @@ function formatNumber(value, maximumFractionDigits = 2) {
 export default function GoldCalculator() {
   const [baseUsdPrice, setBaseUsdPrice] = useState(DEFAULT_BASE_USD_PRICE);
   const [currencyCode, setCurrencyCode] = useState("PKR");
-  const [unitCode, setUnitCode] = useState("TOLA");
+  const [unitCode, setUnitCode] = useState("tola");
   const [karatCode, setKaratCode] = useState("24K");
   const [quantity, setQuantity] = useState(1);
 
@@ -108,9 +65,7 @@ export default function GoldCalculator() {
   const loadRates = useCallback(async () => {
     setRateStatus((prev) => (prev === "live" ? "live" : "loading"));
     try {
-      const res = await fetch("/api/rates", { cache: "no-store" });
-      if (!res.ok) throw new Error(`Request failed with ${res.status}`);
-      const data = await res.json();
+      const data = await fetchRates({ noStore: true });
       if (!data || !data.rates) throw new Error("Malformed rates payload");
 
       setRates({ ...FALLBACK_RATES, ...data.rates });
@@ -137,14 +92,23 @@ export default function GoldCalculator() {
   const result = useMemo(() => {
     const parsedBase = Number(baseUsdPrice);
     const parsedQty = Number(quantity);
+    const safeQty = Number.isFinite(parsedQty) ? parsedQty : 0;
 
-    return computeLocalPrice({
-      baseUsdPricePerOunce: Number.isFinite(parsedBase) ? parsedBase : 0,
-      exchangeRate: Number.isFinite(exchangeRate) ? exchangeRate : 0,
+    const perUnit = calculateGoldPrice(
+      Number.isFinite(parsedBase) ? parsedBase : 0,
+      Number.isFinite(exchangeRate) ? exchangeRate : 0,
       unitCode,
-      karatCode,
-      quantity: Number.isFinite(parsedQty) ? parsedQty : 0,
-    });
+      karatCode
+    );
+
+    const totalRaw = perUnit.rawPrice * safeQty;
+
+    return {
+      pricePerUnitLocal: perUnit.rawPrice,
+      pricePerUnitFormatted: perUnit.formattedPrice,
+      usdEquivalent: perUnit.usdEquivalent,
+      totalLocal: totalRaw,
+    };
   }, [baseUsdPrice, exchangeRate, unitCode, karatCode, quantity]);
 
   const statusCopy = {
@@ -240,9 +204,9 @@ export default function GoldCalculator() {
                   onChange={(e) => setUnitCode(e.target.value)}
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm transition-colors focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                 >
-                  {WEIGHT_UNITS.map((u) => (
-                    <option key={u.code} value={u.code}>
-                      {u.label}
+                  {UNIT_OPTIONS.map((code) => (
+                    <option key={code} value={code}>
+                      {WEIGHT_UNIT_LABELS[code]}
                     </option>
                   ))}
                 </select>
@@ -255,22 +219,23 @@ export default function GoldCalculator() {
                   Karat
                 </span>
                 <div className="flex gap-2">
-                  {KARATS.map((k) => {
-                    const active = karatCode === k.code;
+                  {KARAT_OPTIONS.map((code) => {
+                    const active = karatCode === code;
+                    const purityPct = Math.round(KARAT_PURITY[code] * 1000) / 10;
                     return (
                       <button
-                        key={k.code}
+                        key={code}
                         type="button"
-                        onClick={() => setKaratCode(k.code)}
+                        onClick={() => setKaratCode(code)}
                         aria-pressed={active}
                         className={`flex-1 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${
                           active
                             ? "border-gold-500 bg-gold-50 text-gold-800"
                             : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
                         }`}
-                        title={k.label}
+                        title={`${code} (${purityPct}% pure)`}
                       >
-                        {k.code}
+                        {code}
                       </button>
                     );
                   })}
@@ -282,7 +247,7 @@ export default function GoldCalculator() {
                   htmlFor="quantity-input"
                   className="mb-1.5 block text-sm font-semibold text-slate-700"
                 >
-                  Quantity ({WEIGHT_UNITS.find((u) => u.code === unitCode)?.label.split(" (")[0]})
+                  Quantity ({WEIGHT_UNIT_LABELS[unitCode]?.split(" (")[0]})
                 </label>
                 <input
                   id="quantity-input"
@@ -331,25 +296,18 @@ export default function GoldCalculator() {
               </p>
 
               <p className="mt-3 text-sm text-slate-500">
-                {karatCode} price per gram
+                {karatCode} price per {WEIGHT_UNIT_LABELS[unitCode]?.split(" (")[0].toLowerCase()}
               </p>
               <p className="text-lg font-bold text-slate-900">
-                {selectedCurrency.symbol} {formatNumber(result.pricePerGramLocal)}
+                {selectedCurrency.symbol} {result.pricePerUnitFormatted}
               </p>
-
-              <p className="mt-4 text-sm text-slate-500">
-                {karatCode} price per{" "}
-                {WEIGHT_UNITS.find((u) => u.code === unitCode)?.label.split(" (")[0].toLowerCase()}
-              </p>
-              <p className="text-lg font-bold text-slate-900">
-                {selectedCurrency.symbol} {formatNumber(result.pricePerUnitLocal)}
+              <p className="mt-0.5 text-xs text-slate-400">
+                ≈ ${result.usdEquivalent} USD
               </p>
 
               <div className="mt-5 border-t border-slate-200 pt-4">
                 <p className="text-sm text-slate-500">
-                  Total for {quantity || 0}{" "}
-                  {WEIGHT_UNITS.find((u) => u.code === unitCode)?.code.toLowerCase()}
-                  (s)
+                  Total for {quantity || 0} {unitCode.replace("_", " ")}(s)
                 </p>
                 <p className="mt-1 text-2xl font-extrabold text-brand-700">
                   {selectedCurrency.symbol} {formatNumber(result.totalLocal)}

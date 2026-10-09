@@ -1,29 +1,36 @@
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata = {
-  title: "OmniFin Portal | Currency & Gold Rates",
+  title: "OmniFin Portal | Currency, Gold Rates & Unit Converters",
   description:
-    "OmniFin Portal — a universal currency and gold rates calculator for PKR, AUD, EUR, INR, AED and NGN, with live exchange rates.",
+    "OmniFin Portal — a universal currency and gold rates calculator, worldwide unit converter, and live market charts with AI news, for PKR, AUD, EUR, INR, AED and NGN.",
   keywords: [
     "gold rate calculator",
     "currency converter",
+    "unit converter",
+    "sq ft to marla",
+    "km to miles",
     "tola gold price",
     "22k gold price",
     "24k gold price",
+    "live gold chart",
     "OmniFin Portal",
   ],
 };
 
 const NAV_LINKS = [
-  { label: "Dashboard", href: "#dashboard" },
-  { label: "Gold Calculator", href: "#gold-calculator" },
-  { label: "Rates", href: "#rates" },
-  { label: "About", href: "#about" },
+  { label: "Dashboard", href: "/" },
+  { label: "Gold Calculator", href: "/#gold-calculator" },
+  { label: "Converters", href: "/converters" },
+  { label: "Market Analysis", href: "/market-analysis" },
+  { label: "AI News", href: "/market-analysis/ai-news" },
+  { label: "About", href: "/#about" },
 ];
 
 function HeaderLogo() {
   return (
-    <a href="#dashboard" className="flex items-center gap-2 shrink-0">
+    <Link href="/" className="flex items-center gap-2 shrink-0">
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white shadow-card">
         <svg
           width="18"
@@ -52,7 +59,7 @@ function HeaderLogo() {
       <span className="text-lg font-bold tracking-tight text-slate-900">
         OmniFin<span className="text-brand-600">Portal</span>
       </span>
-    </a>
+    </Link>
   );
 }
 
@@ -67,13 +74,13 @@ function SiteHeader() {
           aria-label="Primary"
         >
           {NAV_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -82,12 +89,12 @@ function SiteHeader() {
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             Live rates · 15 min cache
           </span>
-          <a
-            href="#gold-calculator"
+          <Link
+            href="/#gold-calculator"
             className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-700"
           >
             Open Calculator
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -97,13 +104,13 @@ function SiteHeader() {
         aria-label="Primary mobile"
       >
         {NAV_LINKS.map((link) => (
-          <a
+          <Link
             key={link.href}
             href={link.href}
             className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           >
             {link.label}
-          </a>
+          </Link>
         ))}
       </nav>
     </header>
