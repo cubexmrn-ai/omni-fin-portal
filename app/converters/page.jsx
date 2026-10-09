@@ -1,12 +1,13 @@
 import Link from "next/link";
-import UnitConverter from "@/components/UnitConverter";
+import ConvertersTabs from "@/components/ConvertersTabs";
 import { UNIT_CATEGORIES } from "@/lib/conversionMath";
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
+import { FEATURED_FX_PAIRS } from "@/lib/fxSlugs";
 
 export const metadata = {
-  title: "Universal Unit Converter | OmniFin Portal",
+  title: "Currency, Gold & Unit Converter | OmniFin Portal",
   description:
-    "Convert length, area, weight, volume, speed, digital storage and temperature — including Tola, Maund, Marla and Kanal — instantly and for free.",
+    "Convert currencies, gold rates, and worldwide units (length, area, weight, volume, speed, temperature) — including Tola, Maund, Marla and Kanal — instantly and for free.",
 };
 
 const CATEGORY_SUMMARY = [
@@ -28,12 +29,13 @@ export default function ConvertersPage() {
             Module 1 · Converters
           </span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Universal Unit Converter
+            Currency, Gold &amp; Unit Converter
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-600">
-            Every popular measurement, worldwide and regional, in one
-            calculator — length, area, weight, volume, speed, digital
-            storage and temperature.
+            Three tools, one dashboard: live FX currency conversion, gold
+            rate pricing by karat and weight unit, and a universal
+            converter for length, area, weight, volume, speed, digital
+            storage and temperature — worldwide and regional units alike.
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -52,11 +54,33 @@ export default function ConvertersPage() {
         </div>
       </section>
 
-      <UnitConverter />
+      <div className="py-10">
+        <ConvertersTabs defaultTab="currency" />
+      </div>
+
+      <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
+        <h2 className="text-lg font-bold text-slate-900">
+          Popular Currency Conversions
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Direct links to the most-searched currency pairs.
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {FEATURED_FX_PAIRS.map((pair) => (
+            <Link
+              key={pair.slug}
+              href={`/converters/${pair.slug}`}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-card transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+            >
+              {pair.title}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
         <h2 className="text-lg font-bold text-slate-900">
-          Popular Conversions
+          Popular Unit Conversions
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           Direct links to the most-searched unit conversions.

@@ -6,23 +6,14 @@
 // ISR-cached endpoint: the first request after the window expires
 // triggers a background refresh, while all other requests are served
 // instantly from cache.
+//
+// Serves every currency in lib/currencies.js (used by both the Gold
+// Calculator and the FX Currency Converter), so both features share one
+// cached fetch instead of hitting the upstream provider twice.
+
+import { CURRENCY_CODES, FALLBACK_RATES } from "@/lib/currencies";
 
 const REVALIDATE_SECONDS = 900;
-
-// Currencies supported by the Gold Calculator UI.
-const SUPPORTED_CURRENCIES = ["PKR", "AUD", "EUR", "INR", "AED", "NGN"];
-
-// Static fallback rates (approximate, USD base) used only if every
-// upstream provider is unreachable, so the UI never hard-fails.
-const FALLBACK_RATES = {
-  USD: 1,
-  PKR: 278.5,
-  AUD: 1.52,
-  EUR: 0.92,
-  INR: 83.9,
-  AED: 3.6725,
-  NGN: 1550,
-};
 
 async function fetchFromKeyedProvider(apiKey) {
   const res = await fetch(
@@ -83,7 +74,7 @@ function buildFallbackPayload(errorMessage) {
 
 function pickSupportedRates(payload) {
   const subset = { USD: 1 };
-  for (const code of SUPPORTED_CURRENCIES) {
+  for (const code of CURRENCY_CODES) {
     if (typeof payload.rates[code] === "number") {
       subset[code] = payload.rates[code];
     } else {

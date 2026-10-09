@@ -2,10 +2,12 @@
 
 A Next.js 14 (App Router) + Tailwind CSS finance portal.
 
-- **Module 1 — Converters**: universal currency & gold rate calculator,
-  plus a worldwide unit converter (length, area, weight, volume, speed,
-  digital storage, temperature — including Tola, Maund, Seer, Marla and
-  Kanal), with programmatic SEO routes.
+- **Module 1 — Converters**: a dedicated FX currency converter (36
+  world currencies, searchable pickers, rate matrix), a gold rate
+  calculator, and a worldwide unit converter (length, area, weight,
+  volume, speed, digital storage, temperature — including Tola, Maund,
+  Seer, Marla and Kanal), all tabbed together with programmatic SEO
+  routes for both currency pairs and unit pairs.
 - **Module 2 — Market AI & News**: real-time TradingView charts and a
   multi-source finance news aggregator (AI summaries are a placeholder
   until an Anthropic API key is configured).
@@ -35,7 +37,8 @@ app/
     rates/route.js            # Gold/FX exchange rates (900s cache)
     news-ai/route.js          # RSS aggregator; AI summary placeholder
   converters/
-    page.jsx                  # Converter directory + featured pairs
+    page.jsx                  # Tabbed directory (FX / Gold / Units) + featured pairs
+    [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
     unit/[slug]/page.jsx      # Programmatic SEO routes, e.g. sqft-to-marla
   market-analysis/
     page.jsx                  # Live TradingView chart dashboard
@@ -44,13 +47,17 @@ app/
   page.jsx                    # Homepage dashboard
   globals.css
 components/
+  CurrencyConverter.jsx       # FX converter: searchable pickers, swap, rate matrix
+  ConvertersTabs.jsx          # Tab shell switching Currency / Gold / Units
   GoldCalculator.jsx          # Gold & currency calculator (uses lib/conversionMath)
   UnitConverter.jsx           # Universal multi-category unit converter
   TradingChart.jsx            # TradingView "Advanced Chart" embed wrapper
   MarketDashboard.jsx         # Symbol picker + TradingChart
 lib/
   conversionMath.js           # All conversion math (gold + units + temperature)
+  currencies.js                # Master currency list + fallback rates
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
+  fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes
   fetchRates.js                # Shared caller for /api/rates
   fetchNews.js                 # Shared caller for /api/news-ai
 ```
@@ -97,6 +104,31 @@ cp .env.example .env.local
   (e.g. `/converters/unit/sqft-to-marla`). `FEATURED_UNIT_PAIRS` there
   is pre-rendered at build time via `generateStaticParams`; any other
   valid `<from>-to-<to>` slug still resolves on demand.
+
+## Notes on the FX currency converter
+
+- `lib/currencies.js` holds the full list of 36 supported currencies
+  (code, name, symbol, flag, fallback rate) — add a currency there once
+  and it's immediately available in the Gold Calculator, the FX
+  Converter, `/api/rates`, and the SEO routes.
+- `/api/rates` now returns rates for every currency in that list (one
+  cached upstream call, shared by both the Gold Calculator and the FX
+  Converter) instead of a hard-coded 6-currency subset.
+- `components/CurrencyConverter.jsx` implements its own searchable
+  dropdown (a text input + filtered list) rather than a native
+  `<select>`, since plain selects can't be typed into to filter options.
+- The 24h trend badge is an intentionally labeled placeholder — no
+  historical rate store exists yet. See the `TODO` comment in
+  `CurrencyConverter.jsx`'s `TrendBadge` for how to wire in a real
+  percentage once day-over-day rates are persisted somewhere.
+- `lib/fxSlugs.js` maps `<from>-to-<to>` slugs (e.g. `usd-to-pkr`) to
+  currency codes for `/converters/[pair]`. Next.js App Router folder
+  names only support a single dynamic segment each, so this route lives
+  at `app/converters/[pair]/page.jsx` rather than a literal
+  `[from]-to-[to]` folder — the resulting URLs are identical either way.
+  It sits safely alongside the separate `app/converters/unit/[slug]`
+  route because Next.js always matches a literal folder name (`unit`)
+  before a dynamic one at the same level.
 
 ## Notes on Market Analysis
 
