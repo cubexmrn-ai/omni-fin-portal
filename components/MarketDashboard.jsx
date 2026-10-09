@@ -3,11 +3,17 @@
 import { useState } from "react";
 import TradingChart from "@/components/TradingChart";
 
+// NSE:NIFTY and PSX:KSE100 show "This symbol is only available on
+// TradingView" in the free, anonymous embed widget — that data vendor
+// gates those direct exchange feeds behind a logged-in TradingView
+// account for guest embeds. Swapped for the same open, anonymous-embed-
+// safe proxies used in MarketOverviewBoard.jsx's Indices group (see the
+// comment there for the full explanation of each substitute).
 const SYMBOLS = [
   { code: "OANDA:XAUUSD", label: "Gold (XAU/USD)" },
   { code: "FOREXCOM:SPXUSD", label: "S&P 500 (US)" },
-  { code: "PSX:KSE100", label: "KSE-100 (Pakistan)" },
-  { code: "NSE:NIFTY", label: "Nifty 50 (India)" },
+  { code: "AMEX:PAK", label: "Pakistan (KSE-100 proxy)" },
+  { code: "AMEX:INDY", label: "India 50 (Nifty 50 proxy)" },
   { code: "OANDA:EURUSD", label: "EUR/USD" },
   { code: "OANDA:GBPUSD", label: "GBP/USD" },
   { code: "BITSTAMP:BTCUSD", label: "Bitcoin (BTC/USD)" },

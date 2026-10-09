@@ -1,206 +1,59 @@
 // app/api/news-ai/route.js
 //
-// Serverless route for Module 2 (Market AI & News Aggregator).
+// Thin HTTP wrapper around lib/newsAggregator.js's getAggregatedNews().
+// This route exists for any external or client-side caller that wants
+// the news feed over HTTP; app/ai-news/page.jsx itself calls
+// getAggregatedNews() directly during server-side rendering rather than
+// fetching this route by URL — see the comment at the top of
+// lib/newsAggregator.js for exactly why that self-fetch was the root
+// cause of the page breaking with an "Unexpected token '<' ... DOCTYPE"
+// JSON-parse error in production.
 //
-// CURRENT PHASE: fetches finance RSS feeds across four categories
-// (Stocks, Forex, Crypto, Commodities — see FEEDS below) and returns
-// plain headlines, each tagged with its feed's `category` so the
-// /ai-news page can render category pills and filter client-side.
-// No Anthropic API key is configured yet, so each item's `summary` field
-// is intentionally null and carries a `summaryStatus: "pending_ai_key"`
-// flag — the UI renders this as a "AI summary coming soon" placeholder.
+// The try/catch below is a last-resort safety net: getAggregatedNews()
+// is already designed to never throw (every feed has its own try/catch,
+// and a total outage falls back to static mock items), but if something
+// truly unexpected still happens, this guarantees the route ALWAYS
+// returns a valid JSON body — never Next.js's default HTML error page —
+// so a caller's res.json() never breaks here again.
+//
+// CURRENT PHASE: no Anthropic API key is configured yet, so each item's
+// `summary` field is intentionally null and carries a
+// `summaryStatus: "pending_ai_key"` flag — the UI renders this as an
+// "AI summary coming soon" placeholder.
 //
 // NEXT PHASE (once an API key is available): for each item, send the
 // `description`/content through the Claude API (Messages API) with a
 // short prompt such as "Summarize this financial news headline and its
 // 1-2 sentence takeaway for a retail investor" and store the result in
-// `summary`. That call belongs right where the TODO comment is below —
-// the RSS fetch/parse/caching plumbing here does not need to change.
+// `summary`. That call belongs in lib/newsAggregator.js's
+// parseRssItems()/getAggregatedNews() — the TODO comment there marks
+// the spot; the RSS fetch/parse/caching plumbing does not need to change.
 
-const REVALIDATE_SECONDS = 900;
-const MAX_ITEMS_PER_FEED = 20;
-const MAX_ITEMS = 60;
-
-// Public, no-auth-required finance RSS feeds, each tagged with the
-// category shown in the AI News page's filter pills. Reuters' and
-// Bloomberg's own RSS feeds were discontinued/blocked years ago (both
-// now return robots-disallowed or access-blocked responses), so these
-// are their closest still-live, freely-embeddable equivalents per
-// category — verified reachable before wiring them in here.
-const FEEDS = [
-  {
-    name: "Yahoo Finance",
-    url: "https://finance.yahoo.com/news/rssindex",
-    category: "Stocks",
-  },
-  {
-    name: "MarketWatch",
-    url: "https://feeds.marketwatch.com/marketwatch/topstories/",
-    category: "Stocks",
-  },
-  {
-    name: "CNBC Markets",
-    url: "https://www.cnbc.com/id/100003114/device/rss/rss.html",
-    category: "Stocks",
-  },
-  {
-    name: "FXStreet",
-    url: "https://www.fxstreet.com/rss/news",
-    category: "Forex",
-  },
-  {
-    name: "CoinDesk",
-    url: "https://www.coindesk.com/arc/outboundfeeds/rss/",
-    category: "Crypto",
-  },
-  {
-    name: "Cointelegraph",
-    url: "https://cointelegraph.com/rss",
-    category: "Crypto",
-  },
-  {
-    name: "OilPrice.com",
-    url: "https://oilprice.com/rss/main",
-    category: "Commodities",
-  },
-];
-
-function decodeEntities(text) {
-  if (!text) return "";
-  return text
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .trim();
-}
-
-function extractTag(block, tag) {
-  const match = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
-  return match ? decodeEntities(match[1]) : "";
-}
-
-function stripHtml(text) {
-  return text.replace(/<[^>]*>/g, "").trim();
-}
-
-/**
- * Minimal, dependency-free RSS 2.0 parser. Good enough for standard
- * <item> feeds; not a full XML parser, but avoids pulling in an extra
- * package for a handful of regex-extractable fields.
- */
-function parseRssItems(xml, sourceName, category) {
-  const items = [];
-  const itemBlocks = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
-
-  for (const block of itemBlocks.slice(0, MAX_ITEMS_PER_FEED)) {
-    const title = extractTag(block, "title");
-    const link = extractTag(block, "link") || extractTag(block, "guid");
-    const pubDate = extractTag(block, "pubDate") || extractTag(block, "dc:date");
-    const rawDescription =
-      extractTag(block, "description") || extractTag(block, "content:encoded");
-
-    if (!title) continue;
-
-    // Guard against an unparseable pubDate throwing on .toISOString()
-    // (new Date("garbage") is an "Invalid Date", not null) — one bad
-    // date shouldn't take down this feed's whole item list.
-    const parsedDate = pubDate ? new Date(pubDate) : null;
-    const publishedAt =
-      parsedDate && !Number.isNaN(parsedDate.getTime())
-        ? parsedDate.toISOString()
-        : null;
-
-    items.push({
-      title,
-      link: link.trim(),
-      source: sourceName,
-      category,
-      publishedAt,
-      excerpt: stripHtml(rawDescription).slice(0, 220),
-      // --- Placeholder for Phase 2 AI summarization ---
-      summary: null,
-      summaryStatus: "pending_ai_key",
-      // TODO (Phase 2, once EXCHANGERATE_API_KEY-style ANTHROPIC_API_KEY
-      // is configured): call the Claude API here with `excerpt` and set
-      // `summary` + `summaryStatus: "ready"` on the returned item.
-    });
-  }
-
-  return items;
-}
-
-async function fetchFeed(feed) {
-  // A hard timeout so one slow/hanging RSS host can't stall the whole
-  // aggregator (or a Vercel build doing static prerendering) — same
-  // guard used for the three providers in app/api/rates/route.js.
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
-  try {
-    const res = await fetch(feed.url, {
-      next: { revalidate: REVALIDATE_SECONDS },
-      signal: controller.signal,
-      headers: {
-        // Some finance RSS endpoints reject requests with no UA header.
-        "User-Agent":
-          "Mozilla/5.0 (compatible; OmniFinPortalBot/1.0; +https://omnifinportal.app)",
-        Accept: "application/rss+xml, application/xml, text/xml",
-      },
-    });
-
-    if (!res.ok) throw new Error(`${feed.name} responded with ${res.status}`);
-
-    const xml = await res.text();
-    return parseRssItems(xml, feed.name, feed.category);
-  } catch (err) {
-    // A single failing feed should never break the whole aggregator.
-    return { error: `${feed.name}: ${err.message}` };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+import { getAggregatedNews, NEWS_REVALIDATE_SECONDS } from "@/lib/newsAggregator";
 
 export async function GET() {
-  const feedResults = await Promise.all(FEEDS.map(fetchFeed));
+  try {
+    const responseBody = await getAggregatedNews();
 
-  const items = [];
-  const errors = [];
-
-  for (const result of feedResults) {
-    if (Array.isArray(result)) {
-      items.push(...result);
-    } else if (result?.error) {
-      errors.push(result.error);
-    }
+    return Response.json(responseBody, {
+      status: 200,
+      headers: {
+        "Cache-Control": `public, s-maxage=${NEWS_REVALIDATE_SECONDS}, stale-while-revalidate=59`,
+      },
+    });
+  } catch (err) {
+    // Should be unreachable (see comment above), but guarantees JSON
+    // over an HTML error page no matter what.
+    return Response.json(
+      {
+        items: [],
+        usingMockFallback: true,
+        aiSummarization: { enabled: false, status: "error", note: null },
+        fetchedAt: new Date().toISOString(),
+        revalidateSeconds: NEWS_REVALIDATE_SECONDS,
+        warnings: [`news-ai route failed unexpectedly: ${err.message || "unknown error"}`],
+      },
+      { status: 200 }
+    );
   }
-
-  items.sort((a, b) => {
-    const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-    const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-    return dateB - dateA;
-  });
-
-  const responseBody = {
-    items: items.slice(0, MAX_ITEMS),
-    aiSummarization: {
-      enabled: false,
-      status: "pending_ai_key",
-      note:
-        "Headlines are live from RSS. AI-generated summaries will appear here once an Anthropic API key is configured on the server.",
-    },
-    fetchedAt: new Date().toISOString(),
-    revalidateSeconds: REVALIDATE_SECONDS,
-    ...(errors.length ? { warnings: errors } : {}),
-  };
-
-  return Response.json(responseBody, {
-    status: 200,
-    headers: {
-      "Cache-Control": `public, s-maxage=${REVALIDATE_SECONDS}, stale-while-revalidate=59`,
-    },
-  });
 }

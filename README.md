@@ -52,7 +52,7 @@ Open http://localhost:3000.
 app/
   api/
     rates/route.js            # Unified Fiat+Crypto+Metals rates (3600s cache)
-    news-ai/route.js          # RSS aggregator; AI summary placeholder
+    news-ai/route.js          # Thin JSON wrapper around lib/newsAggregator.js
   converters/
     page.jsx                  # Tabbed directory (Currency / Gold / Units) + featured pairs
     [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
@@ -83,8 +83,11 @@ lib/
   assetConversion.js           # Cross-asset "convert anything to anything" engine
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
   fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes
-  fetchRates.js                # Shared caller for /api/rates
-  fetchNews.js                 # Shared caller for /api/news-ai
+  fetchRates.js                # Client-side caller for /api/rates (GoldCalculator)
+  newsAggregator.js            # The actual RSS fetch/parse/fallback logic — called
+                                # directly by app/ai-news/page.jsx, not over HTTP
+  fetchNews.js                 # Client-side-only caller for /api/news-ai (unused
+                                # server-side — see comment in the file for why)
 ```
 
 ## Environment variables
@@ -247,41 +250,81 @@ Each of the three provider calls:
   `components/MiniSymbolWidget.jsx` (TradingView's free "Mini Symbol
   Overview" widget — much lighter than the full Advanced Chart, which
   matters when rendering 15 of them on one page):
-  - **Indices**: S&P 500, Nasdaq 100, Nifty 50 (`NSE:NIFTY`), KSE-100
-    (`PSX:KSE100`), Nikkei 225 (`TVC:NI225`)
+  - **Indices**: S&P 500 (`FOREXCOM:SPXUSD`), Nasdaq 100
+    (`FOREXCOM:NSXUSD`), India 50 / Nifty 50 proxy (`AMEX:INDY`),
+    Pakistan / KSE-100 proxy (`AMEX:PAK`), Nikkei 225 (`CME:NIY1!`)
   - **Forex**: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD
   - **Crypto**: Bitcoin, Ethereum, BNB, Solana, XRP
 
+  The Indices group doesn't use the direct exchange symbols
+  (`NSE:NIFTY`, `PSX:KSE100`, `TVC:NI225`) — in the free, anonymous
+  embed widget these show "This symbol is only available on
+  TradingView", because that specific message means the symbol's data
+  vendor gates it behind a logged-in TradingView account for guest/
+  third-party embeds (most commonly hit on direct NSE India and PSX
+  Pakistan feeds). It's not a malformed-ticker problem, so there's no
+  alternate string in the same vendor that fixes it. Swapped to
+  ordinary US-listed securities/futures instead (`AMEX:`/`CME:`),
+  which carry no extra data license and are never gated for anonymous
+  embeds: `AMEX:INDY` (iShares India 50 ETF, tracks Nifty 50),
+  `CME:NIY1!` (CME Nikkei 225/USD continuous futures), and `AMEX:PAK`
+  (Global X MSCI Pakistan ETF — there's no CFD/futures broker offering
+  a KSE-100 instrument at all, so this is the closest proxy available).
   Add/remove symbols by editing the `INDEX_SYMBOLS` / `FOREX_SYMBOLS` /
-  `CRYPTO_SYMBOLS` arrays at the top of `MarketOverviewBoard.jsx` with
-  any valid TradingView ticker. Below the grid, the same toggle also
-  drives `components/MarketDashboard.jsx` (the original full-size,
+  `CRYPTO_SYMBOLS` arrays at the top of `MarketOverviewBoard.jsx` — the
+  same substitution was applied to `components/MarketDashboard.jsx`'s
+  `SYMBOLS` array for the same reason. Below the grid, the same toggle
+  also drives `MarketDashboard.jsx` (the original full-size,
   symbol-picker chart via `TradingChart.jsx`) so the whole page is
   consistently themed rather than a dark grid sitting above a chart
   that's still light, or vice versa.
-- **`app/api/news-ai/route.js`** fetches 7 finance RSS feeds in
-  parallel across 4 categories — **Stocks** (Yahoo Finance,
-  MarketWatch, CNBC Markets), **Forex** (FXStreet), **Crypto**
-  (CoinDesk, Cointelegraph) and **Commodities** (OilPrice.com) — with a
-  small dependency-free parser, each with its own `try/catch` (so one
-  feed going down never breaks the others) and the same 8-second
-  `AbortController` timeout guard used in `/api/rates`. Reuters' and
-  Bloomberg's own RSS feeds were discontinued/blocked (confirmed: both
-  now return robots-disallowed or access-blocked responses), so these
-  are their closest still-live, freely-embeddable equivalents per
-  category. Each item is tagged with its feed's `category`. Caches the
-  result for 900s (15 min) and returns each headline with
-  `summary: null` and `summaryStatus: "pending_ai_key"`. Wiring in
-  `ANTHROPIC_API_KEY` and calling the Claude API per-headline is the
-  next step (see the `TODO` comment in that file).
+- **`lib/newsAggregator.js`** is the actual news-fetching logic: it
+  fetches 7 finance RSS feeds in parallel across 4 categories —
+  **Stocks** (Yahoo Finance, MarketWatch, CNBC Markets), **Forex**
+  (FXStreet), **Crypto** (CoinDesk, Cointelegraph) and **Commodities**
+  (OilPrice.com) — with a small dependency-free parser, each with its
+  own `try/catch` (so one feed going down never breaks the others), the
+  same 8-second `AbortController` timeout guard used in `/api/rates`,
+  and a check for a feed host returning an HTML page with a `200`
+  status (rate-limit/WAF interstitial) instead of real RSS/XML, which
+  is treated as a failure for that feed rather than silently parsing to
+  zero items. If every single feed fails, `getAggregatedNews()` returns
+  a small set of clearly-labeled static placeholder items
+  (`source: "OmniFin Portal (cached)"`, `isMock: true`) instead of an
+  empty list, and sets `usingMockFallback: true` so the UI can say so.
+  Reuters' and Bloomberg's own RSS feeds were discontinued/blocked
+  (confirmed: both now return robots-disallowed or access-blocked
+  responses), so these are their closest still-live, freely-embeddable
+  equivalents per category. Each item is tagged with its feed's
+  `category`. Returns each real headline with `summary: null` and
+  `summaryStatus: "pending_ai_key"`. Wiring in `ANTHROPIC_API_KEY` and
+  calling the Claude API per-headline is the next step (see the `TODO`
+  comment in that file).
+- **`app/api/news-ai/route.js`** is now a thin wrapper: it calls
+  `getAggregatedNews()` and returns it as JSON, with its own outer
+  `try/catch` as a last-resort guarantee that this route never returns
+  anything but valid JSON (`revalidate`/cache headers use the
+  900s/15-min window exported from the aggregator module).
 - **`app/ai-news/page.jsx`** (the new top-level route — the nav's
   "News" link and the old `app/market-analysis/ai-news/page.jsx`, now
-  just a redirect, both point here) fetches the full headline list
-  server-side via `lib/fetchNews.js`, then hands it to
+  just a redirect, both point here) calls `getAggregatedNews()`
+  **directly** — not over HTTP — then hands the result to
   `components/NewsFeed.jsx`, a client component that does instant
   client-side search (title/excerpt/source) and category-pill
-  filtering over that already-small, already-cached list — no
-  per-keystroke server round trip needed.
+  filtering over that already-small, already-cached list. This directly
+  fixes the page's earlier `"Unexpected token '<', <!DOCTYPE ... is not
+  valid JSON"` crash: that page is a Server Component rendered during
+  static generation/ISR, and it was fetching its *own* `/api/news-ai`
+  route by absolute URL (via the now-unused-here `lib/fetchNews.js`) to
+  get its data — a Next.js/Vercel self-fetch during server rendering is
+  unreliable (the deployment the URL points to isn't guaranteed to be
+  live/routable at that point), and whatever intercepted the request
+  returned an HTML page instead of JSON, which broke `res.json()`.
+  Calling the aggregator function directly removes the HTTP round trip
+  (and that whole failure mode) entirely rather than just handling it
+  gracefully. `lib/fetchNews.js` is kept only for a genuine client-side
+  caller (same pattern as `lib/fetchRates.js` + `GoldCalculator.jsx`),
+  and is commented accordingly so this isn't reintroduced later.
 
 ## Roadmap
 

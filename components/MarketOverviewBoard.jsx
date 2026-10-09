@@ -10,12 +10,32 @@ import MarketDashboard from "@/components/MarketDashboard";
 // TradingChart.jsx / MarketDashboard.jsx elsewhere in this project.
 // ---------------------------------------------------------------------------
 
+// Direct exchange symbols (NSE:NIFTY, PSX:KSE100, TVC:NI225/INDEX:N225)
+// show "This symbol is only available on TradingView" in the free,
+// anonymous embed widgets — that message means the symbol's *data
+// vendor* gates it behind a logged-in TradingView account for guest/
+// third-party embeds, not that the ticker is wrong. It affects several
+// direct exchange feeds (especially NSE India and PSX Pakistan) and
+// isn't something fixable from our side with a different string in the
+// same vendor. The fix is to use a tracking instrument from a vendor
+// tier that's always open to anonymous embeds — ordinary US-listed
+// securities/futures are that tier, since they carry no extra data
+// license beyond what every public TradingView widget already has:
+//   - Nifty 50    -> AMEX:INDY   (iShares India 50 ETF, tracks Nifty 50)
+//   - Nikkei 225  -> CME:NIY1!   (CME Nikkei 225/USD futures, continuous)
+//   - KSE-100     -> AMEX:PAK    (Global X MSCI Pakistan ETF — no major
+//                                 CFD/futures broker offers a KSE-100
+//                                 instrument at all, so this ETF, which
+//                                 tracks the same large-cap Pakistani
+//                                 names, is the closest free proxy)
+// If this deployment's TradingView embed context ever does carry a
+// logged-in session, the direct symbols can be swapped back in.
 const INDEX_SYMBOLS = [
   { code: "FOREXCOM:SPXUSD", label: "S&P 500 (US)" },
   { code: "FOREXCOM:NSXUSD", label: "Nasdaq 100 (US)" },
-  { code: "NSE:NIFTY", label: "Nifty 50 (India)" },
-  { code: "PSX:KSE100", label: "KSE-100 (Pakistan)" },
-  { code: "TVC:NI225", label: "Nikkei 225 (Japan)" },
+  { code: "AMEX:INDY", label: "India 50 (Nifty 50 proxy)" },
+  { code: "AMEX:PAK", label: "Pakistan (KSE-100 proxy)" },
+  { code: "CME:NIY1!", label: "Nikkei 225 (Japan)" },
 ];
 
 const FOREX_SYMBOLS = [

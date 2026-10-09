@@ -1,6 +1,6 @@
 import Link from "next/link";
 import NewsFeed from "@/components/NewsFeed";
-import { fetchNews } from "@/lib/fetchNews";
+import { getAggregatedNews } from "@/lib/newsAggregator";
 
 export const metadata = {
   title: "Financial News — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
@@ -15,7 +15,14 @@ export default async function AiNewsPage() {
   let loadError = null;
 
   try {
-    data = await fetchNews();
+    // Calling the aggregator directly (not via an HTTP self-fetch to
+    // /api/news-ai) — see the top of lib/newsAggregator.js for why that
+    // self-fetch was the actual cause of this page's "DOCTYPE is not
+    // valid JSON" error in production. getAggregatedNews() is also
+    // designed to never throw (per-feed try/catch + a static mock
+    // fallback if every feed fails), so loadError below should now only
+    // ever fire on a truly unexpected bug, not a network/feed issue.
+    data = await getAggregatedNews();
   } catch (err) {
     loadError = err.message;
   }
