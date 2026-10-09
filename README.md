@@ -71,7 +71,8 @@ app/
     social-buzz/route.js      # Thin JSON wrapper around lib/socialBuzz.js (simulated data)
   converters/
     page.jsx                  # Tabbed directory (Currency / Metals & Commodities / Units) + featured pairs
-    [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
+    [pair]/page.jsx           # Programmatic SEO routes across fiat/crypto/metals, e.g. usd-to-pkr,
+                                # btc-to-usd, xau-to-usd — JSON-LD (FinancialProduct + WebApplication)
     unit/[slug]/page.jsx      # Programmatic SEO routes, e.g. sqft-to-marla
   market-analysis/
     page.jsx                  # Ticker strip + full chart + AI Technical Analysis panel (light/dark)
@@ -83,6 +84,8 @@ app/
   globals.css
 components/
   CurrencyConverter.jsx       # Cross-asset converter: Fiat/Crypto/Metals, swap, rate matrix
+  ConverterStructuredData.jsx # JSON-LD (FinancialProduct + WebApplication) for a converter SEO page
+  PopularPairs.jsx             # "Popular Currency & Metal Pairs" cross-linking block
   ConvertersTabs.jsx          # Tab shell switching Currency / Metals & Commodities / Units
   GoldCalculator.jsx          # Metals & Commodities calculator (6-asset selector; auto-fills
                                 # live spot prices; uses lib/conversionMath) — filename kept
@@ -121,7 +124,11 @@ lib/
                                 # real X/Twitter or Reddit API is wired in (see its header comment)
   assetConversion.js           # Cross-asset "convert anything to anything" engine
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
-  fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes
+  fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes (fiat-only;
+                                # still used by app/converters/page.jsx's directory listing)
+  pairSlugs.js                 # URL-slug <-> asset-pair mapping across fiat/crypto/metals (superset
+                                # of fxSlugs.js), used by app/converters/[pair]/page.jsx
+  siteUrl.js                    # Resolves an absolute site URL for metadata/JSON-LD
   fetchRates.js                # Client-side caller for /api/rates (GoldCalculator)
   newsAggregator.js            # The actual RSS fetch/parse/fallback/sentiment logic — called
                                 # directly by app/ai-news/page.jsx, not over HTTP
@@ -547,6 +554,56 @@ Each provider call:
   social API" toggle with a tooltip explaining exactly why it's off —
   this is the same honesty-over-fabrication bar kept everywhere else in
   this project, never a silent "looks live" placeholder.
+
+## Notes on programmatic SEO converter routes & structured data
+
+- **`app/converters/[pair]/page.jsx`** now resolves `<from>-to-<to>`
+  slugs across **all three** asset classes — fiat, crypto, metals —
+  not just FX: `/converters/usd-to-pkr`, `/converters/btc-to-usd`,
+  `/converters/xau-to-usd` all work through the same route.
+  `lib/pairSlugs.js`'s `parsePairSlug()` resolves each side's code
+  against `CURRENCY_CODES`/`CRYPTO_CODES`/`METAL_CODES` in turn (no
+  collisions between the three sets — verified) and returns `null` for
+  anything unrecognized, which triggers `notFound()`. `lib/fxSlugs.js`
+  is unchanged and still powers `app/converters/page.jsx`'s existing
+  fiat-only "Popular Currency Pairs" directory listing — `pairSlugs.js`
+  is a separate, additive superset used only by the dynamic route.
+- The page is now an `async` Server Component that calls
+  `getUnifiedRates()` **directly** (via `lib/marketData.js`, no
+  self-fetch — same architectural lesson as `lib/newsAggregator.js`)
+  to resolve a live rate for this specific pair via
+  `getPairRate()` (`lib/assetConversion.js`). That rate feeds both the
+  page's "1 X = Y" summary line and the JSON-LD below; if it's
+  genuinely unavailable, both simply omit it rather than guessing — the
+  client-side `CurrencyConverter` component still renders and fetches
+  its own live rate independently either way.
+- **`generateMetadata()`** builds a per-pair `title`/`description`,
+  `alternates.canonical`, and `openGraph`/`twitter` tags from
+  `lib/siteUrl.js`'s `getSiteUrl()` (falls back through
+  `NEXT_PUBLIC_SITE_URL` → `VERCEL_URL` → `localhost:3000`, same chain
+  `lib/fetchRates.js` already used internally).
+- **`components/ConverterStructuredData.jsx`** renders one
+  `<script type="application/ld+json">` with an `"@graph"` of two
+  entities:
+  - A **`FinancialProduct`** describing the specific pair, with
+    `additionalProperty` `PropertyValue`s for the base/quote asset,
+    their classes, and — only when a live rate was actually resolved
+    server-side — `exchangeRate` and `exchangeRateAsOf`. No
+    `aggregateRating`/review fields are included anywhere, since this
+    project has no real review data to back one (same
+    never-fabricate-structured-data bar as the rest of this project).
+  - A **`WebApplication`** describing the converter tool itself
+    (`applicationCategory: "FinanceApplication"`, a free `Offer`).
+- **`components/PopularPairs.jsx`** is the internal cross-linking
+  block at the bottom of every converter SEO page — "Popular Currency
+  & Metal Pairs" — rendering `lib/pairSlugs.js`'s `FEATURED_PAIRS`
+  (16 curated pairs spanning all three classes) as links, excluding
+  whichever pair is already on-screen. Helps search engines discover
+  the other programmatic routes and keeps visitors on-site.
+- `generateStaticParams()` pre-renders all of `FEATURED_PAIRS` at build
+  time; any other valid `<from>-to-<to>` combination across the three
+  registries still resolves on demand (Next.js's default
+  `dynamicParams` behavior).
 
 ## Roadmap
 
