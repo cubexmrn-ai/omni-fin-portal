@@ -2,9 +2,9 @@ import Link from "next/link";
 import MarketOverviewBoard from "@/components/MarketOverviewBoard";
 
 export const metadata = {
-  title: "Live Market Charts | OmniFin Portal",
+  title: "Live Market Charts & AI Technical Analysis | OmniFin Portal",
   description:
-    "Real-time TradingView charts for global stock indices (S&P 500, Nasdaq, Nifty 50, PSX, Nikkei 225), major forex pairs and top crypto assets — free, no login required.",
+    "A live market snapshot (S&P 500, Nasdaq, Gold, Bitcoin, EUR/USD), a full interactive TradingView chart, and on-demand rule-based technical analysis (Price Action, Support/Resistance, Fibonacci, RSI/EMA, Gann Theory) — free, no login required.",
 };
 
 export default function MarketAnalysisPage() {
@@ -19,9 +19,9 @@ export default function MarketAnalysisPage() {
             Market Analysis
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-600">
-            Track global stock indices, major forex pairs and top crypto
-            assets with real-time TradingView charts, and catch up on the
-            latest finance headlines.
+            A live snapshot of the markets, a full interactive TradingView
+            chart for research, and on-demand technical analysis — all
+            computed live, with zero paid API dependency.
           </p>
           <div className="mt-5">
             <Link

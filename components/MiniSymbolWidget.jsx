@@ -7,10 +7,14 @@ const WIDGET_SRC =
 
 /**
  * Lightweight wrapper around TradingView's free "Mini Symbol Overview"
- * embed widget — a small price + sparkline card, much cheaper to render
- * than the full "Advanced Chart" widget (see TradingChart.jsx), which
- * matters here since the Market Analysis page renders a dozen-plus of
- * these at once across Indices / Forex / Crypto. No API key required.
+ * embed widget — a small price + sparkline card. No API key required.
+ *
+ * Currently unused by components/MarketOverviewBoard.jsx — the Market
+ * Analysis page was rebuilt around a single TickerStrip.jsx (ticker-
+ * tape widget) instead of a grid of a dozen-plus of these cards, to
+ * keep the page clean rather than cluttered. Kept here as a reusable
+ * building block for any future page that wants a small per-symbol
+ * price card.
  *
  * Docs: https://www.tradingview.com/widget-docs/widgets/charts/mini-chart/
  */

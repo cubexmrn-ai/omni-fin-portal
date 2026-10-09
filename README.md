@@ -12,14 +12,18 @@ A Next.js 14 (App Router) + Tailwind CSS finance portal.
   digital storage, temperature — including Tola, Maund, Seer, Marla and
   Kanal), all tabbed together with programmatic SEO routes for both
   currency pairs and unit pairs.
-- **Module 2 — Market AI & News**: a Global Markets Overview of live,
-  lightweight TradingView widgets grouped by Indices (S&P 500, Nasdaq
-  100, Nifty 50, PSX KSE-100, Nikkei 225), major Forex pairs and top
-  Crypto assets, plus a detailed full chart with a symbol picker — all
-  with a light/dark toggle — and a categorized Financial News page
-  (Forex / Crypto / Commodities / Stocks) with search and category
-  filters, aggregated from multiple public RSS sources (AI summaries
-  are a placeholder until an Anthropic API key is configured).
+- **Module 2 — Market AI & News**: a clean Market Analysis page — a
+  top ticker-tape strip (S&P 500, Nasdaq 100, Gold, BTC/USD, EUR/USD),
+  a full interactive TradingView Advanced Chart with a symbol picker,
+  and an on-demand rule-based "AI Technical Analysis" panel (Price
+  Action, Support/Resistance, Fibonacci, RSI/EMA, Gann Theory —
+  computed live from `/api/rates`, zero paid API dependency) — all with
+  a light/dark toggle; and a categorized Financial News page (Forex /
+  Crypto / Commodities / Stocks) with search, category filters, and
+  rule-based Bullish/Bearish/Neutral sentiment badges per headline plus
+  a headline-sentiment tally card (AI summaries and real social
+  sentiment are both placeholders until an Anthropic API key / social
+  data source is configured).
 
 ## Stack
 
@@ -55,17 +59,18 @@ Open http://localhost:3000.
 ```
 app/
   api/
-    rates/route.js            # Unified Fiat+Crypto+Metals+Commodities rates (3600s cache)
+    rates/route.js            # Thin JSON wrapper around lib/marketData.js
+    market-ai/route.js        # On-demand technical analysis (rule-based; see lib/technicalAnalysis.js)
     news-ai/route.js          # Thin JSON wrapper around lib/newsAggregator.js
   converters/
     page.jsx                  # Tabbed directory (Currency / Metals & Commodities / Units) + featured pairs
     [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
     unit/[slug]/page.jsx      # Programmatic SEO routes, e.g. sqft-to-marla
   market-analysis/
-    page.jsx                  # Global Markets Overview + detailed chart (light/dark)
+    page.jsx                  # Ticker strip + full chart + AI Technical Analysis panel (light/dark)
     ai-news/page.jsx          # Redirects to /ai-news (legacy path, kept for old links)
   ai-news/
-    page.jsx                  # Categorized Financial News page (search + category pills)
+    page.jsx                  # Categorized Financial News page (search + category pills + sentiment)
   layout.jsx                  # Header, nav, footer
   page.jsx                    # Homepage dashboard
   globals.css
@@ -76,11 +81,14 @@ components/
                                 # live spot prices; uses lib/conversionMath) — filename kept
                                 # for history, the component/UI is no longer gold-only
   UnitConverter.jsx           # Universal multi-category unit converter
-  TradingChart.jsx            # TradingView "Advanced Chart" embed wrapper
-  MiniSymbolWidget.jsx        # TradingView "Mini Symbol Overview" embed wrapper (lightweight)
-  MarketOverviewBoard.jsx     # Indices/Forex/Crypto grid + AI Insights card + light/dark toggle + detailed chart
+  TradingChart.jsx            # TradingView "Advanced Chart" embed wrapper (allows symbol change)
+  TickerStrip.jsx             # TradingView "Ticker Tape" embed wrapper — the top horizontal strip
+  MiniSymbolWidget.jsx        # TradingView "Mini Symbol Overview" embed wrapper (currently unused
+                                # by MarketOverviewBoard.jsx; kept as a reusable building block)
+  MarketOverviewBoard.jsx     # Ticker strip + MarketDashboard + AiTechnicalAnalysis, light/dark toggle
   MarketDashboard.jsx         # Symbol picker (global indices) + TradingChart
-  NewsFeed.jsx                 # Client-side search + category filter over fetched headlines
+  AiTechnicalAnalysis.jsx     # On-demand instrument + analysis-type picker, calls /api/market-ai
+  NewsFeed.jsx                 # Client-side search + category filter + sentiment badges
 lib/
   conversionMath.js           # All conversion math (weight/karat metals pricing,
                                 # flat-unit commodity pricing, units + temperature)
@@ -88,11 +96,17 @@ lib/
   crypto.js                    # Master cryptocurrency list + fallback USD prices
   metals.js                    # Master metals list (incl. Copper) + fallback USD/troy-oz prices
   commodities.js               # Crude Oil (barrel-priced) — deliberately separate from metals.js
+  marketData.js                # getUnifiedRates() — the actual Fiat+Crypto+Metals+Commodities
+                                # fetch/fallback logic, called directly by app/api/rates/route.js
+                                # AND app/api/market-ai/route.js (no self-fetch — see its header)
+  technicalAnalysis.js         # Rule-based technical-analysis engine behind /api/market-ai —
+                                # instrument registry, round-level math, Fibonacci, and the
+                                # honest RSI/EMA & Gann Theory degradation (see its header comment)
   assetConversion.js           # Cross-asset "convert anything to anything" engine
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
   fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes
   fetchRates.js                # Client-side caller for /api/rates (GoldCalculator)
-  newsAggregator.js            # The actual RSS fetch/parse/fallback logic — called
+  newsAggregator.js            # The actual RSS fetch/parse/fallback/sentiment logic — called
                                 # directly by app/ai-news/page.jsx, not over HTTP
   fetchNews.js                 # Client-side-only caller for /api/news-ai (unused
                                 # server-side — see comment in the file for why)
@@ -141,10 +155,21 @@ cp .env.example .env.local
   genuinely live. Add an `OIL_API_KEY`-style variable and a
   `fetchFromOilApi()` tier in `fetchCommodityPrices()`
   (`app/api/rates/route.js`) to wire in a real feed later.
-- `ANTHROPIC_API_KEY` (not required yet) — once added, wire it into the
-  `TODO` in `app/api/news-ai/route.js` to generate a `summary` for each
-  headline via the Claude API. Until then, `summary` is `null` and the
-  UI shows an "AI summary coming soon" placeholder.
+- `ANTHROPIC_API_KEY` (not required yet) — checked in two places, each
+  with the same honest fallback: a key being absent (or present but not
+  yet wired up) never breaks either feature, it just means the
+  rule-based path runs instead.
+  - `app/api/news-ai/route.js` (via `lib/newsAggregator.js`) — once
+    added, wire it into the `TODO` on `parseRssItems()` to generate a
+    `summary` for each headline via the Claude API. Until then,
+    `summary` stays `null` and the UI shows an "AI summary coming
+    soon" placeholder — the rule-based `sentiment` badge (Bullish/
+    Bearish/Neutral) is separate and always computed either way.
+  - `app/api/market-ai/route.js` — checks the key and, if present,
+    attempts `generateAiAnalysis()` (currently a documented stub that
+    always throws, so it safely falls through to the rule-based
+    engine). Wire a real Claude API call in there to generate genuine
+    AI-written technical analysis instead of the rule-based summary.
 
 ## Notes on the Metals & Commodities Calculator math
 
@@ -318,46 +343,61 @@ Each provider call:
 - **`app/market-analysis/page.jsx`** renders `components/MarketOverviewBoard.jsx`,
   which has its own local light/dark toggle (not tied to OS preference
   or any site-wide setting — see `darkMode: "class"` in
-  `tailwind.config.js`) driving three categorized grids of
-  `components/MiniSymbolWidget.jsx` (TradingView's free "Mini Symbol
-  Overview" widget — much lighter than the full Advanced Chart, which
-  matters when rendering 15 of them on one page):
-  - **Indices**: S&P 500 (`FOREXCOM:SPXUSD`), Nasdaq 100
-    (`FOREXCOM:NSXUSD`), FTSE 100 (`TVC:UKX`), DAX (`TVC:DAX`), Nikkei
-    225 (`TVC:NI225`)
-  - **Forex**: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD
-  - **Crypto**: Bitcoin, Ethereum, BNB, Solana, XRP
+  `tailwind.config.js`) and is now three stacked sections instead of
+  the old 15-widget grid:
+  1. **`components/TickerStrip.jsx`** — TradingView's free "Ticker
+     Tape" embed widget, a slim scrolling strip of 5 high-value
+     universal symbols: S&P 500, Nasdaq 100, Gold, BTC/USD, EUR/USD.
+     Purpose-built for exactly this "clean top bar" case, instead of
+     stacking several Mini Symbol Overview cards side by side.
+  2. **`components/MarketDashboard.jsx`** — unchanged: a symbol
+     quick-pick row + `TradingChart.jsx`'s full "Advanced Chart"
+     widget (`allowSymbolChange: true`, so a visitor can also search
+     for any other instrument inside the chart itself).
+  3. **`components/AiTechnicalAnalysis.jsx`** — the new "On-Demand AI
+     Technical Analysis" panel: pick an instrument and an analysis
+     type, hit "Run Analysis," and it calls `GET /api/market-ai` for a
+     structured, live-computed result.
 
-  The Indices group avoided two different TradingView failure modes
-  while landing on this set: (1) direct exchange symbols like
-  `NSE:NIFTY`/`PSX:KSE100` show "This symbol is only available on
-  TradingView" in the free, anonymous embed widget, because that data
-  vendor gates them behind a logged-in TradingView account for guest/
-  third-party embeds; and (2) a first attempt at working around that
-  with `AMEX:INDY`/`AMEX:PAK`/`CME:NIY1!` turned out to be invalid
-  tickers entirely ("Invalid Symbol" — a different failure mode, not
-  gating). The current set uses only broad, globally-recognized index
-  CFDs/benchmarks (`FOREXCOM:`/`TVC:`) that are never gated for
-  anonymous embeds and are confirmed valid TradingView symbols.
-  Pakistan/KSE-100 was dropped entirely rather than guess a third proxy
-  — no reliable free substitute was found. Add/remove symbols by
-  editing the `INDEX_SYMBOLS` / `FOREX_SYMBOLS` / `CRYPTO_SYMBOLS`
-  arrays at the top of `MarketOverviewBoard.jsx` — the same
-  substitution was applied to `components/MarketDashboard.jsx`'s
-  `SYMBOLS` array (which also keeps `AMEX:INDA`, a US-listed India ETF,
-  as its own detailed-chart option). Below the grid, the same toggle
-  also drives `MarketDashboard.jsx` (the original full-size,
-  symbol-picker chart via `TradingChart.jsx`) so the whole page is
-  consistently themed rather than a dark grid sitting above a chart
-  that's still light, or vice versa.
-- **`MarketInsightsCard`** (top of `MarketOverviewBoard.jsx`) is a
-  rule-based "AI Market Commentary & Technical Sentiment" summary card
-  generated from the same live `/api/rates` payload — USD strength vs.
-  EUR/GBP, gold sentiment, and BTC's position relative to a few round
-  price levels (`buildInsights()`). It's explicitly labeled "Live
-  snapshot · full AI analysis coming soon" rather than claiming to be
-  AI-generated, since the underlying logic is deterministic, not an LLM
-  call.
+  All symbols across this page (and `MarketDashboard.jsx`'s picker)
+  stick to TradingView families already confirmed safe in two earlier
+  rounds of fixes: direct exchange symbols like `NSE:NIFTY`/
+  `PSX:KSE100` show "This symbol is only available on TradingView"
+  (gated behind a logged-in account for guest embeds), and a first
+  workaround attempt (`AMEX:INDY`/`AMEX:PAK`/`CME:NIY1!`) turned out to
+  be "Invalid Symbol" entirely (not in TradingView's database at all).
+  The current symbols are all `FOREXCOM:`/`TVC:`/`OANDA:`/`BITSTAMP:`
+  — broad, globally-recognized, never gated for anonymous embeds.
+- **`app/api/market-ai/route.js`** + **`lib/technicalAnalysis.js`**
+  power the AI Technical Analysis panel. `getInstrument()`/
+  `resolveInstrumentPrice()` resolve a live USD price for one of 15
+  instruments (5 metals, crude oil, 5 crypto, 4 FX pairs — all backed
+  by real numbers already available from `lib/marketData.js`'s
+  `getUnifiedRates()`, called directly with no self-fetch, same lesson
+  as `lib/newsAggregator.js`) from `/api/rates`'s payload. `checks
+  process.env.ANTHROPIC_API_KEY`; absent (or present but not yet
+  wired — `generateAiAnalysis()` is a documented stub), it falls
+  through to `buildAnalysis()`'s rule-based engine:
+  - **Price Action** / **Support & Resistance**: fully, honestly
+    computable from a single live price via `niceStep()` — a "nice
+    round number" level spacing scaled to the instrument's own price
+    magnitude (the same technique chart-axis gridlines use).
+  - **Fibonacci Retracement**: the real ratio math (23.6/38.2/50/
+    61.8/78.6%) applied to an explicitly-labeled *illustrative* ±%
+    band around the live price — the response's `limitations` field
+    says plainly that no real historical swing high/low is available,
+    rather than pretending one was detected.
+  - **RSI/EMA** and **Gann Theory**: both genuinely need historical
+    price data (a close-price sequence; swing points + time cycles)
+    that this deployment doesn't store. Rather than fabricate a fake
+    single-point reading, these return the honest Price Action context
+    instead, with a `limitations` field explaining exactly what's
+    missing and what would unlock the real calculation.
+
+  See the large comment at the top of `lib/technicalAnalysis.js` for
+  the full reasoning — this is the same "never claim fake AI, always
+  say what's real vs. placeholder" bar kept everywhere else in this
+  project.
 - **`lib/newsAggregator.js`** is the actual news-fetching logic: it
   fetches 7 finance RSS feeds in parallel across 4 categories —
   **Stocks** (Yahoo Finance, MarketWatch, CNBC Markets), **Forex**
@@ -376,10 +416,15 @@ Each provider call:
   (confirmed: both now return robots-disallowed or access-blocked
   responses), so these are their closest still-live, freely-embeddable
   equivalents per category. Each item is tagged with its feed's
-  `category`. Returns each real headline with `summary: null` and
-  `summaryStatus: "pending_ai_key"`. Wiring in `ANTHROPIC_API_KEY` and
-  calling the Claude API per-headline is the next step (see the `TODO`
-  comment in that file).
+  `category` and a rule-based `sentiment` (`computeSentiment()` — a
+  keyword scan against small hand-picked Bullish/Bearish word lists,
+  always computed, no API key needed). Returns each real headline with
+  `summary: null` and `summaryStatus: "pending_ai_key"` — that part
+  (an actual AI-written summary) is still a `TODO`; `getAggregatedNews()`
+  also checks `process.env.ANTHROPIC_API_KEY` to report a more specific
+  `aiSummarization.status` (`pending_ai_key` vs. `key_configured_not_wired`),
+  and returns a `sentimentTally` (Bullish/Bearish/Neutral counts across
+  the current page of items) for the News page's sentiment summary card.
 - **`app/api/news-ai/route.js`** is now a thin wrapper: it calls
   `getAggregatedNews()` and returns it as JSON, with its own outer
   `try/catch` as a last-resort guarantee that this route never returns
@@ -404,7 +449,17 @@ Each provider call:
   (and that whole failure mode) entirely rather than just handling it
   gracefully. `lib/fetchNews.js` is kept only for a genuine client-side
   caller (same pattern as `lib/fetchRates.js` + `GoldCalculator.jsx`),
-  and is commented accordingly so this isn't reintroduced later.
+  and is commented accordingly so this isn't reintroduced later. The
+  page also renders two small cards above the feed: a **Headline
+  Sentiment** card (real — the `sentimentTally` counts from the actual
+  loaded headlines, labeled "Rule-based") and a **Social Sentiment**
+  card that's an explicit, clearly-labeled placeholder ("Coming soon" —
+  no X/Twitter or Reddit data source is wired in, and it shows no
+  numbers at all rather than a fabricated estimate).
+- **`components/NewsFeed.jsx`**'s `NewsCard` now also shows each
+  item's rule-based sentiment as a colored badge (green/Bullish, red/
+  Bearish, slate/Neutral) next to its category badge, with a tooltip
+  noting it's from a keyword scan, not AI-generated.
 
 ## Roadmap
 

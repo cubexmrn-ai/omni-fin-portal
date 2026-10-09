@@ -16,6 +16,14 @@ const CATEGORY_BADGE_STYLES = {
 };
 const DEFAULT_BADGE_STYLE = "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
 
+// Rule-based sentiment badge styles (see computeSentiment() in
+// lib/newsAggregator.js — a keyword scan, not an AI/NLP call).
+const SENTIMENT_BADGE_STYLES = {
+  Bullish: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
+  Bearish: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300",
+  Neutral: "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+};
+
 function timeAgo(isoDate) {
   if (!isoDate) return "";
   const diffMs = Date.now() - new Date(isoDate).getTime();
@@ -37,6 +45,16 @@ function NewsCard({ item }) {
         {item.category && (
           <span className={`rounded-full px-2 py-0.5 font-semibold ${badgeStyle}`}>
             {item.category}
+          </span>
+        )}
+        {item.sentiment && (
+          <span
+            className={`rounded-full px-2 py-0.5 font-semibold ${
+              SENTIMENT_BADGE_STYLES[item.sentiment] || DEFAULT_BADGE_STYLE
+            }`}
+            title="Rule-based sentiment from a keyword scan, not AI-generated"
+          >
+            {item.sentiment}
           </span>
         )}
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">

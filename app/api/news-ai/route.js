@@ -19,7 +19,10 @@
 // CURRENT PHASE: no Anthropic API key is configured yet, so each item's
 // `summary` field is intentionally null and carries a
 // `summaryStatus: "pending_ai_key"` flag — the UI renders this as an
-// "AI summary coming soon" placeholder.
+// "AI summary coming soon" placeholder. Each item DOES already carry a
+// rule-based `sentiment` (Bullish/Bearish/Neutral) from a keyword scan —
+// that one needs no API key and is always computed (see
+// computeSentiment() in lib/newsAggregator.js).
 //
 // NEXT PHASE (once an API key is available): for each item, send the
 // `description`/content through the Claude API (Messages API) with a
@@ -48,6 +51,7 @@ export async function GET() {
       {
         items: [],
         usingMockFallback: true,
+        sentimentTally: { Bullish: 0, Bearish: 0, Neutral: 0 },
         aiSummarization: { enabled: false, status: "error", note: null },
         fetchedAt: new Date().toISOString(),
         revalidateSeconds: NEWS_REVALIDATE_SECONDS,

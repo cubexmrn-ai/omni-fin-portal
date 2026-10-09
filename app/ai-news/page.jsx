@@ -28,6 +28,9 @@ export default async function AiNewsPage() {
   }
 
   const items = data?.items || [];
+  const sentimentTally = data?.sentimentTally || { Bullish: 0, Bearish: 0, Neutral: 0 };
+  const sentimentTotal =
+    sentimentTally.Bullish + sentimentTally.Bearish + sentimentTally.Neutral;
 
   return (
     <>
@@ -71,6 +74,50 @@ export default async function AiNewsPage() {
               {data?.aiSummarization?.note ||
                 "AI-generated summaries are coming soon — this feed currently shows raw headlines only."}
             </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-900">Headline Sentiment</h2>
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+                Rule-based
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              A keyword scan of the {sentimentTotal} headlines below — not AI-generated.
+            </p>
+            <div className="mt-3 flex gap-2 text-center">
+              {[
+                { key: "Bullish", color: "bg-emerald-50 text-emerald-700" },
+                { key: "Neutral", color: "bg-slate-100 text-slate-600" },
+                { key: "Bearish", color: "bg-rose-50 text-rose-700" },
+              ].map((s) => (
+                <div key={s.key} className={`flex-1 rounded-lg px-2 py-2.5 ${s.color}`}>
+                  <p className="text-lg font-bold">{sentimentTally[s.key] || 0}</p>
+                  <p className="text-xs font-medium">{s.key}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-700">Social Sentiment</h2>
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                Coming soon
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              X/Twitter and Reddit chatter aren&apos;t wired in yet — this is a
+              placeholder, not live or estimated data.
+            </p>
+            <div className="mt-3 flex h-[66px] items-center justify-center rounded-lg border border-slate-200 bg-white text-xs text-slate-400">
+              No social data source connected
+            </div>
           </div>
         </div>
       </section>
