@@ -89,9 +89,16 @@ function parseRssItems(xml, sourceName) {
 }
 
 async function fetchFeed(feed) {
+  // A hard timeout so one slow/hanging RSS host can't stall the whole
+  // aggregator (or a Vercel build doing static prerendering) — same
+  // guard used for the three providers in app/api/rates/route.js.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
   try {
     const res = await fetch(feed.url, {
       next: { revalidate: REVALIDATE_SECONDS },
+      signal: controller.signal,
       headers: {
         // Some finance RSS endpoints reject requests with no UA header.
         "User-Agent":
@@ -107,6 +114,8 @@ async function fetchFeed(feed) {
   } catch (err) {
     // A single failing feed should never break the whole aggregator.
     return { error: `${feed.name}: ${err.message}` };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

@@ -2,22 +2,30 @@
 
 A Next.js 14 (App Router) + Tailwind CSS finance portal.
 
-- **Module 1 — Converters**: a dedicated FX currency converter (36
-  world currencies, searchable pickers, rate matrix), a gold rate
-  calculator, and a worldwide unit converter (length, area, weight,
-  volume, speed, digital storage, temperature — including Tola, Maund,
-  Seer, Marla and Kanal), all tabbed together with programmatic SEO
-  routes for both currency pairs and unit pairs.
-- **Module 2 — Market AI & News**: real-time TradingView charts and a
-  multi-source finance news aggregator (AI summaries are a placeholder
-  until an Anthropic API key is configured).
+- **Module 1 — Converters**: a cross-asset Universal Currency Converter
+  (36 fiat currencies + 12 cryptocurrencies + 4 precious metals, any
+  asset to any other, searchable pickers, rate matrix), a gold rate
+  calculator (auto-filled from the live XAU spot price), and a
+  worldwide unit converter (length, area, weight, volume, speed,
+  digital storage, temperature — including Tola, Maund, Seer, Marla and
+  Kanal), all tabbed together with programmatic SEO routes for both
+  currency pairs and unit pairs.
+- **Module 2 — Market AI & News**: real-time TradingView charts
+  (gold, forex, global indices including PSX KSE-100 and India's Nifty
+  50, crude oil, crypto) and a multi-source finance news aggregator
+  (AI summaries are a placeholder until an Anthropic API key is
+  configured).
 
 ## Stack
 
 - Next.js 14 (App Router, React 18)
 - Tailwind CSS 3
-- Serverless route handlers with ISR-style 900s revalidation
-  (`app/api/rates/route.js`, `app/api/news-ai/route.js`)
+- A unified rates API fetching Fiat (ExchangeRate-API), Crypto
+  (CoinGecko) and Metals (metals-api.com) **in parallel** via
+  `Promise.all()`, each with its own timeout and fallback, cached with
+  ISR-style 3600s (1 hour) revalidation (`app/api/rates/route.js`)
+- A separate RSS news aggregator route with the same timeout/fallback
+  pattern, cached for 900s (`app/api/news-ai/route.js`)
 - TradingView public embed widget (no API key required)
 
 ## Getting started
@@ -34,10 +42,10 @@ Open http://localhost:3000.
 ```
 app/
   api/
-    rates/route.js            # Gold/FX exchange rates (900s cache)
+    rates/route.js            # Unified Fiat+Crypto+Metals rates (3600s cache)
     news-ai/route.js          # RSS aggregator; AI summary placeholder
   converters/
-    page.jsx                  # Tabbed directory (FX / Gold / Units) + featured pairs
+    page.jsx                  # Tabbed directory (Currency / Gold / Units) + featured pairs
     [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
     unit/[slug]/page.jsx      # Programmatic SEO routes, e.g. sqft-to-marla
   market-analysis/
@@ -47,15 +55,18 @@ app/
   page.jsx                    # Homepage dashboard
   globals.css
 components/
-  CurrencyConverter.jsx       # FX converter: searchable pickers, swap, rate matrix
+  CurrencyConverter.jsx       # Cross-asset converter: Fiat/Crypto/Metals, swap, rate matrix
   ConvertersTabs.jsx          # Tab shell switching Currency / Gold / Units
-  GoldCalculator.jsx          # Gold & currency calculator (uses lib/conversionMath)
+  GoldCalculator.jsx          # Gold calculator (auto-fills live XAU; uses lib/conversionMath)
   UnitConverter.jsx           # Universal multi-category unit converter
   TradingChart.jsx            # TradingView "Advanced Chart" embed wrapper
-  MarketDashboard.jsx         # Symbol picker + TradingChart
+  MarketDashboard.jsx         # Symbol picker (incl. PSX, Nifty) + TradingChart
 lib/
   conversionMath.js           # All conversion math (gold + units + temperature)
-  currencies.js                # Master currency list + fallback rates
+  currencies.js                # Master fiat currency list + fallback rates
+  crypto.js                    # Master cryptocurrency list + fallback USD prices
+  metals.js                    # Master precious-metal list + fallback USD/troy-oz prices
+  assetConversion.js           # Cross-asset "convert anything to anything" engine
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
   fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes
   fetchRates.js                # Shared caller for /api/rates
@@ -70,11 +81,21 @@ Copy `.env.example` to `.env.local`:
 cp .env.example .env.local
 ```
 
-- `EXCHANGERATE_API_KEY` (optional) — a key from
+- `EXCHANGE_RATE_API_KEY` (optional) — a key from
   [exchangerate-api.com](https://www.exchangerate-api.com/) enables the
-  higher-limit `v6` endpoint. Without a key, the route falls back to the
-  free `open.er-api.com` endpoint, and finally to static rates if both
-  are unreachable, so the app always renders.
+  higher-limit `v6` endpoint for fiat rates. Without a key, the route
+  falls back to the free `open.er-api.com` endpoint, and finally to
+  static rates if both are unreachable, so the app always renders. The
+  older name `EXCHANGERATE_API_KEY` is still read as a fallback.
+- `COINGECKO_API_KEY` (optional) — a free "Demo" key from
+  [coingecko.com](https://www.coingecko.com/en/api) raises the rate
+  limit for crypto prices. Without a key, requests go through
+  anonymously (lower limit, fine at this traffic level).
+- `METALS_API_KEY` (optional, but recommended) — a key from
+  [metals-api.com](https://metals-api.com/) enables live gold/silver/
+  platinum/palladium spot prices. There's no free keyless tier for
+  metals, so without a key the route uses static fallback prices for
+  that asset class only — fiat and crypto stay live either way.
 - `ANTHROPIC_API_KEY` (not required yet) — once added, wire it into the
   `TODO` in `app/api/news-ai/route.js` to generate a `summary` for each
   headline via the Claude API. Until then, `summary` is `null` and the
@@ -105,42 +126,105 @@ cp .env.example .env.local
   is pre-rendered at build time via `generateStaticParams`; any other
   valid `<from>-to-<to>` slug still resolves on demand.
 
-## Notes on the FX currency converter
+## Notes on the unified rates API
 
-- `lib/currencies.js` holds the full list of 36 supported currencies
-  (code, name, symbol, flag, fallback rate) — add a currency there once
-  and it's immediately available in the Gold Calculator, the FX
-  Converter, `/api/rates`, and the SEO routes.
-- `/api/rates` now returns rates for every currency in that list (one
-  cached upstream call, shared by both the Gold Calculator and the FX
-  Converter) instead of a hard-coded 6-currency subset.
-- `components/CurrencyConverter.jsx` implements its own searchable
-  dropdown (a text input + filtered list) rather than a native
-  `<select>`, since plain selects can't be typed into to filter options.
+`app/api/rates/route.js` fetches three independent sources **in
+parallel** with `Promise.all()` and returns one unified JSON shape:
+
+```json
+{
+  "base": "USD",
+  "fiat":   { "USD": 1, "PKR": 278.5, "EUR": 0.92, "...": "..." },
+  "crypto": { "BTC": 65234.12, "ETH": 3456.78, "SOL": 142.33, "...": "..." },
+  "metals": { "XAU": 2634.50, "XAG": 30.85, "XPT": 912.40, "XPD": 985.10 },
+  "sources": { "fiat": "exchangerate-api.com (v6)", "crypto": "coingecko.com", "metals": "metals-api.com" },
+  "fetchedAt": "2026-10-09T18:00:00.000Z",
+  "revalidateSeconds": 3600,
+  "warnings": ["Metal prices unavailable (...); using fallback values."]
+}
+```
+
+Conventions (see the long comment at the top of the route file and in
+`lib/assetConversion.js` for the full reasoning):
+
+- **`fiat`** keeps the traditional FX convention: "units of X per 1
+  USD" (so `fiat.USD` is always `1`).
+- **`crypto`** and **`metals`** are both "direct USD value of 1 unit"
+  (1 BTC in USD; 1 troy ounce of gold in USD) — metals-api.com actually
+  quotes metals the same way fiat does (ounces per 1 USD), so the route
+  inverts it server-side before returning, specifically so metals and
+  crypto share one convention and the Gold Calculator can use
+  `metals.XAU` directly as "USD per troy ounce, 24K" with no extra math.
+
+Each of the three provider calls:
+
+- Has its **own** `try/catch` and **own** static fallback (`lib/currencies.js`'s
+  `FALLBACK_RATES`, `lib/crypto.js`'s `CRYPTO_FALLBACK_USD`, `lib/metals.js`'s
+  `METAL_FALLBACK_USD`) — one provider being down or rate-limited never
+  breaks the other two, it just adds an entry to the top-level `warnings`
+  array and keeps serving fallback numbers for that asset class only.
+- Has an 8-second hard timeout via `AbortController` (`cachedFetch()` in
+  the route file), so a slow/hanging upstream can't stall the whole
+  route — this is also what was crashing static prerendering once
+  before (see the `formatAmount`/`maximumFractionDigits` fix below);
+  the timeout guards against a *different*, request-level failure mode.
+
+## Notes on the Universal Currency Converter
+
+- `lib/assetConversion.js` is the cross-asset engine: it normalizes
+  every asset (fiat, crypto, or metal) to "USD value of 1 unit" via
+  `getUsdValue()`, so converting *any* asset to *any* other asset is
+  always just `amount * usdValue(from) / usdValue(to)` — implemented in
+  `convertBetweenAssets()`. This is how Fiat→Fiat, Crypto→Fiat,
+  Metal→Crypto, etc. all work through one code path.
+- `lib/currencies.js` (36 fiat currencies), `lib/crypto.js` (12 major
+  cryptocurrencies, with their CoinGecko ids), and `lib/metals.js` (4
+  precious metals) are the three asset registries. Add an asset to any
+  one of them and it's immediately available in the converter's picker,
+  in `/api/rates`, and (for fiat) in the SEO routes.
+- `components/CurrencyConverter.jsx` implements its own searchable,
+  **grouped** dropdown (a text input + filtered list with Fiat/Crypto/
+  Metals section headers) rather than a native `<select>`, since plain
+  selects can't be typed into to filter options or show groups.
 - The 24h trend badge is an intentionally labeled placeholder — no
   historical rate store exists yet. See the `TODO` comment in
   `CurrencyConverter.jsx`'s `TrendBadge` for how to wire in a real
   percentage once day-over-day rates are persisted somewhere.
 - `lib/fxSlugs.js` maps `<from>-to-<to>` slugs (e.g. `usd-to-pkr`) to
-  currency codes for `/converters/[pair]`. Next.js App Router folder
-  names only support a single dynamic segment each, so this route lives
-  at `app/converters/[pair]/page.jsx` rather than a literal
-  `[from]-to-[to]` folder — the resulting URLs are identical either way.
-  It sits safely alongside the separate `app/converters/unit/[slug]`
+  **fiat** currency codes for `/converters/[pair]` — the SEO route is
+  fiat-only by design (that's what people search for), but the
+  converter component it renders also lets the visitor switch either
+  side to crypto or metals once the page loads. Next.js App Router
+  folder names only support a single dynamic segment each, so this
+  route lives at `app/converters/[pair]/page.jsx` rather than a literal
+  `[from]-to-[to]` folder — the resulting URLs are identical either
+  way. It sits safely alongside the separate `app/converters/unit/[slug]`
   route because Next.js always matches a literal folder name (`unit`)
   before a dynamic one at the same level.
+- `components/GoldCalculator.jsx` now auto-fills its "Base Gold Price"
+  field from the live `metals.XAU` value on load, but only until the
+  user types their own value (tracked via a ref to avoid a stale-closure
+  bug where the auto-fill could re-trigger after a manual edit); hitting
+  "Refresh rates" resets that and re-syncs to the live price.
 
-## Notes on Market Analysis
+## Notes on Market Analysis & AI News
 
 - `components/TradingChart.jsx` embeds TradingView's free, public
   "Advanced Chart" widget (`s3.tradingview.com/external-embedding/...`)
-  — no API key or account required.
+  — no API key or account required. `components/MarketDashboard.jsx`'s
+  symbol picker covers gold, global indices (S&P 500, Pakistan's
+  KSE-100 via `PSX:KSE100`, India's Nifty 50 via `NSE:NIFTY`), major FX
+  pairs, crude oil and Bitcoin — add more by appending to its `SYMBOLS`
+  array with any valid TradingView ticker.
 - `app/api/news-ai/route.js` fetches and merges several finance RSS
-  feeds with a small dependency-free parser, caches the result for 15
-  minutes, and returns each headline with `summary: null` and
-  `summaryStatus: "pending_ai_key"`. Wiring in `ANTHROPIC_API_KEY` and
-  calling the Claude API per-headline is the next step (see the `TODO`
-  comment in that file).
+  feeds (Yahoo Finance, MarketWatch, CNBC) in parallel with a small
+  dependency-free parser, each with its own `try/catch` (so one feed
+  going down never breaks the others) and the same 8-second
+  `AbortController` timeout guard used in `/api/rates`. Caches the
+  result for 900s (15 min) and returns each headline with
+  `summary: null` and `summaryStatus: "pending_ai_key"`. Wiring in
+  `ANTHROPIC_API_KEY` and calling the Claude API per-headline is the
+  next step (see the `TODO` comment in that file).
 
 ## Roadmap
 

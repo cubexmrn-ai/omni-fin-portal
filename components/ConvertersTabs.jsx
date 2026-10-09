@@ -6,16 +6,17 @@ import CurrencyConverter from "@/components/CurrencyConverter";
 import UnitConverter from "@/components/UnitConverter";
 
 const TABS = [
-  { key: "currency", label: "Currency (FX)" },
+  { key: "currency", label: "Currency & Crypto" },
   { key: "gold", label: "Gold Rate" },
   { key: "units", label: "Units & Area" },
 ];
 
 /**
- * Tabbed shell switching between the three Module 1 tools: FX Currency
- * Converter, Gold Rate Calculator, and the Universal Unit Converter.
- * Keeping each tool itself a standalone component means every tool also
- * still works standing alone on its own SEO landing page.
+ * Tabbed shell switching between the three Module 1 tools: the
+ * cross-asset Currency Converter (fiat + crypto + metals), the Gold
+ * Rate Calculator, and the Universal Unit Converter. Keeping each tool
+ * itself a standalone component means every tool also still works
+ * standing alone on its own SEO landing page.
  */
 export default function ConvertersTabs({ defaultTab = "currency" }) {
   const [activeTab, setActiveTab] = useState(defaultTab);

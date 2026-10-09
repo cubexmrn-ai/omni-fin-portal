@@ -5,7 +5,9 @@ import TradingChart from "@/components/TradingChart";
 
 const SYMBOLS = [
   { code: "OANDA:XAUUSD", label: "Gold (XAU/USD)" },
-  { code: "FOREXCOM:SPXUSD", label: "S&P 500" },
+  { code: "FOREXCOM:SPXUSD", label: "S&P 500 (US)" },
+  { code: "PSX:KSE100", label: "KSE-100 (Pakistan)" },
+  { code: "NSE:NIFTY", label: "Nifty 50 (India)" },
   { code: "OANDA:EURUSD", label: "EUR/USD" },
   { code: "OANDA:GBPUSD", label: "GBP/USD" },
   { code: "BITSTAMP:BTCUSD", label: "Bitcoin (BTC/USD)" },

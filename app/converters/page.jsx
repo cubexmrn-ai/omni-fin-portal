@@ -5,9 +5,9 @@ import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { FEATURED_FX_PAIRS } from "@/lib/fxSlugs";
 
 export const metadata = {
-  title: "Currency, Gold & Unit Converter | OmniFin Portal",
+  title: "Currency, Crypto, Gold & Unit Converter | OmniFin Portal",
   description:
-    "Convert currencies, gold rates, and worldwide units (length, area, weight, volume, speed, temperature) — including Tola, Maund, Marla and Kanal — instantly and for free.",
+    "Convert between fiat currencies, crypto and precious metals, gold rates, and worldwide units (length, area, weight, volume, speed, temperature) — including Tola, Maund, Marla and Kanal — instantly and for free.",
 };
 
 const CATEGORY_SUMMARY = [
@@ -29,11 +29,12 @@ export default function ConvertersPage() {
             Module 1 · Converters
           </span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Currency, Gold &amp; Unit Converter
+            Currency, Crypto, Gold &amp; Unit Converter
           </h1>
           <p className="mt-3 max-w-2xl text-base text-slate-600">
-            Three tools, one dashboard: live FX currency conversion, gold
-            rate pricing by karat and weight unit, and a universal
+            Three tools, one dashboard: a cross-asset converter spanning
+            fiat currencies, crypto and precious metals, a gold rate
+            calculator by karat and weight unit, and a universal
             converter for length, area, weight, volume, speed, digital
             storage and temperature — worldwide and regional units alike.
           </p>

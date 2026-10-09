@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import {
   WEIGHT_UNIT_LABELS,
   KARAT_PURITY,
@@ -64,6 +64,7 @@ function formatNumber(value, maximumFractionDigits = 2) {
 
 export default function GoldCalculator() {
   const [baseUsdPrice, setBaseUsdPrice] = useState(DEFAULT_BASE_USD_PRICE);
+  const [baseTouched, setBaseTouched] = useState(false);
   const [currencyCode, setCurrencyCode] = useState("PKR");
   const [unitCode, setUnitCode] = useState("tola");
   const [karatCode, setKaratCode] = useState("24K");
@@ -73,15 +74,33 @@ export default function GoldCalculator() {
   const [rateStatus, setRateStatus] = useState("loading"); // loading | live | fallback | error
   const [fetchedAt, setFetchedAt] = useState(null);
 
+  // Mirrors `baseTouched` in a ref so loadRates() always reads the
+  // latest value synchronously, instead of a value captured in a
+  // stale closure from whenever loadRates was last created.
+  const baseTouchedRef = useRef(baseTouched);
+  useEffect(() => {
+    baseTouchedRef.current = baseTouched;
+  }, [baseTouched]);
+
   const loadRates = useCallback(async () => {
     setRateStatus((prev) => (prev === "live" ? "live" : "loading"));
     try {
+      // /api/rates now returns a unified { fiat, crypto, metals } payload
+      // (see app/api/rates/route.js) rather than a flat `rates` object.
       const data = await fetchRates({ noStore: true });
-      if (!data || !data.rates) throw new Error("Malformed rates payload");
+      if (!data || !data.fiat) throw new Error("Malformed rates payload");
 
-      setRates({ ...FALLBACK_RATES, ...data.rates });
+      setRates({ ...FALLBACK_RATES, ...data.fiat });
       setFetchedAt(data.fetchedAt || new Date().toISOString());
-      setRateStatus(data.warning ? "fallback" : "live");
+      setRateStatus(data.warnings?.length ? "fallback" : "live");
+
+      // Auto-fill the base gold price from the live XAU (gold) spot
+      // price once it loads, but only if the user hasn't typed their
+      // own value yet — this never overwrites a manual edit.
+      const liveXau = data.metals?.XAU;
+      if (!baseTouchedRef.current && Number.isFinite(liveXau)) {
+        setBaseUsdPrice(liveXau);
+      }
     } catch (err) {
       setRates(FALLBACK_RATES);
       setFetchedAt(new Date().toISOString());
@@ -91,8 +110,8 @@ export default function GoldCalculator() {
 
   useEffect(() => {
     loadRates();
-    // Keep rates fresh client-side too, matching the 15 min server cache.
-    const interval = setInterval(loadRates, 15 * 60 * 1000);
+    // Keep rates fresh client-side too, matching the 1-hour server cache.
+    const interval = setInterval(loadRates, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [loadRates]);
 
@@ -173,11 +192,19 @@ export default function GoldCalculator() {
                   min="0"
                   step="0.01"
                   value={baseUsdPrice}
-                  onChange={(e) => setBaseUsdPrice(e.target.value)}
+                  onChange={(e) => {
+                    setBaseTouched(true);
+                    setBaseUsdPrice(e.target.value);
+                  }}
                   className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-7 pr-3 text-sm font-medium text-slate-900 shadow-sm transition-colors focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                   placeholder="2650.00"
                 />
               </div>
+              <p className="mt-1.5 text-xs text-slate-400">
+                {baseTouched
+                  ? "Edited manually — refresh rates to reset to the live spot price."
+                  : "Auto-filled from the live XAU spot price; edit to override."}
+              </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -276,7 +303,17 @@ export default function GoldCalculator() {
 
             <button
               type="button"
-              onClick={loadRates}
+              onClick={() => {
+                // An explicit refresh is treated as "go back to live":
+                // it resets the manual-edit flag so the base price
+                // re-syncs to the current XAU spot price. The ref is
+                // set directly (not just the state) so loadRates sees
+                // it immediately rather than waiting on React's commit
+                // + effect cycle to sync the ref from state.
+                baseTouchedRef.current = false;
+                setBaseTouched(false);
+                loadRates();
+              }}
               className="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               <svg

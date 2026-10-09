@@ -1,10 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CURRENCIES, getCurrency } from "@/lib/currencies";
 import { fetchRates } from "@/lib/fetchRates";
+import {
+  getAssetMeta,
+  getPairRate,
+  convertBetweenAssets,
+  buildUnifiedAssetList,
+} from "@/lib/assetConversion";
 
 const MATRIX_MULTIPLIERS = [1, 10, 100, 1000];
+
+const ASSET_CLASS_LABELS = {
+  fiat: "Fiat Currencies",
+  crypto: "Cryptocurrencies",
+  metals: "Precious Metals",
+};
+
+const UNIFIED_ASSETS = buildUnifiedAssetList();
 
 function formatAmount(value, maximumFractionDigits = 2) {
   if (!Number.isFinite(value)) return "—";
@@ -28,16 +41,36 @@ function formatAmount(value, maximumFractionDigits = 2) {
 }
 
 /**
- * Searchable currency picker. A plain <select> can't be filtered by
- * typing a query, so this renders a text input + dropdown list instead,
- * while staying a controlled component driven by `value`/`onChange`.
+ * Picks sensible decimal precision for a converted amount so very
+ * cheap assets (e.g. DOGE, NGN) and very expensive ones (e.g. BTC, XAU)
+ * both read naturally instead of showing "0.00" or needless zeros.
  */
-function CurrencySelect({ id, label, value, onChange, excludeCode }) {
+function precisionFor(assetClass, value) {
+  if (assetClass === "crypto") {
+    if (!Number.isFinite(value)) return 2;
+    if (Math.abs(value) < 1) return 6;
+    if (Math.abs(value) < 100) return 4;
+    return 2;
+  }
+  return 2;
+}
+
+function assetKey(assetClass, code) {
+  return `${assetClass}:${code}`;
+}
+
+/**
+ * Searchable, grouped asset picker spanning Fiat / Crypto / Metals. A
+ * plain <select> can't be filtered by typing a query or show section
+ * headers, so this renders a text input + grouped dropdown instead,
+ * while staying a controlled component driven by value/onChange.
+ */
+function AssetSelect({ id, label, assetClass, code, onChange }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const containerRef = useRef(null);
 
-  const selected = getCurrency(value);
+  const selected = getAssetMeta(assetClass, code);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -50,22 +83,30 @@ function CurrencySelect({ id, label, value, onChange, excludeCode }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filtered = useMemo(() => {
+  const groupedFiltered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return CURRENCIES.filter((c) => {
-      if (c.code === excludeCode) return false;
-      if (!q) return true;
-      return (
-        c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
-      );
-    });
-  }, [query, excludeCode]);
+    const groups = { fiat: [], crypto: [], metals: [] };
 
-  function handleSelect(code) {
-    onChange(code);
+    for (const asset of UNIFIED_ASSETS) {
+      if (q) {
+        const matches =
+          asset.code.toLowerCase().includes(q) ||
+          asset.name.toLowerCase().includes(q);
+        if (!matches) continue;
+      }
+      groups[asset.assetClass].push(asset);
+    }
+
+    return groups;
+  }, [query]);
+
+  function handleSelect(nextClass, nextCode) {
+    onChange(nextClass, nextCode);
     setOpen(false);
     setQuery("");
   }
+
+  const hasAnyResults = Object.values(groupedFiltered).some((g) => g.length > 0);
 
   return (
     <div ref={containerRef} className="relative">
@@ -87,7 +128,7 @@ function CurrencySelect({ id, label, value, onChange, excludeCode }) {
         <span className="flex items-center gap-2">
           <span aria-hidden="true">{selected?.flag}</span>
           <span>
-            {selected ? `${selected.code} — ${selected.name}` : "Select currency"}
+            {selected ? `${selected.code} — ${selected.name}` : "Select asset"}
           </span>
         </span>
         <svg
@@ -117,37 +158,55 @@ function CurrencySelect({ id, label, value, onChange, excludeCode }) {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search currency or code…"
+              placeholder="Search currency, crypto or metal…"
               className="w-full rounded-md border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </div>
-          <ul
-            role="listbox"
-            className="max-h-56 overflow-y-auto py-1 scrollbar-thin"
-          >
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-slate-400">
-                No currencies match &quot;{query}&quot;
-              </li>
+          <div className="max-h-64 overflow-y-auto py-1 scrollbar-thin" role="listbox">
+            {!hasAnyResults && (
+              <p className="px-3 py-2 text-sm text-slate-400">
+                No assets match &quot;{query}&quot;
+              </p>
             )}
-            {filtered.map((c) => (
-              <li key={c.code} role="option" aria-selected={c.code === value}>
-                <button
-                  type="button"
-                  onClick={() => handleSelect(c.code)}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-brand-50 ${
-                    c.code === value
-                      ? "bg-brand-50 font-semibold text-brand-700"
-                      : "text-slate-700"
-                  }`}
-                >
-                  <span aria-hidden="true">{c.flag}</span>
-                  <span className="font-semibold">{c.code}</span>
-                  <span className="text-slate-400">{c.name}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+            {["fiat", "crypto", "metals"].map((groupClass) => {
+              const items = groupedFiltered[groupClass];
+              if (!items || items.length === 0) return null;
+              return (
+                <div key={groupClass}>
+                  <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    {ASSET_CLASS_LABELS[groupClass]}
+                  </p>
+                  <ul>
+                    {items.map((asset) => {
+                      const active =
+                        asset.assetClass === assetClass && asset.code === code;
+                      return (
+                        <li
+                          key={assetKey(asset.assetClass, asset.code)}
+                          role="option"
+                          aria-selected={active}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSelect(asset.assetClass, asset.code)}
+                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-brand-50 ${
+                              active
+                                ? "bg-brand-50 font-semibold text-brand-700"
+                                : "text-slate-700"
+                            }`}
+                          >
+                            <span aria-hidden="true">{asset.flag}</span>
+                            <span className="font-semibold">{asset.code}</span>
+                            <span className="text-slate-400">{asset.name}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -190,19 +249,32 @@ function TrendBadge() {
 }
 
 /**
- * Dedicated FX Currency Converter: searchable From/To pickers, a swap
- * button, instant conversion against cached /api/rates data, and a
+ * Cross-asset converter: searchable From/To pickers spanning fiat
+ * currencies, cryptocurrencies and precious metals, a swap button,
+ * instant conversion against the unified /api/rates payload, and a
  * quick-reference rate matrix (1 / 10 / 100 / 1000 units).
+ *
+ * Accepts either the newer { initialFromClass, initialFromCode,
+ * initialToClass, initialToCode } props, or the original
+ * { initialFrom, initialTo } fiat-only props (still used by the
+ * /converters/[pair] FX SEO route) — both forms default to "fiat"
+ * when no class is given, so existing call sites keep working as-is.
  */
 export default function CurrencyConverter({
   initialFrom = "USD",
   initialTo = "PKR",
+  initialFromClass = "fiat",
+  initialToClass = "fiat",
+  initialFromCode,
+  initialToCode,
 }) {
-  const [fromCode, setFromCode] = useState(initialFrom);
-  const [toCode, setToCode] = useState(initialTo);
+  const [fromClass, setFromClass] = useState(initialFromClass);
+  const [fromCode, setFromCode] = useState(initialFromCode || initialFrom);
+  const [toClass, setToClass] = useState(initialToClass);
+  const [toCode, setToCode] = useState(initialToCode || initialTo);
   const [amount, setAmount] = useState(1);
 
-  const [rates, setRates] = useState(null);
+  const [ratesPayload, setRatesPayload] = useState(null);
   const [rateStatus, setRateStatus] = useState("loading"); // loading | live | fallback | error
   const [fetchedAt, setFetchedAt] = useState(null);
 
@@ -210,11 +282,11 @@ export default function CurrencyConverter({
     setRateStatus((prev) => (prev === "live" ? "live" : "loading"));
     try {
       const data = await fetchRates({ noStore: true });
-      if (!data || !data.rates) throw new Error("Malformed rates payload");
+      if (!data || !data.fiat) throw new Error("Malformed rates payload");
 
-      setRates(data.rates);
+      setRatesPayload(data);
       setFetchedAt(data.fetchedAt || new Date().toISOString());
-      setRateStatus(data.warning ? "fallback" : "live");
+      setRateStatus(data.warnings?.length ? "fallback" : "live");
     } catch (err) {
       setRateStatus("error");
     }
@@ -222,30 +294,35 @@ export default function CurrencyConverter({
 
   useEffect(() => {
     loadRates();
-    const interval = setInterval(loadRates, 15 * 60 * 1000);
+    const interval = setInterval(loadRates, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [loadRates]);
 
-  const fromCurrency = getCurrency(fromCode);
-  const toCurrency = getCurrency(toCode);
+  const fromMeta = getAssetMeta(fromClass, fromCode);
+  const toMeta = getAssetMeta(toClass, toCode);
 
-  // rates are USD-based: value_in_to = value_in_usd * rates[to]
-  // so from -> to = amount * (rates[to] / rates[from])
   const pairRate = useMemo(() => {
-    if (!rates) return null;
-    const fromRate = rates[fromCode];
-    const toRate = rates[toCode];
-    if (!Number.isFinite(fromRate) || !Number.isFinite(toRate) || fromRate === 0) {
-      return null;
-    }
-    return toRate / fromRate;
-  }, [rates, fromCode, toCode]);
+    if (!ratesPayload) return null;
+    return getPairRate({
+      fromClass,
+      fromCode,
+      toClass,
+      toCode,
+      ratesPayload,
+    });
+  }, [ratesPayload, fromClass, fromCode, toClass, toCode]);
 
   const convertedAmount = useMemo(() => {
-    const numeric = Number(amount);
-    if (!Number.isFinite(numeric) || pairRate === null) return null;
-    return numeric * pairRate;
-  }, [amount, pairRate]);
+    if (!ratesPayload) return null;
+    return convertBetweenAssets({
+      amount,
+      fromClass,
+      fromCode,
+      toClass,
+      toCode,
+      ratesPayload,
+    });
+  }, [amount, ratesPayload, fromClass, fromCode, toClass, toCode]);
 
   const reversePairRate = useMemo(() => {
     if (pairRate === null || pairRate === 0) return null;
@@ -253,7 +330,9 @@ export default function CurrencyConverter({
   }, [pairRate]);
 
   function handleSwap() {
+    setFromClass(toClass);
     setFromCode(toCode);
+    setToClass(fromClass);
     setToCode(fromCode);
   }
 
@@ -274,11 +353,11 @@ export default function CurrencyConverter({
         <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-brand-50 via-white to-slate-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
-              FX Currency Converter
+              Universal Currency Converter
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Convert between {CURRENCIES.length}+ world currencies with
-              live, cached exchange rates.
+              Convert across fiat currencies, crypto and precious
+              metals — any asset to any other.
             </p>
           </div>
           <div className="flex items-center gap-2 self-start rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm sm:self-auto">
@@ -290,19 +369,22 @@ export default function CurrencyConverter({
         <div className="px-6 py-6">
           {/* Amount + From/To/Swap */}
           <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">
-            <CurrencySelect
-              id="fx-from-currency"
+            <AssetSelect
+              id="fx-from-asset"
               label="From"
-              value={fromCode}
-              onChange={setFromCode}
-              excludeCode={null}
+              assetClass={fromClass}
+              code={fromCode}
+              onChange={(nextClass, nextCode) => {
+                setFromClass(nextClass);
+                setFromCode(nextCode);
+              }}
             />
 
             <button
               type="button"
               onClick={handleSwap}
-              aria-label="Swap currencies"
-              title="Swap currencies"
+              aria-label="Swap assets"
+              title="Swap assets"
               className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 hover:text-brand-600 sm:mb-0.5"
             >
               <svg
@@ -323,12 +405,15 @@ export default function CurrencyConverter({
               </svg>
             </button>
 
-            <CurrencySelect
-              id="fx-to-currency"
+            <AssetSelect
+              id="fx-to-asset"
               label="To"
-              value={toCode}
-              onChange={setToCode}
-              excludeCode={null}
+              assetClass={toClass}
+              code={toCode}
+              onChange={(nextClass, nextCode) => {
+                setToClass(nextClass);
+                setToCode(nextCode);
+              }}
             />
           </div>
 
@@ -361,25 +446,26 @@ export default function CurrencyConverter({
               <TrendBadge />
             </div>
             <p className="mt-2 text-3xl font-extrabold text-brand-700">
-              {toCurrency?.symbol} {formatAmount(convertedAmount)}{" "}
+              {toMeta?.symbol}{" "}
+              {formatAmount(convertedAmount, precisionFor(toClass, convertedAmount))}{" "}
               <span className="text-base font-semibold text-slate-400">
                 {toCode}
               </span>
             </p>
             <p className="mt-2 text-sm text-slate-500">
               {pairRate !== null
-                ? `1 ${fromCode} = ${formatAmount(pairRate, 6)} ${toCode}`
+                ? `1 ${fromCode} = ${formatAmount(pairRate, precisionFor(toClass, pairRate))} ${toCode}`
                 : "Rate unavailable"}
               {reversePairRate !== null && (
                 <>
                   {" "}
-                  · 1 {toCode} = {formatAmount(reversePairRate, 6)} {fromCode}
+                  · 1 {toCode} = {formatAmount(reversePairRate, precisionFor(fromClass, reversePairRate))} {fromCode}
                 </>
               )}
             </p>
           </div>
 
-          {/* FX Rate Matrix */}
+          {/* Rate Matrix */}
           <div className="mt-6">
             <h3 className="text-sm font-semibold text-slate-700">
               Quick Reference — {fromCode} to {toCode}
@@ -393,18 +479,21 @@ export default function CurrencyConverter({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {MATRIX_MULTIPLIERS.map((multiplier) => (
-                    <tr key={multiplier} className="bg-white">
-                      <td className="px-4 py-2.5 font-medium text-slate-700">
-                        {fromCurrency?.symbol} {formatAmount(multiplier, 0)}
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-slate-900">
-                        {pairRate !== null
-                          ? `${toCurrency?.symbol} ${formatAmount(multiplier * pairRate)}`
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {MATRIX_MULTIPLIERS.map((multiplier) => {
+                    const rowValue = pairRate !== null ? multiplier * pairRate : null;
+                    return (
+                      <tr key={multiplier} className="bg-white">
+                        <td className="px-4 py-2.5 font-medium text-slate-700">
+                          {fromMeta?.symbol} {formatAmount(multiplier, 0)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-semibold text-slate-900">
+                          {rowValue !== null
+                            ? `${toMeta?.symbol} ${formatAmount(rowValue, precisionFor(toClass, rowValue))}`
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -441,6 +530,13 @@ export default function CurrencyConverter({
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
+                {ratesPayload?.sources && (
+                  <>
+                    {" "}
+                    · {ratesPayload.sources.fiat} · {ratesPayload.sources.crypto} ·{" "}
+                    {ratesPayload.sources.metals}
+                  </>
+                )}
               </span>
             )}
           </div>
