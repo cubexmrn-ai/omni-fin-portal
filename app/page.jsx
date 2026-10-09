@@ -1,7 +1,7 @@
 import Link from "next/link";
-import GoldCalculator from "@/components/GoldCalculator";
+import ConvertersTabs from "@/components/ConvertersTabs";
 
-export const revalidate = 900; // Align page-level ISR with the rates API cache.
+export const revalidate = 3600; // Align page-level ISR with the unified rates API cache.
 
 const MODULES = [
   {
@@ -33,14 +33,14 @@ const SUPPORTED_CURRENCIES = [
 
 const FEATURES = [
   {
-    title: "Live Exchange Rates",
+    title: "Live Fiat, Crypto & Metal Rates",
     description:
-      "Rates refresh from a serverless API route every 15 minutes, with automatic fallback so the calculator never shows a blank screen.",
+      "One unified API route feeds Fiat, Crypto and Metals rates in parallel, cached hourly with per-provider fallback so no card ever shows a blank screen.",
   },
   {
-    title: "Karat-Accurate Pricing",
+    title: "Karat-Accurate Gold Pricing",
     description:
-      "Switch between 24K and 22K purity and the calculator instantly re-weights the spot price for you.",
+      "Switch between 24K and 22K purity and the calculator instantly re-weights the live XAU spot price for you.",
   },
   {
     title: "Ounce, Gram & Tola",
@@ -58,13 +58,13 @@ function Hero() {
             Phase 2 · Finance Portal Dashboard
           </span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            OmniFin Portal — currency &amp; gold rates,
+            OmniFin Portal — gold, currency &amp; crypto rates,
             <span className="text-brand-600"> instantly converted.</span>
           </h1>
           <p className="mt-4 text-base text-slate-600 sm:text-lg">
-            A clean, modern dashboard for converting live gold spot prices
-            into the currency, weight unit and karat purity you actually
-            work with — PKR, AUD, EUR, INR, AED and NGN.
+            A clean, modern dashboard for converting live gold spot
+            prices, 36 world currencies and major crypto — by weight
+            unit, karat purity, or any asset you&rsquo;re pricing against.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
@@ -161,8 +161,8 @@ function SupportedCurrencies() {
             Supported Currencies
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            All rates are sourced against a USD base and cached for 15
-            minutes via Incremental Static Regeneration.
+            All rates are sourced against a USD base and cached hourly
+            via Incremental Static Regeneration.
           </p>
         </div>
       </div>
@@ -186,7 +186,12 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <GoldCalculator />
+      {/* id preserved here (rather than inside ConvertersTabs itself) so
+          the nav's "/#gold-calculator" link and the hero's CTA above
+          both still scroll to this section correctly. */}
+      <div id="gold-calculator">
+        <ConvertersTabs defaultTab="gold" />
+      </div>
       <ModulesGrid />
       <SupportedCurrencies />
     </>
