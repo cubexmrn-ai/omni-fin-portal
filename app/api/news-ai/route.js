@@ -52,6 +52,7 @@ export async function GET() {
         items: [],
         usingMockFallback: true,
         sentimentTally: { Bullish: 0, Bearish: 0, Neutral: 0 },
+        assetSentimentBreakdown: {},
         aiSummarization: { enabled: false, status: "error", note: null },
         fetchedAt: new Date().toISOString(),
         revalidateSeconds: NEWS_REVALIDATE_SECONDS,

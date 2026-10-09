@@ -2,13 +2,81 @@
 
 import { useState } from "react";
 import { INSTRUMENT_OPTIONS, ANALYSIS_TYPES } from "@/lib/technicalAnalysis";
+import SentimentMeter from "@/components/SentimentMeter";
+
+const BIAS_TEXT_COLOR = {
+  "Strong Buy": "text-emerald-700 dark:text-emerald-300",
+  Buy: "text-emerald-600 dark:text-emerald-400",
+  Neutral: "text-slate-600 dark:text-slate-300",
+  Sell: "text-rose-600 dark:text-rose-400",
+  "Strong Sell": "text-rose-700 dark:text-rose-300",
+};
+
+function BiasCard({ title, score, label, note, subtitle }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          {title}
+        </h4>
+      </div>
+      <p className={`mt-1 text-xl font-extrabold ${BIAS_TEXT_COLOR[label] || "text-slate-800"}`}>
+        {label}
+      </p>
+      {subtitle && <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{subtitle}</p>}
+      <div className="mt-3">
+        <SentimentMeter score={score} compact showLabels={false} />
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{note}</p>
+    </div>
+  );
+}
+
+function ReportSection({ title, section }) {
+  if (!section) return null;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-50">{title}</h4>
+      <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300">{section.summary}</p>
+
+      {Array.isArray(section.dataPoints) && section.dataPoints.length > 0 && (
+        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          {section.dataPoints.map((dp) => (
+            <div
+              key={dp.label}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-center dark:border-slate-700 dark:bg-slate-900/40"
+            >
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">{dp.label}</p>
+              <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100">{dp.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {section.limitations && (
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          {section.limitations}
+        </p>
+      )}
+
+      {section.methodology && (
+        <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
+          Method: {section.methodology}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * On-demand technical analysis panel. The person picks an instrument
  * and an analysis type and hits "Run Analysis" — each click is a fresh
- * GET to /api/market-ai, which computes a structured summary from the
- * live rates payload (see lib/technicalAnalysis.js for exactly what is
- * and isn't genuinely calculable without a stored price history).
+ * GET to /api/market-ai, which always returns the full rule-based
+ * report (Buy/Sell meter, Technical/Fundamental/Overall bias, Price
+ * Action, Support/Resistance, Pivot Points, Oscillators), plus an
+ * additive Fibonacci or Gann section when selected. See
+ * lib/technicalAnalysis.js for exactly what is and isn't genuinely
+ * calculable without a stored price history.
  */
 export default function AiTechnicalAnalysis() {
   const [symbol, setSymbol] = useState(INSTRUMENT_OPTIONS[0].code);
@@ -125,10 +193,11 @@ export default function AiTechnicalAnalysis() {
           )}
 
           {status === "ready" && result && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900/40">
+            <div className="space-y-5">
+              {/* Header: instrument + AI/rule-based badge */}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-50">
-                  {result.label} · {result.analysisLabel}
+                  {result.label} · {fmtPrice(result)}
                 </h3>
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
@@ -146,31 +215,73 @@ export default function AiTechnicalAnalysis() {
                 </span>
               </div>
 
-              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{result.summary}</p>
-
-              {Array.isArray(result.dataPoints) && result.dataPoints.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                  {result.dataPoints.map((dp) => (
-                    <div
-                      key={dp.label}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center dark:border-slate-700 dark:bg-slate-800"
+              {/* Big overall meter */}
+              {result.overallSentiment && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Overall Market Sentiment
+                    </h4>
+                    <span
+                      className={`text-lg font-extrabold ${
+                        BIAS_TEXT_COLOR[result.overallSentiment.label] || "text-slate-800"
+                      }`}
                     >
-                      <p className="text-xs text-slate-400 dark:text-slate-500">{dp.label}</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {dp.value}
-                      </p>
-                    </div>
-                  ))}
+                      {result.overallSentiment.label}
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <SentimentMeter score={result.overallSentiment.score} />
+                  </div>
+                  <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                    {result.overallSentiment.note}
+                  </p>
                 </div>
               )}
 
-              {result.limitations && (
-                <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-                  {result.limitations}
-                </p>
-              )}
+              {/* Technical / Fundamental / Overall bias cards */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {result.technicalBias && (
+                  <BiasCard
+                    title="Technical Bias"
+                    subtitle="Long / Short signal"
+                    score={result.technicalBias.score}
+                    label={result.technicalBias.label}
+                    note={result.technicalBias.note}
+                  />
+                )}
+                {result.fundamentalBias && (
+                  <BiasCard
+                    title="Fundamental Bias"
+                    subtitle={`USD proxy: ${result.fundamentalBias.usdState}`}
+                    score={result.fundamentalBias.score}
+                    label={result.fundamentalBias.label}
+                    note={result.fundamentalBias.note}
+                  />
+                )}
+                {result.overallSentiment && (
+                  <BiasCard
+                    title="Overall Sentiment"
+                    subtitle="Blend of technical & fundamental"
+                    score={result.overallSentiment.score}
+                    label={result.overallSentiment.label}
+                    note={result.overallSentiment.note}
+                  />
+                )}
+              </div>
 
-              <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+              {/* Full report sections */}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <ReportSection title="Price Action" section={result.priceAction} />
+                <ReportSection title="Support & Resistance" section={result.supportResistance} />
+                <ReportSection title="Pivot Points" section={result.pivotPoints} />
+                <ReportSection title="RSI / Moving Averages" section={result.oscillators} />
+              </div>
+
+              {/* Additive Fibonacci / Gann section */}
+              {result.extra && <ReportSection title={result.extra.label} section={result.extra} />}
+
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 {result.engineNote} For informational purposes only — not financial advice.
               </p>
             </div>
@@ -179,4 +290,13 @@ export default function AiTechnicalAnalysis() {
       </div>
     </div>
   );
+}
+
+function fmtPrice(result) {
+  if (!Number.isFinite(result?.price)) return "—";
+  const decimals = result.price >= 100 ? 2 : 4;
+  return result.price.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }

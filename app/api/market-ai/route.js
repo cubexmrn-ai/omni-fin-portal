@@ -1,7 +1,14 @@
 // app/api/market-ai/route.js
 //
 // On-demand technical analysis for the Market Analysis page's "AI
-// Technical Analysis" panel. GET /api/market-ai?symbol=XAU&analysisType=price_action
+// Technical Analysis" panel. GET /api/market-ai?symbol=XAU&analysisType=full_report
+//
+// Always returns the full rule-based report (Buy/Sell/Neutral meter,
+// Technical/Fundamental/Overall bias, Price Action, Support/Resistance,
+// Pivot Points, Oscillators) — `analysisType` of "fibonacci" or "gann"
+// additionally includes that one extra deep-dive section. See the big
+// comment at the top of lib/technicalAnalysis.js for exactly what's
+// genuinely computed vs. explicitly labeled illustrative/unavailable.
 //
 // Checks for process.env.ANTHROPIC_API_KEY the same way
 // app/api/news-ai/route.js's underlying lib/newsAggregator.js already
@@ -48,7 +55,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const symbolParam = searchParams.get("symbol") || "XAU";
-    const analysisTypeParam = searchParams.get("analysisType") || "price_action";
+    const analysisTypeParam = searchParams.get("analysisType") || "full_report";
 
     const instrument = getInstrument(symbolParam);
     const analysisType = getAnalysisType(analysisTypeParam);
@@ -97,10 +104,10 @@ export async function GET(request) {
         // Falls through to the rule-based path below — see the TODO
         // above generateAiAnalysis(). A configured key never breaks
         // this route; it just hasn't been wired up to do anything yet.
-        analysis = buildAnalysis(instrument, analysisType, price);
+        analysis = buildAnalysis(instrument, analysisType, price, ratesData);
       }
     } else {
-      analysis = buildAnalysis(instrument, analysisType, price);
+      analysis = buildAnalysis(instrument, analysisType, price, ratesData);
     }
 
     return Response.json(

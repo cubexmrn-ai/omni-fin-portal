@@ -85,6 +85,20 @@ function NewsCard({ item }) {
         </p>
       )}
 
+      {Array.isArray(item.relatedAssets) && item.relatedAssets.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {item.relatedAssets.map((asset) => (
+            <span
+              key={asset}
+              className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+              title={`This headline was keyword-matched as relevant to ${asset}`}
+            >
+              #{asset}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">
         <svg
           width="12"

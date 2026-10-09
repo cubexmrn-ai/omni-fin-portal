@@ -15,15 +15,21 @@ A Next.js 14 (App Router) + Tailwind CSS finance portal.
 - **Module 2 — Market AI & News**: a clean Market Analysis page — a
   top ticker-tape strip (S&P 500, Nasdaq 100, Gold, BTC/USD, EUR/USD),
   a full interactive TradingView Advanced Chart with a symbol picker,
-  and an on-demand rule-based "AI Technical Analysis" panel (Price
-  Action, Support/Resistance, Fibonacci, RSI/EMA, Gann Theory —
-  computed live from `/api/rates`, zero paid API dependency) — all with
+  and an on-demand rule-based "AI Technical Analysis" panel with a
+  visual Buy/Sell/Neutral meter, three bias widgets (**Technical
+  Bias**, **Fundamental Bias**, **Overall Market Sentiment**), and a
+  full report (Price Action, Support/Resistance, Pivot Points,
+  Oscillators) plus an additive Fibonacci or Gann Theory section —
+  computed live from `/api/rates`, zero paid API dependency — all with
   a light/dark toggle; and a categorized Financial News page (Forex /
-  Crypto / Commodities / Stocks) with search, category filters, and
-  rule-based Bullish/Bearish/Neutral sentiment badges per headline plus
-  a headline-sentiment tally card (AI summaries and real social
-  sentiment are both placeholders until an Anthropic API key / social
-  data source is configured).
+  Crypto / Commodities / Stocks) with search, category filters,
+  rule-based Bullish/Bearish/Neutral sentiment badges per headline
+  tagged by which asset(s) it's about, a per-asset sentiment breakdown
+  card, and a Social Buzz Tracker (clearly labeled **simulated** chatter
+  intensity/sentiment across X/Twitter and Reddit, with a disabled
+  "use live API" toggle) (AI summaries and real social-listening data
+  are both placeholders until an Anthropic API key / social data source
+  is configured).
 
 ## Stack
 
@@ -62,6 +68,7 @@ app/
     rates/route.js            # Thin JSON wrapper around lib/marketData.js
     market-ai/route.js        # On-demand technical analysis (rule-based; see lib/technicalAnalysis.js)
     news-ai/route.js          # Thin JSON wrapper around lib/newsAggregator.js
+    social-buzz/route.js      # Thin JSON wrapper around lib/socialBuzz.js (simulated data)
   converters/
     page.jsx                  # Tabbed directory (Currency / Metals & Commodities / Units) + featured pairs
     [pair]/page.jsx           # Programmatic SEO routes for FX pairs, e.g. usd-to-pkr
@@ -87,8 +94,13 @@ components/
                                 # by MarketOverviewBoard.jsx; kept as a reusable building block)
   MarketOverviewBoard.jsx     # Ticker strip + MarketDashboard + AiTechnicalAnalysis, light/dark toggle
   MarketDashboard.jsx         # Symbol picker (global indices) + TradingChart
-  AiTechnicalAnalysis.jsx     # On-demand instrument + analysis-type picker, calls /api/market-ai
-  NewsFeed.jsx                 # Client-side search + category filter + sentiment badges
+  AiTechnicalAnalysis.jsx     # On-demand instrument + analysis-type picker, calls /api/market-ai;
+                                # renders the meter, the 3 bias cards and the full report sections
+  SentimentMeter.jsx          # Visual 5-segment Strong Sell..Strong Buy gauge bar (pure rendering
+                                # of a score already computed in lib/technicalAnalysis.js)
+  NewsFeed.jsx                 # Client-side search + category filter + sentiment + asset-tag badges
+  SocialBuzzTracker.jsx       # Social Buzz Tracker card — fetches /api/social-buzz; keeps the
+                                # "Simulated" badge and disabled live-API toggle always visible
 lib/
   conversionMath.js           # All conversion math (weight/karat metals pricing,
                                 # flat-unit commodity pricing, units + temperature)
@@ -100,8 +112,13 @@ lib/
                                 # fetch/fallback logic, called directly by app/api/rates/route.js
                                 # AND app/api/market-ai/route.js (no self-fetch — see its header)
   technicalAnalysis.js         # Rule-based technical-analysis engine behind /api/market-ai —
-                                # instrument registry, round-level math, Fibonacci, and the
-                                # honest RSI/EMA & Gann Theory degradation (see its header comment)
+                                # instrument registry, round-level math, the Buy/Sell/Neutral
+                                # SCORE_LABEL_BANDS, Technical/Fundamental/Overall Bias, Pivot
+                                # Points, Fibonacci, and the honest RSI/EMA & Gann Theory
+                                # degradation (see its header comment)
+  socialBuzz.js                 # Social Buzz Tracker backend — deterministic, hourly-seeded
+                                # SIMULATED chatter-intensity + sentiment split per asset; no
+                                # real X/Twitter or Reddit API is wired in (see its header comment)
   assetConversion.js           # Cross-asset "convert anything to anything" engine
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
   fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes
@@ -170,6 +187,14 @@ cp .env.example .env.local
     always throws, so it safely falls through to the rule-based
     engine). Wire a real Claude API call in there to generate genuine
     AI-written technical analysis instead of the rule-based summary.
+- `SOCIAL_API_KEY` (not required, not wired to anything yet) — checked
+  by `lib/socialBuzz.js` purely to adjust its own explanatory `note`
+  text (e.g. "a key is configured but no provider is wired up yet").
+  The Social Buzz Tracker's data is **always** simulated right now
+  (`usingLiveApi: false` unconditionally) — there is no actual
+  X/Twitter or Reddit API integration in this codebase. Setting this
+  variable changes nothing about the numbers shown; it's a documented
+  placeholder for when a real social-listening provider is connected.
 
 ## Notes on the Metals & Commodities Calculator math
 
@@ -374,30 +399,65 @@ Each provider call:
   instruments (5 metals, crude oil, 5 crypto, 4 FX pairs — all backed
   by real numbers already available from `lib/marketData.js`'s
   `getUnifiedRates()`, called directly with no self-fetch, same lesson
-  as `lib/newsAggregator.js`) from `/api/rates`'s payload. `checks
-  process.env.ANTHROPIC_API_KEY`; absent (or present but not yet
+  as `lib/newsAggregator.js`) from `/api/rates`'s payload. It checks
+  `process.env.ANTHROPIC_API_KEY`; absent (or present but not yet
   wired — `generateAiAnalysis()` is a documented stub), it falls
-  through to `buildAnalysis()`'s rule-based engine:
+  through to `buildAnalysis()`'s rule-based engine, which **always**
+  returns the full report (`analysisType=full_report`, the default) —
+  `fibonacci`/`gann` just add one extra section on top, they don't
+  replace it:
+  - **Buy/Sell/Neutral meter + Technical/Fundamental/Overall Bias**:
+    `SCORE_LABEL_BANDS` is the single -100..+100 → Strong Sell..Strong
+    Buy source of truth, shared by the gauge (`components/
+    SentimentMeter.jsx`) and every bias widget's text label, so they
+    can never disagree.
+    - **Technical Bias**: `getRangeInfo()` positions the live price
+      between its nearest round-number support/resistance (via
+      `niceStep()`, the same "nice round number" level spacing used
+      for Price Action/Support & Resistance below) and scores it
+      -100..+100 — a real, computable range-positioning read ("buy
+      near support, sell near resistance"), explicitly **not** a
+      trend/momentum signal, since no historical price direction is
+      stored anywhere in this deployment.
+    - **Fundamental Bias**: `computeUsdStrengthScore()` averages that
+      same range-positioning score across EUR/USD, GBP/USD and AUD/USD
+      as a simplified USD-strength proxy, then applies a real, named
+      macro linkage — USD strength is a headwind for USD-priced assets
+      and for other-currency FX pairs, but a tailwind for USD/JPY
+      (USD is the *base* currency there, unlike the other three pairs)
+      — to the selected instrument. Always labeled "a simplified macro
+      linkage, not a comprehensive fundamental analysis."
+    - **Overall Market Sentiment**: a blend of the two scores above,
+      with an explicit note on whether they're aligned or conflicting.
   - **Price Action** / **Support & Resistance**: fully, honestly
-    computable from a single live price via `niceStep()` — a "nice
-    round number" level spacing scaled to the instrument's own price
-    magnitude (the same technique chart-axis gridlines use).
-  - **Fibonacci Retracement**: the real ratio math (23.6/38.2/50/
-    61.8/78.6%) applied to an explicitly-labeled *illustrative* ±%
-    band around the live price — the response's `limitations` field
-    says plainly that no real historical swing high/low is available,
-    rather than pretending one was detected.
-  - **RSI/EMA** and **Gann Theory**: both genuinely need historical
-    price data (a close-price sequence; swing points + time cycles)
-    that this deployment doesn't store. Rather than fabricate a fake
-    single-point reading, these return the honest Price Action context
-    instead, with a `limitations` field explaining exactly what's
-    missing and what would unlock the real calculation.
+    computable from a single live price via `niceStep()`.
+  - **Pivot Points**: the real classic floor-trader formula
+    (`P = (H+L+C)/3`, with R1/S1/R2/S2 derived from `P`) applied to an
+    explicitly-labeled *illustrative* assumed daily range (the same
+    `ILLUSTRATIVE_BAND_PCT` band Fibonacci uses) — the `limitations`
+    field says plainly that no real detected daily high/low/close is
+    stored, rather than pretending one was.
+  - **Fibonacci Retracement** (additive, `analysisType=fibonacci`):
+    the real ratio math (23.6/38.2/50/61.8/78.6%) applied to that same
+    illustrative band — again, explicit that no real historical swing
+    high/low is available.
+  - **Oscillators (RSI/EMA/SMA)** and **Gann Theory** (additive,
+    `analysisType=gann`): both genuinely need historical price data (a
+    close-price sequence; swing points + time cycles) that this
+    deployment doesn't store, so rather than fabricate a fake
+    single-point reading, both stay explicitly marked unavailable with
+    a `limitations` field explaining exactly what's missing and what
+    would unlock the real calculation.
 
   See the large comment at the top of `lib/technicalAnalysis.js` for
   the full reasoning — this is the same "never claim fake AI, always
   say what's real vs. placeholder" bar kept everywhere else in this
-  project.
+  project. The scoring math (including the Technical/Fundamental/
+  Overall bias formulas above) was verified with a standalone Node
+  simulation against hand-constructed "near support, USD strong" /
+  "near resistance, USD weak" / USD-JPY scenarios before shipping —
+  not just a syntax check, since this class of logic bug only shows up
+  when the module actually runs.
 - **`lib/newsAggregator.js`** is the actual news-fetching logic: it
   fetches 7 finance RSS feeds in parallel across 4 categories —
   **Stocks** (Yahoo Finance, MarketWatch, CNBC Markets), **Forex**
@@ -416,15 +476,23 @@ Each provider call:
   (confirmed: both now return robots-disallowed or access-blocked
   responses), so these are their closest still-live, freely-embeddable
   equivalents per category. Each item is tagged with its feed's
-  `category` and a rule-based `sentiment` (`computeSentiment()` — a
+  `category`, a rule-based `sentiment` (`computeSentiment()` — a
   keyword scan against small hand-picked Bullish/Bearish word lists,
-  always computed, no API key needed). Returns each real headline with
-  `summary: null` and `summaryStatus: "pending_ai_key"` — that part
-  (an actual AI-written summary) is still a `TODO`; `getAggregatedNews()`
-  also checks `process.env.ANTHROPIC_API_KEY` to report a more specific
-  `aiSummarization.status` (`pending_ai_key` vs. `key_configured_not_wired`),
-  and returns a `sentimentTally` (Bullish/Bearish/Neutral counts across
-  the current page of items) for the News page's sentiment summary card.
+  always computed, no API key needed), and `relatedAssets`
+  (`detectRelatedAssets()` — a word-boundary-aware keyword match
+  against `ASSET_KEYWORDS`, e.g. Gold/Silver/Oil/BTC/ETH/USD/EUR/GBP/
+  S&P 500; word-boundary matching specifically avoids false positives
+  like "Goldman Sachs" or "golden visa" matching "Gold"). Returns each
+  real headline with `summary: null` and `summaryStatus:
+  "pending_ai_key"` — that part (an actual AI-written summary) is
+  still a `TODO`; `getAggregatedNews()` also checks
+  `process.env.ANTHROPIC_API_KEY` to report a more specific
+  `aiSummarization.status` (`pending_ai_key` vs.
+  `key_configured_not_wired`), and returns both a `sentimentTally`
+  (Bullish/Bearish/Neutral counts across the current page of items)
+  and an `assetSentimentBreakdown` (the same tally, but broken down per
+  asset via `relatedAssets` — e.g. `{ Gold: { Bullish: 2, Bearish: 1,
+  Neutral: 0 }, USD: {...} }`) for the News page's sentiment cards.
 - **`app/api/news-ai/route.js`** is now a thin wrapper: it calls
   `getAggregatedNews()` and returns it as JSON, with its own outer
   `try/catch` as a last-resort guarantee that this route never returns
@@ -450,16 +518,35 @@ Each provider call:
   gracefully. `lib/fetchNews.js` is kept only for a genuine client-side
   caller (same pattern as `lib/fetchRates.js` + `GoldCalculator.jsx`),
   and is commented accordingly so this isn't reintroduced later. The
-  page also renders two small cards above the feed: a **Headline
-  Sentiment** card (real — the `sentimentTally` counts from the actual
-  loaded headlines, labeled "Rule-based") and a **Social Sentiment**
-  card that's an explicit, clearly-labeled placeholder ("Coming soon" —
-  no X/Twitter or Reddit data source is wired in, and it shows no
-  numbers at all rather than a fabricated estimate).
+  page also renders two cards above the feed: a **Headline Sentiment by
+  Asset** card (real — `assetSentimentBreakdown`'s per-asset Bullish/
+  Neutral/Bearish bars from the actual loaded headlines, labeled
+  "Rule-based") and the **Social Buzz Tracker**
+  (`components/SocialBuzzTracker.jsx`, replacing the old plain "Coming
+  soon" placeholder) — see below.
 - **`components/NewsFeed.jsx`**'s `NewsCard` now also shows each
   item's rule-based sentiment as a colored badge (green/Bullish, red/
   Bearish, slate/Neutral) next to its category badge, with a tooltip
-  noting it's from a keyword scan, not AI-generated.
+  noting it's from a keyword scan, not AI-generated, plus one `#Asset`
+  pill per entry in its `relatedAssets`.
+- **`lib/socialBuzz.js`** + **`app/api/social-buzz/route.js`** +
+  **`components/SocialBuzzTracker.jsx`** are the Social Buzz Tracker.
+  There is **no** real X/Twitter or Reddit API integration anywhere in
+  this codebase — `getSocialBuzz()` generates a per-asset "buzz
+  intensity" (0-100) and a Bullish/Bearish/Neutral sentiment split
+  using a deterministic seeded PRNG (`mulberry32`, seeded from the
+  asset code + the current UTC date-hour bucket via a `djb2`-style
+  string hash), so the numbers are **stable within an hour** rather
+  than randomly jittering on every page load, but are a simulation,
+  never a measurement. `usingLiveApi` is unconditionally `false`; a
+  `SOCIAL_API_KEY` env var is checked only to make the UI's own `note`
+  text slightly more specific (see the Environment Variables section
+  above), never to change the data. The component keeps this unmissable
+  at all times: a persistent amber "Simulated" badge, the backend's own
+  `note` text rendered verbatim, and a permanently disabled "Use live
+  social API" toggle with a tooltip explaining exactly why it's off —
+  this is the same honesty-over-fabrication bar kept everywhere else in
+  this project, never a silent "looks live" placeholder.
 
 ## Roadmap
 
