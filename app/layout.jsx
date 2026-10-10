@@ -28,6 +28,7 @@ const NAV_LINKS = [
   { label: "Converters", href: "/converters" },
   { label: "Market Analysis", href: "/market-analysis" },
   { label: "News", href: "/ai-news" },
+  { label: "Academy", href: "/learn" },
   { label: "About", href: "/#about" },
 ];
 

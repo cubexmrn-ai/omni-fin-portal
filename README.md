@@ -12,6 +12,13 @@ A Next.js 14 (App Router) + Tailwind CSS finance portal.
   digital storage, temperature — including Tola, Maund, Seer, Marla and
   Kanal), all tabbed together with programmatic SEO routes for both
   currency pairs and unit pairs.
+- **Module 3 — OmniFin Academy** (`/learn`): a free, gamified,
+  BabyPips-style "School of Pipsology" curriculum — 5 skill levels
+  (Rookie → Apprentice → Analyst → Strategist → Pro Trader), 20
+  bite-sized lessons, 100 quiz questions total, visual SVG diagram
+  cards, two OmniFin tools embedded directly inside relevant lessons,
+  and `localStorage`-backed progress tracking with level unlocking.
+  See "Notes on the OmniFin Academy" below for the full breakdown.
 - **Module 2 — Market AI & News**: a clean Market Analysis page — a
   top ticker-tape strip (S&P 500, Nasdaq 100, Gold, BTC/USD, EUR/USD),
   a full interactive TradingView Advanced Chart with a symbol picker,
@@ -79,6 +86,10 @@ app/
     ai-news/page.jsx          # Redirects to /ai-news (legacy path, kept for old links)
   ai-news/
     page.jsx                  # Categorized Financial News page (search + category pills + sentiment)
+  learn/
+    page.jsx                  # Academy hub shell (metadata) wrapping components/academy/AcademyHub.jsx
+    [level]/[lesson]/page.jsx # One lesson page (generateStaticParams over all 20 lessons),
+                                # wrapping components/academy/LessonViewer.jsx
   layout.jsx                  # Header, nav, footer
   page.jsx                    # Homepage dashboard
   globals.css
@@ -104,6 +115,16 @@ components/
   NewsFeed.jsx                 # Client-side search + category filter + sentiment + asset-tag badges
   SocialBuzzTracker.jsx       # Social Buzz Tracker card — fetches /api/social-buzz; keeps the
                                 # "Simulated" badge and disabled live-API toggle always visible
+  academy/
+    AcademyHub.jsx             # Progress banner + level roadmap grid + search/category filter
+    LessonViewer.jsx           # Renders one lesson's sections, sticky nav, and the QuizModule
+    QuizModule.jsx             # End-of-module quiz engine — instant feedback, 80% pass threshold,
+                                # score card with "Retake Quiz" / "Proceed to Next Chapter"
+    LessonVisualCard.jsx       # ~13 reusable inline-SVG diagram kinds (candlestick,
+                                # support-resistance, risk-reward, bid-ask, MA crossover, RSI,
+                                # Fibonacci, timeline, comparison, flow, gauge, grid, ladder)
+    EmbeddedTool.jsx           # toolId -> real OmniFin tool component registry (used inside lessons)
+    MiniLotSizeCalculator.jsx  # Small position-sizing calculator embedded in two lessons
 lib/
   conversionMath.js           # All conversion math (weight/karat metals pricing,
                                 # flat-unit commodity pricing, units + temperature)
@@ -134,6 +155,12 @@ lib/
                                 # directly by app/ai-news/page.jsx, not over HTTP
   fetchNews.js                 # Client-side-only caller for /api/news-ai (unused
                                 # server-side — see comment in the file for why)
+  academyData.js                # OmniFin Academy curriculum — 5 levels, 20 lessons, 100 quiz
+                                # questions, plus pure helper functions (getLevel, getLesson,
+                                # getAdjacentLessons, getLevelStats, ...) — no React/browser APIs
+hooks/
+  useAcademyProgress.js         # localStorage-backed Academy progress: completed lessons, quiz
+                                # scores, level-unlock logic, overall % — see its header comment
 ```
 
 ## Environment variables
@@ -604,6 +631,98 @@ Each provider call:
   time; any other valid `<from>-to-<to>` combination across the three
   registries still resolves on demand (Next.js's default
   `dynamicParams` behavior).
+
+## Notes on the OmniFin Academy
+
+- **Curriculum (`lib/academyData.js`)**: 5 skill levels, mirroring
+  BabyPips' "School of Pipsology" progression — **Rookie** (Foundations
+  of Money & Wealth: inflation, money vs. fiat, fractional reserve
+  banking, gold vs. paper money), **Apprentice** (Market Mechanics &
+  Charting: candlestick anatomy, bid/ask spreads, pips & lot sizes,
+  order types), **Analyst** (Technical Precision & Indicators:
+  support/resistance, RSI, moving averages, Fibonacci, Gann basics),
+  **Strategist** (Macro Fundamentals & Sentiment: central bank rates,
+  NFP & news trading, market sentiment), and **Pro Trader** (Risk
+  Management & Psychology: position sizing math, risk-to-reward,
+  trading journal, FOMO/greed). 20 lessons total, 100 quiz questions
+  total (5 per lesson) — verified by a standalone Node script asserting
+  every quiz has 4-5 questions, every `correctOptionId` actually exists
+  among that question's `options`, no duplicate level/lesson/question
+  IDs, and that lesson adjacency correctly crosses level boundaries
+  (e.g. Rookie's last lesson's "next" is Apprentice's first).
+- Each lesson is a list of typed **sections** — `text` (heading + body
+  + optional bullet list), `proTip` (a highlighted callout), `formula`
+  (a key-formula/concept badge), `visual` (a diagram card), and `tool`
+  (an embedded OmniFin calculator) — rendered generically by
+  `components/academy/LessonViewer.jsx`, so adding a new lesson is a
+  pure data change in `lib/academyData.js`, no new component code.
+- **`components/academy/LessonVisualCard.jsx`** is a toolkit of ~13
+  reusable, parameterized inline-SVG diagram kinds — `candlestick`,
+  `support-resistance`, `risk-reward`, `bid-ask`, `ma-crossover`,
+  `rsi`, `fibonacci`, `timeline`, `comparison`, `flow`, `gauge`,
+  `grid`, `ladder` — rather than one hand-drawn image per lesson. Each
+  lesson's `diagram` spec just picks a kind and supplies small data
+  (e.g. `{ kind: "risk-reward", riskUnits: 1, rewardUnits: 2 }`), which
+  keeps every diagram genuinely illustrative of its concept (candlestick
+  anatomy, a support/resistance breakout, a 1:2 risk-reward setup, etc.)
+  without needing bespoke artwork per lesson.
+- **Embedded tools (`components/academy/EmbeddedTool.jsx`)**: a lesson
+  section can embed a real OmniFin tool inline via `{ type: "tool",
+  toolId }`. `"metals-calculator"` reuses the platform's existing
+  `components/GoldCalculator.jsx` as-is (live spot prices, weight
+  units, karat purity) inside the "Gold vs. Paper Money" lesson;
+  `"lot-size-calculator"` is a small new
+  `components/academy/MiniLotSizeCalculator.jsx` (pure client-side
+  arithmetic — `Lot Size ≈ Risk Amount ÷ (Stop-Loss Pips × Pip Value
+  per Lot)`, with an explicit note that pip value varies by pair rather
+  than presenting its $10/pip default as universal) embedded in both
+  "Pips & Lot Sizes" and "Position Sizing Math."
+- **Quiz engine (`components/academy/QuizModule.jsx`)**: one question
+  at a time, the selected option locks and shows instant green
+  (correct)/red (incorrect) highlighting plus that question's
+  `explanation`; the final question's "Next" becomes "See Results,"
+  which shows a score card — pass/fail against the lesson's
+  `passPercent` (80%, i.e. 4 of 5 — `PASS_PERCENT` in
+  `lib/academyData.js`), a full correct-answer recap, and "Retake Quiz"
+  / "Proceed to Next Chapter" buttons (the proceed button only renders
+  once the quiz is actually passed). `QuizModule` itself holds no
+  localStorage dependency — it reports the finished result via
+  `onFinish({ score, total, percent, passed })`, and
+  `components/academy/LessonViewer.jsx` is what persists that through
+  `hooks/useAcademyProgress.js`. Verified with a standalone script
+  confirming 4/5 → 80% → passed and 3/5 → 60% → not passed.
+- **Progress & unlocking (`hooks/useAcademyProgress.js`)**: a
+  `localStorage`-backed hook (key `omnifin.academy.progress.v1`) that
+  never throws — a blocked/corrupted/private-browsing localStorage just
+  falls back to a fresh in-memory session rather than breaking the
+  page. A lesson only counts as completed once its quiz is **passed**
+  (not merely attempted); Level 1 is always unlocked, and Level N
+  unlocks only once every lesson in Level N-1 has been completed —
+  verified with a standalone script confirming Apprentice stays locked
+  at 3-of-4 Rookie lessons done and unlocks exactly at 4-of-4. Exposes
+  `isLessonCompleted`, `getQuizResult`, `recordQuizResult`,
+  `isLevelUnlocked`, `isLevelMastered`, `getLevelProgressPercent`,
+  `overallPercent`/`overallCompletedCount`/`overallTotalLessons`,
+  `currentLevel` (the first level not yet fully mastered), and
+  `resetProgress()`.
+- **`app/learn/page.jsx`** + **`components/academy/AcademyHub.jsx`**:
+  the hub is a thin server component (for its `metadata` export)
+  wrapping the actual "use client" hub UI — same page/component split
+  as `app/ai-news/page.jsx` + `NewsFeed.jsx` elsewhere in this project,
+  since progress lives in `localStorage`, which only exists
+  client-side. Shows the "Level N — X% Completed" progress banner,
+  a 5-card level roadmap (lesson/quiz counts, estimated minutes,
+  "Mastered"/"Locked" states, a per-level progress bar), and a
+  search + `CATEGORIES` topic filter (Forex, Metals, Crypto, Personal
+  Finance, Technicals) that switches the roadmap grid into a flat,
+  filtered lesson list.
+- **`app/learn/[level]/[lesson]/page.jsx`** + **`components/academy/LessonViewer.jsx`**:
+  `generateStaticParams()` pre-renders all 20 lessons at build time;
+  an unknown level/lesson slug calls `notFound()`. The lesson page
+  renders a sticky bottom nav bar (Previous / "Jump to Quiz" / Next),
+  and if the lesson's level is still locked (deep-linked directly),
+  shows a locked notice with a link back to the hub instead of the
+  lesson content.
 
 ## Roadmap
 
