@@ -28,6 +28,7 @@ import Link from "next/link";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import ConverterStructuredData from "@/components/ConverterStructuredData";
 import PopularPairs from "@/components/PopularPairs";
+import MiniCalculatorWidget from "@/components/calculators/MiniCalculatorWidget";
 import { parsePairSlug, buildPairSlug, FEATURED_PAIRS } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
@@ -103,6 +104,16 @@ export default async function CurrencyPairSeoPage({ params }) {
   const fromNoun = ASSET_CLASS_NOUN[fromClass] || "asset";
   const toNoun = ASSET_CLASS_NOUN[toClass] || "asset";
 
+  // A fiat-involved pair (e.g. usd-to-pkr) is the kind of pair a forex
+  // trader would actually size a position on, so it gets the Pip Value
+  // Calculator; any other pair (crypto/metals) still benefits from a
+  // generic, asset-agnostic position-sizing tool, so it gets the
+  // Margin & Leverage Calculator instead. Either way, something useful
+  // shows up — this is the "quick mini-widget" cross-sell called for
+  // alongside Popular Pairs below.
+  const isForexPair = fromClass === "fiat" || toClass === "fiat";
+  const relatedCalculatorId = isForexPair ? "pip-value" : "margin";
+
   return (
     <>
       <ConverterStructuredData
@@ -161,6 +172,10 @@ export default async function CurrencyPairSeoPage({ params }) {
             fiat currencies, cryptocurrencies and precious metals. Enter
             any amount above to convert instantly in either direction.
           </p>
+        </div>
+
+        <div className="mt-6">
+          <MiniCalculatorWidget calculatorId={relatedCalculatorId} />
         </div>
 
         <PopularPairs pairs={FEATURED_PAIRS} currentSlug={slug} />

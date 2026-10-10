@@ -11,14 +11,26 @@
 // no separate mini version needed since that component is already
 // self-contained and lightweight. "lot-size-calculator" is a small
 // academy-only calculator (components/academy/MiniLotSizeCalculator.jsx)
-// since no equivalent tool existed elsewhere on the platform yet.
+// since no equivalent tool existed elsewhere on the platform yet (now
+// superseded by the full Position & Lot Size Calculator on the
+// Calculators Hub, but left in place here since lessons already
+// reference it and it's functionally identical for a single lesson's
+// purposes). "pip-value-calculator", "risk-reward-calculator" and
+// "margin-calculator" map onto the corresponding Calculators Hub
+// calculators via MiniCalculatorWidget (lib/calculatorsRegistry.js),
+// so a lesson section only needs to reference a toolId — it never
+// needs its own copy of that calculator's component or math.
 
 import GoldCalculator from "@/components/GoldCalculator";
 import MiniLotSizeCalculator from "@/components/academy/MiniLotSizeCalculator";
+import MiniCalculatorWidget from "@/components/calculators/MiniCalculatorWidget";
 
 const TOOL_REGISTRY = {
   "metals-calculator": GoldCalculator,
   "lot-size-calculator": MiniLotSizeCalculator,
+  "pip-value-calculator": () => <MiniCalculatorWidget calculatorId="pip-value" />,
+  "risk-reward-calculator": () => <MiniCalculatorWidget calculatorId="risk-reward" />,
+  "margin-calculator": () => <MiniCalculatorWidget calculatorId="margin" />,
 };
 
 export default function EmbeddedTool({ toolId, caption }) {

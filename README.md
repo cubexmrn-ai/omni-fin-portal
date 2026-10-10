@@ -12,6 +12,14 @@ A Next.js 14 (App Router) + Tailwind CSS finance portal.
   digital storage, temperature — including Tola, Maund, Seer, Marla and
   Kanal), all tabbed together with programmatic SEO routes for both
   currency pairs and unit pairs.
+- **Module 4 — Calculators Hub** (`/calculators`): seven free
+  calculators across two category tabs — **Trading Tools** (Position &
+  Lot Size, Pip Value, Risk/Reward Ratio, Margin & Leverage) and
+  **Wealth & Personal Finance** (Inflation & Purchasing Power, Compound
+  Interest / Wealth Growth, Business Profit Margin & Markup). The same
+  calculators are also embedded as compact "quick mini-widgets" inside
+  relevant Academy lessons and Converter pages. See "Notes on the
+  Calculators Hub" below for the full breakdown.
 - **Module 3 — OmniFin Academy** (`/learn`): a free, gamified,
   BabyPips-style "School of Pipsology" curriculum — 5 skill levels
   (Rookie → Apprentice → Analyst → Strategist → Pro Trader), 20
@@ -90,6 +98,8 @@ app/
     page.jsx                  # Academy hub shell (metadata) wrapping components/academy/AcademyHub.jsx
     [level]/[lesson]/page.jsx # One lesson page (generateStaticParams over all 20 lessons),
                                 # wrapping components/academy/LessonViewer.jsx
+  calculators/
+    page.jsx                  # Calculators Hub shell (metadata) wrapping components/calculators/CalculatorsHub.jsx
   layout.jsx                  # Header, nav, footer
   page.jsx                    # Homepage dashboard
   globals.css
@@ -125,6 +135,17 @@ components/
                                 # Fibonacci, timeline, comparison, flow, gauge, grid, ladder)
     EmbeddedTool.jsx           # toolId -> real OmniFin tool component registry (used inside lessons)
     MiniLotSizeCalculator.jsx  # Small position-sizing calculator embedded in two lessons
+  calculators/
+    CalculatorsHub.jsx         # Category tabs (Trading Tools / Wealth & Personal Finance) + calculator grid
+    MiniCalculatorWidget.jsx   # calculatorId -> full calculator component, embedded in Academy lessons
+                                # (via academy/EmbeddedTool.jsx) and Converter pages
+    LotSizeCalculator.jsx      # Position & Lot Size Calculator (Standard/Mini/Micro breakdown)
+    PipValueCalculator.jsx     # Pip Value Calculator (live-rate USD/PKR conversion)
+    RiskRewardCalculator.jsx   # Risk/Reward Ratio Calculator (works for any asset, not just forex)
+    MarginCalculator.jsx       # Margin & Leverage Calculator (1:50 to 1:500, plus custom)
+    InflationCalculator.jsx    # Inflation & Purchasing Power Calculator
+    CompoundGrowthCalculator.jsx # Compound Interest / Wealth Growth Calculator (year-by-year table)
+    ProfitMarginCalculator.jsx # Business Profit Margin & Markup Calculator
 lib/
   conversionMath.js           # All conversion math (weight/karat metals pricing,
                                 # flat-unit commodity pricing, units + temperature)
@@ -158,6 +179,12 @@ lib/
   academyData.js                # OmniFin Academy curriculum — 5 levels, 20 lessons, 100 quiz
                                 # questions, plus pure helper functions (getLevel, getLesson,
                                 # getAdjacentLessons, getLevelStats, ...) — no React/browser APIs
+  calculatorsRegistry.js        # CALCULATOR_CATEGORIES + CALCULATORS metadata — single source of
+                                # truth shared by CalculatorsHub.jsx and MiniCalculatorWidget.jsx
+  tradingCalculators.js         # Pure math: calculateLotSize, calculatePipValue, calculateRiskReward,
+                                # calculateMargin — no React, no fetch, fully unit-testable
+  personalCalculators.js        # Pure math: calculateInflation, calculateCompoundGrowth,
+                                # calculateMarginMarkup — no React, no fetch
 hooks/
   useAcademyProgress.js         # localStorage-backed Academy progress: completed lessons, quiz
                                 # scores, level-unlock logic, overall % — see its header comment
@@ -723,6 +750,88 @@ Each provider call:
   and if the lesson's level is still locked (deep-linked directly),
   shows a locked notice with a link back to the hub instead of the
   lesson content.
+
+## Notes on the Calculators Hub
+
+- **`lib/tradingCalculators.js`** and **`lib/personalCalculators.js`**
+  hold all the math for the seven calculators as plain, dependency-free
+  functions (no React, no `fetch`) — `calculateLotSize`,
+  `calculatePipValue`, `calculateRiskReward`, `calculateMargin`,
+  `calculateInflation`, `calculateCompoundGrowth`, and
+  `calculateMarginMarkup`. Each returns `null` on invalid/incomplete
+  input rather than a misleading `NaN`-filled result, matching the
+  pattern established by `MiniLotSizeCalculator.jsx`. Verified end-to-
+  end with a standalone Node script exercising every function with
+  known numbers (e.g. a $10,000 account risking 1% with a 20-pip stop
+  at $10/pip → exactly 0.5 standard lots / 5 mini / 50 micro; a 50-pip
+  risk vs. 100-pip reward → exactly a 1:2 ratio; $50,000 notional at
+  1:100 leverage on a $1,000 account → exactly $500 required margin and
+  a 200% margin level).
+- **Position & Lot Size Calculator**: the same formula as the Academy's
+  `MiniLotSizeCalculator.jsx` (`Lot Size ≈ Risk Amount ÷ (Stop-Loss
+  Pips × Pip Value per Lot)`), extended to also report the Mini (×10)
+  and Micro (×100) lot equivalents.
+- **Pip Value Calculator**: a pip is the 2nd decimal (0.01) for any
+  pair quoted in JPY and the 4th decimal (0.0001) otherwise; pip value
+  in the quote currency is `pipSize × lot units`, converted to USD and
+  PKR using the same unified, hourly-cached rates payload every other
+  calculator on the platform reads (`lib/fetchRates.js` /
+  `app/api/rates/route.js`), with a visible live/fallback status dot
+  and a safe fallback-rate table (`lib/currencies.js`) if the live fetch
+  fails — never a blank result.
+- **Risk / Reward Ratio Calculator**: deliberately takes raw entry /
+  stop-loss / take-profit price levels plus a position size in base-
+  asset units rather than a "pips" concept, so the same calculator
+  works unmodified for forex, metals, crypto, or stocks. Also flags
+  (without blocking) when the take-profit looks like it's on the wrong
+  side of entry for the implied trade direction — a likely data-entry
+  mistake, not a math error.
+- **Margin & Leverage Calculator**: `Required Margin = Position Size ÷
+  Leverage`; also reports free margin and a simplified `Balance ÷
+  Required Margin` margin-level percentage, with a visible warning if
+  the position size would leave free margin negative at the selected
+  leverage (1:50 through 1:500 presets, plus a custom leverage input).
+- **Inflation & Purchasing Power Calculator**: compounds a historical
+  annual rate forward from a past year to the current year and reports
+  two distinct figures that are often conflated — "Equivalent Today"
+  (the nominal amount you'd need now for the same buying power) and
+  "Real Value Today" / "Erosion" (what the *original* cash amount is
+  actually worth today, in today's purchasing-power terms, which is
+  always less than the original amount at a positive inflation rate).
+- **Compound Interest / Wealth Growth Calculator**: simulates month-by-
+  month compounding (growth applied, then the monthly contribution
+  added) rather than annual compounding, and renders a year-by-year
+  table (contributed / growth / balance) alongside the final totals —
+  verified to be strictly monotonically increasing and to match
+  `totalContributed = initial + monthly × months` exactly.
+- **Business Profit Margin & Markup Calculator**: intentionally returns
+  both **margin** (`profit ÷ selling price`) and **markup** (`profit ÷
+  cost`) side by side, since they're different numbers for the same
+  sale and are commonly confused.
+- **`components/calculators/MiniCalculatorWidget.jsx`** is the shared
+  "quick mini-widget" embed used outside the hub itself: a
+  `calculatorId` in, the matching full calculator component out, with a
+  small header linking back to `/calculators#<id>` for the rest of the
+  suite. It's wired into two places per the brief:
+  - **Academy lessons**, via `components/academy/EmbeddedTool.jsx`'s
+    `TOOL_REGISTRY` — `"pip-value-calculator"` in "Pips & Lot Sizes",
+    `"risk-reward-calculator"` in "Risk-to-Reward Ratio", and
+    `"margin-calculator"` in "Position Sizing Math" (alongside the
+    lesson's existing `lot-size-calculator`).
+  - **Converter pages** (`app/converters/[pair]/page.jsx`), which embed
+    the Pip Value Calculator for any pair involving a fiat currency
+    (the kind a forex trader would actually size a position on) and the
+    asset-agnostic Margin & Leverage Calculator for crypto/metals-only
+    pairs — always something contextually useful, never a blank slot.
+- **`app/calculators/page.jsx`** + **`components/calculators/CalculatorsHub.jsx`**:
+  same thin-server-shell/`"use client"`-body split as the Academy and
+  News modules (no `localStorage` dependency here, but it keeps the
+  pattern consistent and lets the page export `metadata`). The hub
+  itself switches between the two category tabs by unmounting the
+  other category's calculators — the same tab pattern
+  `ConvertersTabs.jsx` already uses elsewhere on the platform — with
+  each calculator keeping a stable `id` anchor (`#lot-size`,
+  `#pip-value`, etc.) that mini-widgets and other pages link back to.
 
 ## Roadmap
 

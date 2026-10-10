@@ -26,6 +26,7 @@ const NAV_LINKS = [
   { label: "Dashboard", href: "/" },
   { label: "Metals & Commodities", href: "/#metals-calculator" },
   { label: "Converters", href: "/converters" },
+  { label: "Calculators", href: "/calculators" },
   { label: "Market Analysis", href: "/market-analysis" },
   { label: "News", href: "/ai-news" },
   { label: "Academy", href: "/learn" },
