@@ -9,12 +9,14 @@
 
 import { useMemo, useState } from "react";
 import { calculateMargin } from "@/lib/tradingCalculators";
+import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 const LEVERAGE_PRESETS = [50, 100, 200, 300, 400, 500];
 
+// See lib/formatNumber.js's header comment for why this delegates
+// rather than calling toLocaleString directly.
 function formatNumber(value, decimals = 2) {
-  if (!Number.isFinite(value)) return "—";
-  return value.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
+  return formatNumberSafe(value, { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
 }
 
 export default function MarginCalculator() {

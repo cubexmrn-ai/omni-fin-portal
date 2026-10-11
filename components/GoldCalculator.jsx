@@ -8,6 +8,7 @@ import {
   calculateFlatUnitPrice,
 } from "@/lib/conversionMath";
 import { fetchRates } from "@/lib/fetchRates";
+import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 // ---------------------------------------------------------------------------
 // Static reference data (UI-level — the math itself lives in lib/conversionMath.js)
@@ -77,23 +78,12 @@ const FALLBACK_RATES = {
   NGN: 1550,
 };
 
+// Delegates to lib/formatNumber.js, which now owns the clamp this
+// function used to do by hand (see that file's header comment) — a
+// future call site passing fewer than 2 max digits is clamped safely
+// instead of throwing a RangeError.
 function formatNumber(value, maximumFractionDigits = 2) {
-  if (!Number.isFinite(value)) return "—";
-
-  // Guard against Intl.NumberFormat's RangeError when a future call site
-  // passes fewer than 2 max digits (minimumFractionDigits was hardcoded
-  // to 2 here, which throws if maximumFractionDigits is ever lower —
-  // see the identical, previously-crashing pattern fixed in
-  // CurrencyConverter.jsx's formatAmount).
-  const safeMax = Number.isFinite(maximumFractionDigits)
-    ? Math.max(0, Math.min(100, maximumFractionDigits))
-    : 2;
-  const minimumFractionDigits = Math.min(2, safeMax);
-
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: safeMax,
-    minimumFractionDigits,
-  }).format(value);
+  return formatNumberSafe(value, { maximumFractionDigits, minimumFractionDigits: 2, locale: "en-US" });
 }
 
 // ---------------------------------------------------------------------------

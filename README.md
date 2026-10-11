@@ -147,6 +147,9 @@ components/
     CompoundGrowthCalculator.jsx # Compound Interest / Wealth Growth Calculator (year-by-year table)
     ProfitMarginCalculator.jsx # Business Profit Margin & Markup Calculator
 lib/
+  formatNumber.js              # Shared, safely-clamped Intl.NumberFormat wrapper used by every
+                                # number formatter in the project — see "Notes on number
+                                # formatting safety" below
   conversionMath.js           # All conversion math (weight/karat metals pricing,
                                 # flat-unit commodity pricing, units + temperature)
   currencies.js                # Master fiat currency list + fallback rates
@@ -256,6 +259,62 @@ cp .env.example .env.local
   X/Twitter or Reddit API integration in this codebase. Setting this
   variable changes nothing about the numbers shown; it's a documented
   placeholder for when a real social-listening provider is connected.
+
+## Notes on number formatting safety
+
+- **The bug**: `Intl.NumberFormat` (and `Number.prototype.toLocaleString`,
+  which calls it) throws a `RangeError` — `"maximumFractionDigits value
+  is out of range"` — whenever `minimumFractionDigits` ends up greater
+  than `maximumFractionDigits`, or either one is `NaN`/`undefined`, or
+  either falls outside the valid 0-100 range. Several formatters in
+  this project called `toLocaleString` with one of those two options
+  hardcoded and the other passed through from a caller-supplied
+  `decimals` argument. That's exactly what broke the Vercel build:
+  `components/calculators/PipValueCalculator.jsx`'s
+  `formatContractSize()` called its local `formatNumber(units, 0)` for
+  whole-number contract sizes (100,000; 10,000; … down to 1), against
+  a helper that hardcoded `minimumFractionDigits: 2` — `max: 0, min: 2`
+  throws. This only renders for the Pip Value Calculator's dropdown,
+  which Next.js statically prerenders on `/calculators` directly and
+  on any `/converters/[pair]` page that embeds it as a mini-widget
+  (any pair involving a fiat currency, e.g. `/converters/usd-to-pkr`
+  — see `app/converters/[pair]/page.jsx`'s `relatedCalculatorId`
+  logic) — a server-side render, so the thrown error failed the build
+  instead of just showing a client-side fallback.
+- **The fix**: one shared, defensively-clamped wrapper,
+  **`lib/formatNumber.js`**'s `formatNumber(value, options)`. It
+  returns `"—"` for any non-finite `value` (including `NaN`,
+  `undefined`, `Infinity`, or a non-number), clamps
+  `maximumFractionDigits` to `[0, 20]` (rounding first, defaulting to
+  `2` if missing/`NaN`) — a deliberately tighter ceiling than the
+  engine's actual 0-100 allowance, since no formatter in this project
+  ever legitimately needs more than a handful of decimal places and a
+  lower cap is one more layer of defense — and clamps
+  `minimumFractionDigits` to `[0, safeMax]` — i.e. it can never exceed
+  the already-clamped maximum, which is the exact constraint the bug
+  violated. Every formatter in the project — `GoldCalculator.jsx`,
+  `CurrencyConverter.jsx`, `UnitConverter.jsx`,
+  `lib/conversionMath.js`, `lib/technicalAnalysis.js`,
+  `AiTechnicalAnalysis.jsx`, `app/converters/[pair]/page.jsx`, every
+  calculator under `components/calculators/`, and
+  `components/academy/MiniLotSizeCalculator.jsx` — now delegates to
+  this one function instead of calling `toLocaleString` directly or
+  hand-rolling its own clamp (two of them, `GoldCalculator.jsx` and
+  `CurrencyConverter.jsx`, had already hit and fixed a sibling version
+  of this same bug once before with their own local clamps; those are
+  now just thin wrappers around the shared one instead of duplicating
+  it).
+- **Verified** with a standalone Node script exercising the exact
+  crash shape (`max: 0, min: 2` on every real forex/metal/crypto
+  contract size the Pip Value Calculator's dropdown actually renders —
+  100,000 down to 0.01) plus a broader edge-case sweep: `NaN`/
+  `undefined`/`Infinity`/non-number `value`, `NaN`/`undefined`/
+  negative/fractional/>100 `maximumFractionDigits`, and
+  `minimumFractionDigits` exceeding `maximumFractionDigits` — none of
+  which throw after the fix, confirming `npm run build`'s prerendering
+  of `/calculators` and every `/converters/[pair]` route is safe
+  regardless of which asset/lot combination a page happens to render
+  server-side.
 
 ## Notes on the Metals & Commodities Calculator math
 

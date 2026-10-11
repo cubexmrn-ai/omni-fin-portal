@@ -33,6 +33,7 @@ import { parsePairSlug, buildPairSlug, FEATURED_PAIRS } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { formatNumber } from "@/lib/formatNumber";
 
 export function generateStaticParams() {
   return FEATURED_PAIRS.map((pair) => ({ pair: pair.slug }));
@@ -148,7 +149,7 @@ export default async function CurrencyPairSeoPage({ params }) {
           {Number.isFinite(rate) && (
             <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">
               1 {from.code} ={" "}
-              {rate.toLocaleString(undefined, { maximumFractionDigits: 8 })} {to.code}
+              {formatNumber(rate, { maximumFractionDigits: 8 })} {to.code}
             </p>
           )}
         </div>

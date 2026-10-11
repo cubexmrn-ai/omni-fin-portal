@@ -8,6 +8,7 @@ import {
   convertBetweenAssets,
   buildUnifiedAssetList,
 } from "@/lib/assetConversion";
+import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 const MATRIX_MULTIPLIERS = [1, 10, 100, 1000];
 
@@ -19,25 +20,13 @@ const ASSET_CLASS_LABELS = {
 
 const UNIFIED_ASSETS = buildUnifiedAssetList();
 
+// Delegates to lib/formatNumber.js, which now owns the clamp this
+// function used to do by hand (see that file's header comment) — a
+// call site asking for fewer than 2 max digits (e.g. formatAmount
+// (multiplier, 0) in the rate matrix below) is clamped safely instead
+// of throwing a RangeError.
 function formatAmount(value, maximumFractionDigits = 2) {
-  if (!Number.isFinite(value)) return "—";
-
-  // Intl.NumberFormat throws a RangeError ("maximumFractionDigits value
-  // is out of range") if minimumFractionDigits ends up greater than
-  // maximumFractionDigits — which happened here whenever a caller asked
-  // for fewer than 2 max digits (e.g. formatAmount(multiplier, 0) in the
-  // rate matrix below) while this always hardcoded a minimum of 2.
-  // Clamping the minimum to never exceed the requested maximum keeps
-  // every call site safe, including ones added later.
-  const safeMax = Number.isFinite(maximumFractionDigits)
-    ? Math.max(0, Math.min(100, maximumFractionDigits))
-    : 2;
-  const minimumFractionDigits = Math.min(2, safeMax);
-
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: safeMax,
-    minimumFractionDigits,
-  }).format(value);
+  return formatNumberSafe(value, { maximumFractionDigits, minimumFractionDigits: 2, locale: "en-US" });
 }
 
 /**

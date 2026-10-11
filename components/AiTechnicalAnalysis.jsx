@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { INSTRUMENT_OPTIONS, ANALYSIS_TYPES } from "@/lib/technicalAnalysis";
 import SentimentMeter from "@/components/SentimentMeter";
+import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 const BIAS_TEXT_COLOR = {
   "Strong Buy": "text-emerald-700 dark:text-emerald-300",
@@ -295,8 +296,7 @@ export default function AiTechnicalAnalysis() {
 function fmtPrice(result) {
   if (!Number.isFinite(result?.price)) return "—";
   const decimals = result.price >= 100 ? 2 : 4;
-  return result.price.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  // Delegates to lib/formatNumber.js for the same safe clamping every
+  // other formatter in the project now shares.
+  return formatNumberSafe(result.price, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }

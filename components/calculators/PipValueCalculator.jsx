@@ -26,6 +26,7 @@ import {
 } from "@/lib/tradingCalculators";
 import { fetchRates } from "@/lib/fetchRates";
 import { FALLBACK_RATES } from "@/lib/currencies";
+import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 const LOT_LABELS = {
   standard: "Standard",
@@ -33,15 +34,24 @@ const LOT_LABELS = {
   micro: "Micro",
 };
 
+// Thin wrapper kept so call sites below can keep passing a single
+// `decimals` number (this file's own convention) while the actual
+// clamping/NaN-safety lives once in lib/formatNumber.js. Previously
+// this hardcoded `minimumFractionDigits: 2` directly, which threw a
+// RangeError whenever a caller (see formatContractSize below) passed
+// `decimals` below 2 — see lib/formatNumber.js's header comment for
+// the full story.
 function formatNumber(value, decimals = 4) {
-  if (!Number.isFinite(value)) return "—";
-  return value.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: 2 });
+  return formatNumberSafe(value, { maximumFractionDigits: decimals, minimumFractionDigits: 2 });
 }
 
 function formatContractSize(units) {
   // Contract sizes span from 100,000 (forex) down to 0.01 (micro BTC),
   // so a single fixed decimal count would either truncate the small
-  // ones or add noise to the large ones.
+  // ones or add noise to the large ones. The `units >= 1` branch
+  // passes decimals=0 — below formatNumber's own minimumFractionDigits
+  // of 2 — which is exactly the combination lib/formatNumber.js now
+  // clamps safely instead of throwing.
   return units >= 1 ? formatNumber(units, 0) : formatNumber(units, 2);
 }
 

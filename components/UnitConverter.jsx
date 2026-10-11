@@ -7,6 +7,7 @@ import {
   getCategoryKeys,
   getCategoryMeta,
 } from "@/lib/conversionMath";
+import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 const CATEGORY_KEYS = getCategoryKeys(); // length, area, weight, volume, speed, data, temperature
 
@@ -14,11 +15,11 @@ function formatResult(value) {
   if (!Number.isFinite(value)) return "—";
   const abs = Math.abs(value);
   // Use more precision for very small numbers so unit pairs like
-  // mm -> km don't round to 0.
+  // mm -> km don't round to 0. Delegates to lib/formatNumber.js for
+  // the same safe clamping every other formatter in the project now
+  // shares.
   const maximumFractionDigits = abs !== 0 && abs < 0.01 ? 8 : 6;
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits,
-  }).format(value);
+  return formatNumberSafe(value, { maximumFractionDigits, locale: "en-US" });
 }
 
 function firstTwoUnits(categoryKey) {

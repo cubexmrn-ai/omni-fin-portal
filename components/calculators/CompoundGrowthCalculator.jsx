@@ -10,10 +10,12 @@
 
 import { useMemo, useState } from "react";
 import { calculateCompoundGrowth } from "@/lib/personalCalculators";
+import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
+// See lib/formatNumber.js's header comment for why this delegates
+// rather than calling toLocaleString directly.
 function formatNumber(value, decimals = 0) {
-  if (!Number.isFinite(value)) return "—";
-  return value.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+  return formatNumberSafe(value, { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
 }
 
 export default function CompoundGrowthCalculator() {
