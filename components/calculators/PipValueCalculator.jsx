@@ -2,40 +2,60 @@
 
 // components/calculators/PipValueCalculator.jsx
 //
-// Pip Value Calculator — pair (represented here by its quote currency,
-// since pip value only depends on the quote side) and lot size in,
-// pip value in USD and PKR out. Fetches live rates the same way
-// GoldCalculator.jsx does (fetchRates + FALLBACK_RATES, with a visible
-// live/fallback status dot) so the USD/PKR conversion is never just a
-// hardcoded guess, but still works offline via lib/currencies.js's
-// fallback table.
+// Pip Value Calculator — a real, named tradable pair (not a bare quote-
+// currency dropdown) and lot size in; pip value in USD and PKR out.
+// Pip decimal precision is auto-detected from the selected pair's
+// instrument type (lib/tradingCalculators.js's TRADABLE_PAIRS /
+// PIP_SIZE_OPTIONS): 0.0001 for standard FX pairs, 0.01 for JPY pairs,
+// and a selectable 0.01-or-0.1 for gold (both conventions are in
+// genuine use across brokers, so this one is never silently assumed).
+// Quote-currency conversion to USD/PKR is driven live from /api/rates
+// via fetchRates — the same pattern GoldCalculator.jsx uses — so
+// switching pairs recalculates against the current live rate, with a
+// visible live/fallback status dot and a safe fallback-rate table
+// (lib/currencies.js) if the live fetch fails.
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { calculatePipValue } from "@/lib/tradingCalculators";
+import {
+  TRADABLE_PAIRS,
+  CONTRACT_SIZES,
+  PIP_SIZE_OPTIONS,
+  getTradablePair,
+  getDefaultPipSize,
+  calculatePipValue,
+} from "@/lib/tradingCalculators";
 import { fetchRates } from "@/lib/fetchRates";
-import { CURRENCIES, FALLBACK_RATES } from "@/lib/currencies";
+import { FALLBACK_RATES } from "@/lib/currencies";
 
-// Most pip-value lookups are for a handful of common quote currencies;
-// the full CURRENCIES list is still used for the USD/PKR conversion
-// rates themselves.
-const QUOTE_OPTIONS = ["USD", "EUR", "GBP", "JPY", "AUD", "CHF", "CAD", "NZD"];
-
-const LOT_OPTIONS = [
-  { id: "standard", label: "Standard (100,000 units)" },
-  { id: "mini", label: "Mini (10,000 units)" },
-  { id: "micro", label: "Micro (1,000 units)" },
-];
+const LOT_LABELS = {
+  standard: "Standard",
+  mini: "Mini",
+  micro: "Micro",
+};
 
 function formatNumber(value, decimals = 4) {
   if (!Number.isFinite(value)) return "—";
   return value.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: 2 });
 }
 
+function formatContractSize(units) {
+  // Contract sizes span from 100,000 (forex) down to 0.01 (micro BTC),
+  // so a single fixed decimal count would either truncate the small
+  // ones or add noise to the large ones.
+  return units >= 1 ? formatNumber(units, 0) : formatNumber(units, 2);
+}
+
 export default function PipValueCalculator() {
-  const [quoteCode, setQuoteCode] = useState("USD");
+  const [pairId, setPairId] = useState("EURUSD");
   const [lotType, setLotType] = useState("standard");
+  const [pipSize, setPipSize] = useState(getDefaultPipSize("forex"));
   const [rates, setRates] = useState(FALLBACK_RATES);
   const [rateStatus, setRateStatus] = useState("loading"); // loading | live | fallback | error
+
+  const pair = getTradablePair(pairId) || TRADABLE_PAIRS[0];
+  const contractSizes = CONTRACT_SIZES[pair.instrumentType] || CONTRACT_SIZES.forex;
+  const pipSizeOptions = PIP_SIZE_OPTIONS[pair.instrumentType] || PIP_SIZE_OPTIONS.forex;
+  const hasSelectablePipSize = pipSizeOptions.length > 1;
 
   const loadRates = useCallback(async () => {
     try {
@@ -53,9 +73,20 @@ export default function PipValueCalculator() {
     loadRates();
   }, [loadRates]);
 
+  // Switching pairs always re-syncs pip size to the NEW instrument
+  // type's default (clearing any manual gold 0.01/0.1 selection from
+  // the PREVIOUS pair) — a pip size chosen for gold has no meaning
+  // once a plain forex pair is selected. Mirrors the asset-switch
+  // reset pattern already used in GoldCalculator.jsx.
+  function handlePairChange(nextId) {
+    setPairId(nextId);
+    const nextPair = getTradablePair(nextId) || TRADABLE_PAIRS[0];
+    setPipSize(getDefaultPipSize(nextPair.instrumentType));
+  }
+
   const result = useMemo(
-    () => calculatePipValue({ quoteCode, lotType, rates }),
-    [quoteCode, lotType, rates]
+    () => calculatePipValue({ pairId: pair.id, lotType, pipSize, rates }),
+    [pair.id, lotType, pipSize, rates]
   );
 
   const statusCopy = {
@@ -70,7 +101,7 @@ export default function PipValueCalculator() {
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
         <div>
           <h3 className="text-sm font-bold text-slate-900">Pip Value Calculator</h3>
-          <p className="mt-0.5 text-xs text-slate-500">Pip Size × Lot Units, converted to USD/PKR</p>
+          <p className="mt-0.5 text-xs text-slate-500">Pip Size × Contract Size, converted live to USD/PKR</p>
         </div>
         <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-500">
           <span className={`h-1.5 w-1.5 rounded-full ${statusCopy.dot}`} />
@@ -80,43 +111,78 @@ export default function PipValueCalculator() {
 
       <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-600">Quote Currency (Pair)</span>
+          <span className="mb-1 block text-xs font-semibold text-slate-600">Pair</span>
           <select
-            value={quoteCode}
-            onChange={(e) => setQuoteCode(e.target.value)}
+            value={pairId}
+            onChange={(e) => handlePairChange(e.target.value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
           >
-            {QUOTE_OPTIONS.map((code) => (
-              <option key={code} value={code}>
-                XXX/{code}
+            {TRADABLE_PAIRS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
               </option>
             ))}
           </select>
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-600">Lot Size</span>
+          <span className="mb-1 block text-xs font-semibold text-slate-600">
+            Lot Size {pair.instrumentType === "crypto" && "(this calculator's own scale, not an exchange standard)"}
+          </span>
           <select
             value={lotType}
             onChange={(e) => setLotType(e.target.value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
           >
-            {LOT_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>
-                {opt.label}
+            {Object.keys(contractSizes).map((key) => (
+              <option key={key} value={key}>
+                {LOT_LABELS[key]} ({formatContractSize(contractSizes[key])}{" "}
+                {pair.instrumentType === "crypto" ? pair.base : pair.instrumentType === "metal" ? "oz" : "units"})
               </option>
             ))}
           </select>
         </label>
+
+        {hasSelectablePipSize ? (
+          <label className="block sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold text-slate-600">
+              Pip / Tick Size — brokers vary for {pair.label}
+            </span>
+            <div className="flex gap-2">
+              {pipSizeOptions.map((size) => {
+                const active = pipSize === size;
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setPipSize(size)}
+                    aria-pressed={active}
+                    className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                      active
+                        ? "border-brand-500 bg-brand-50 text-brand-700"
+                        : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+          </label>
+        ) : (
+          <p className="text-xs text-slate-400 sm:col-span-2">
+            Pip size for {pair.label} is auto-detected at {pipSizeOptions[0]}.
+          </p>
+        )}
       </div>
 
       <div className="border-t border-slate-100 bg-slate-50 px-4 py-3">
         {result ? (
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <p>
-              <span className="text-slate-500">1 pip = </span>
+              <span className="text-slate-500">1 {pair.instrumentType === "crypto" ? "tick" : "pip"} = </span>
               <span className="font-bold text-slate-900">
-                {formatNumber(result.pipValueQuote, 2)} {quoteCode}
+                {formatNumber(result.pipValueQuote, 2)} {pair.quote}
               </span>
             </p>
             <p>
@@ -133,10 +199,12 @@ export default function PipValueCalculator() {
             </p>
           </div>
         ) : (
-          <p className="text-sm text-slate-400">Select a quote currency and lot size above.</p>
+          <p className="text-sm text-slate-400">Select a pair and lot size above.</p>
         )}
         <p className="mt-2 text-[11px] text-slate-400">
-          Pip is the 2nd decimal (0.01) for JPY-quoted pairs and the 4th decimal (0.0001) for all other pairs.
+          {pair.instrumentType === "forex-jpy" && "JPY pairs: 1 pip = the 2nd decimal place (0.01), not the usual 4th. "}
+          {pair.instrumentType === "metal" && "Gold pip/tick size varies by broker — both 0.01 and 0.10 are in genuine use, so pick the one that matches yours. "}
+          {pair.instrumentType === "crypto" && "Crypto has no industry-standard \"pip\" — this treats a $1 move as the smallest tick for illustration only. "}
           For informational purposes only, not financial advice.
         </p>
       </div>

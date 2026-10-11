@@ -771,14 +771,29 @@ Each provider call:
   `MiniLotSizeCalculator.jsx` (`Lot Size ≈ Risk Amount ÷ (Stop-Loss
   Pips × Pip Value per Lot)`), extended to also report the Mini (×10)
   and Micro (×100) lot equivalents.
-- **Pip Value Calculator**: a pip is the 2nd decimal (0.01) for any
-  pair quoted in JPY and the 4th decimal (0.0001) otherwise; pip value
-  in the quote currency is `pipSize × lot units`, converted to USD and
-  PKR using the same unified, hourly-cached rates payload every other
+- **Pip Value Calculator**: a dropdown of real, named tradable pairs
+  (`lib/tradingCalculators.js`'s `TRADABLE_PAIRS` — EUR/USD, GBP/USD,
+  USD/JPY, AUD/USD, USD/CAD, USD/CHF, XAU/USD, BTC/USD), not a bare
+  "pick any quote currency" selector. Pip/tick precision auto-detects
+  from the pair's `instrumentType`: `0.0001` for standard FX, `0.01`
+  for JPY pairs, and a user-selectable `0.01` or `0.1` for gold (both
+  conventions are genuinely in use across brokers, so neither is
+  silently assumed — switching pairs always resets the toggle to that
+  pair's default). Contract size per lot is also instrument-specific
+  (`CONTRACT_SIZES`) — 100,000/10,000/1,000 units for forex, 100/10/1
+  troy ounces for gold, and a 1/0.1/0.01 BTC scale for crypto (called
+  out in the UI as this calculator's own stand-in scale, since crypto
+  has no broker-standardized "lot" at all). Pip value in the quote
+  currency (`pipSize × contract size`) is converted live to USD and PKR
+  using the same unified, hourly-cached rates payload every other
   calculator on the platform reads (`lib/fetchRates.js` /
   `app/api/rates/route.js`), with a visible live/fallback status dot
-  and a safe fallback-rate table (`lib/currencies.js`) if the live fetch
-  fails — never a blank result.
+  and a safe fallback-rate table (`lib/currencies.js`) if the live
+  fetch fails — never a blank result. Verified with a Node script
+  covering every pair (EUR/USD → exactly $10/pip on a standard lot;
+  USD/JPY → pip value correctly computed in JPY then converted through
+  the JPY/USD rate; gold at both 0.01 and 0.1 pip sizes; BTC's $1 tick)
+  plus every pair ID resolving to a valid instrument type.
 - **Risk / Reward Ratio Calculator**: deliberately takes raw entry /
   stop-loss / take-profit price levels plus a position size in base-
   asset units rather than a "pips" concept, so the same calculator
