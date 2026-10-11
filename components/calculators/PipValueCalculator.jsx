@@ -2,25 +2,37 @@
 
 // components/calculators/PipValueCalculator.jsx
 //
-// Pip Value Calculator — a real, named tradable pair (not a bare quote-
-// currency dropdown) and lot size in; pip value in USD and PKR out.
-// Pip decimal precision is auto-detected from the selected pair's
-// instrument type (lib/tradingCalculators.js's TRADABLE_PAIRS /
-// PIP_SIZE_OPTIONS): 0.0001 for standard FX pairs, 0.01 for JPY pairs,
-// and a selectable 0.01-or-0.1 for gold (both conventions are in
-// genuine use across brokers, so this one is never silently assumed).
-// Quote-currency conversion to USD/PKR is driven live from /api/rates
-// via fetchRates — the same pattern GoldCalculator.jsx uses — so
-// switching pairs recalculates against the current live rate, with a
-// visible live/fallback status dot and a safe fallback-rate table
-// (lib/currencies.js) if the live fetch fails.
+// Pip Value Calculator — a real, named tradable pair grouped by asset
+// class (Forex / Commodities & Metals / Indices / Crypto, rendered as
+// <optgroup>s — not a bare quote-currency dropdown) and a lot/contract
+// size in; pip (or tick/point) value in USD and PKR out. Precision is
+// auto-detected from the selected pair's instrument type
+// (lib/tradingCalculators.js's TRADABLE_PAIRS / PIP_SIZE_OPTIONS):
+// 0.0001 for standard FX, 0.01 for JPY and PKR-quoted pairs, a
+// selectable 0.01-or-0.1 for metals/energy, a selectable 0.1-or-1 for
+// indices, and a single $1 illustrative tick for crypto — every one of
+// these conventions genuinely varies by broker except plain FX, so
+// nothing beyond FX is silently assumed. Quote-currency conversion to
+// USD/PKR is driven live from /api/rates via fetchRates — the same
+// pattern GoldCalculator.jsx uses — so switching pairs recalculates
+// against the current live rate, with a visible live/fallback status
+// dot and a safe fallback-rate table (lib/currencies.js) if the live
+// fetch fails; this never blocks static prerendering (/calculators and
+// any /converters/[pair] page embedding this as a mini-widget) because
+// every value synthesized above is a plain finite number or a fixed
+// default, so lib/formatNumber.js's formatNumber() below never sees a
+// NaN/undefined or an invalid fraction-digit combination to throw on
+// (see that file's header comment for the RangeError this previously
+// caused during SSG).
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   TRADABLE_PAIRS,
+  PAIR_CATEGORIES,
   CONTRACT_SIZES,
   PIP_SIZE_OPTIONS,
   getTradablePair,
+  getPairsByCategory,
   getDefaultPipSize,
   calculatePipValue,
 } from "@/lib/tradingCalculators";
@@ -32,6 +44,34 @@ const LOT_LABELS = {
   standard: "Standard",
   mini: "Mini",
   micro: "Micro",
+};
+
+// Unit noun shown next to each contract-size option, by instrument
+// type — "units" for forex (all three variants), "oz" for metals,
+// "barrels" for energy, "contracts" for indices. Crypto isn't in this
+// map because its noun is the pair's own base asset (BTC, ETH, …),
+// resolved dynamically where it's used below.
+const CONTRACT_UNIT_LABEL = {
+  forex: "units",
+  "forex-jpy": "units",
+  "forex-pkr": "units",
+  metal: "oz",
+  energy: "barrels",
+  index: "contracts",
+};
+
+// What to call the smallest price increment, by instrument type — a
+// real "pip" for forex/metals/energy, a "point" for indices (the
+// conventional term for index CFDs), and an explicitly-labeled "tick"
+// for crypto, which has no industry-standard term at all.
+const PIP_NOUN = {
+  forex: "pip",
+  "forex-jpy": "pip",
+  "forex-pkr": "pip",
+  metal: "pip",
+  energy: "pip",
+  index: "point",
+  crypto: "tick",
 };
 
 // Thin wrapper kept so call sites below can keep passing a single
@@ -121,23 +161,33 @@ export default function PipValueCalculator() {
 
       <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs font-semibold text-slate-600">Pair</span>
+          <span className="mb-1 block text-xs font-semibold text-slate-600">Pair / Instrument</span>
           <select
             value={pairId}
             onChange={(e) => handlePairChange(e.target.value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
           >
-            {TRADABLE_PAIRS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
+            {PAIR_CATEGORIES.map((cat) => {
+              const pairsInCategory = getPairsByCategory(cat.id);
+              if (pairsInCategory.length === 0) return null;
+              return (
+                <optgroup key={cat.id} label={cat.label}>
+                  {pairsInCategory.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
           </select>
         </label>
 
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-600">
-            Lot Size {pair.instrumentType === "crypto" && "(this calculator's own scale, not an exchange standard)"}
+            {pair.instrumentType === "index" || pair.instrumentType === "crypto"
+              ? "Contract Size (this calculator's own scale, not an exchange standard)"
+              : "Lot Size"}
           </span>
           <select
             value={lotType}
@@ -147,7 +197,7 @@ export default function PipValueCalculator() {
             {Object.keys(contractSizes).map((key) => (
               <option key={key} value={key}>
                 {LOT_LABELS[key]} ({formatContractSize(contractSizes[key])}{" "}
-                {pair.instrumentType === "crypto" ? pair.base : pair.instrumentType === "metal" ? "oz" : "units"})
+                {pair.instrumentType === "crypto" ? pair.base : CONTRACT_UNIT_LABEL[pair.instrumentType] || "units"})
               </option>
             ))}
           </select>
@@ -156,7 +206,8 @@ export default function PipValueCalculator() {
         {hasSelectablePipSize ? (
           <label className="block sm:col-span-2">
             <span className="mb-1 block text-xs font-semibold text-slate-600">
-              Pip / Tick Size — brokers vary for {pair.label}
+              {PIP_NOUN[pair.instrumentType] === "point" ? "Point" : "Pip / Tick"} Size — brokers vary for{" "}
+              {pair.label}
             </span>
             <div className="flex gap-2">
               {pipSizeOptions.map((size) => {
@@ -181,7 +232,7 @@ export default function PipValueCalculator() {
           </label>
         ) : (
           <p className="text-xs text-slate-400 sm:col-span-2">
-            Pip size for {pair.label} is auto-detected at {pipSizeOptions[0]}.
+            {PIP_NOUN[pair.instrumentType] || "Pip"} size for {pair.label} is auto-detected at {pipSizeOptions[0]}.
           </p>
         )}
       </div>
@@ -190,7 +241,7 @@ export default function PipValueCalculator() {
         {result ? (
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <p>
-              <span className="text-slate-500">1 {pair.instrumentType === "crypto" ? "tick" : "pip"} = </span>
+              <span className="text-slate-500">1 {PIP_NOUN[pair.instrumentType] || "pip"} = </span>
               <span className="font-bold text-slate-900">
                 {formatNumber(result.pipValueQuote, 2)} {pair.quote}
               </span>
@@ -213,8 +264,11 @@ export default function PipValueCalculator() {
         )}
         <p className="mt-2 text-[11px] text-slate-400">
           {pair.instrumentType === "forex-jpy" && "JPY pairs: 1 pip = the 2nd decimal place (0.01), not the usual 4th. "}
-          {pair.instrumentType === "metal" && "Gold pip/tick size varies by broker — both 0.01 and 0.10 are in genuine use, so pick the one that matches yours. "}
-          {pair.instrumentType === "crypto" && "Crypto has no industry-standard \"pip\" — this treats a $1 move as the smallest tick for illustration only. "}
+          {pair.instrumentType === "forex-pkr" && "PKR pairs: 1 pip = the 2nd decimal place (0.01), reflecting PKR's larger nominal value, not the usual 4th. "}
+          {pair.instrumentType === "metal" && "Pip/tick size varies by broker — both 0.01 and 0.10 are in genuine use, so pick the one that matches yours. "}
+          {pair.instrumentType === "energy" && "Oil pip/tick size varies by broker — both 0.01 and 0.10 are in genuine use, so pick the one that matches yours. "}
+          {pair.instrumentType === "index" && "Index point size varies by broker — both 0.1 and 1.0 point ticks are in genuine use, so pick the one that matches yours. Contract size shown is this calculator's own illustrative scale, not an exchange standard. "}
+          {pair.instrumentType === "crypto" && "Crypto has no industry-standard \"pip\" — this treats a $1 move as the smallest tick for illustration only, and the contract size shown is this calculator's own scale, not an exchange standard. "}
           For informational purposes only, not financial advice.
         </p>
       </div>

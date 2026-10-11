@@ -830,29 +830,54 @@ Each provider call:
   `MiniLotSizeCalculator.jsx` (`Lot Size ≈ Risk Amount ÷ (Stop-Loss
   Pips × Pip Value per Lot)`), extended to also report the Mini (×10)
   and Micro (×100) lot equivalents.
-- **Pip Value Calculator**: a dropdown of real, named tradable pairs
-  (`lib/tradingCalculators.js`'s `TRADABLE_PAIRS` — EUR/USD, GBP/USD,
-  USD/JPY, AUD/USD, USD/CAD, USD/CHF, XAU/USD, BTC/USD), not a bare
-  "pick any quote currency" selector. Pip/tick precision auto-detects
-  from the pair's `instrumentType`: `0.0001` for standard FX, `0.01`
-  for JPY pairs, and a user-selectable `0.01` or `0.1` for gold (both
-  conventions are genuinely in use across brokers, so neither is
-  silently assumed — switching pairs always resets the toggle to that
-  pair's default). Contract size per lot is also instrument-specific
-  (`CONTRACT_SIZES`) — 100,000/10,000/1,000 units for forex, 100/10/1
-  troy ounces for gold, and a 1/0.1/0.01 BTC scale for crypto (called
-  out in the UI as this calculator's own stand-in scale, since crypto
-  has no broker-standardized "lot" at all). Pip value in the quote
-  currency (`pipSize × contract size`) is converted live to USD and PKR
-  using the same unified, hourly-cached rates payload every other
-  calculator on the platform reads (`lib/fetchRates.js` /
+- **Pip Value Calculator**: a dropdown of 31 real, named tradable
+  instruments (`lib/tradingCalculators.js`'s `TRADABLE_PAIRS`), grouped
+  into four `<optgroup>`s by `PAIR_CATEGORIES`:
+  - **Forex** — majors & minors (EUR/USD, GBP/USD, USD/JPY, AUD/USD,
+    USD/CAD, USD/CHF, NZD/USD), crosses (EUR/GBP, EUR/JPY, GBP/JPY,
+    AUD/JPY, NZD/JPY), and regional PKR pairs (USD/PKR, EUR/PKR,
+    GBP/PKR, AED/PKR, SAR/PKR).
+  - **Commodities & Metals** — XAU/USD (Gold), XAG/USD (Silver),
+    XPT/USD (Platinum), XCU/USD (Copper), WTI/USD (Crude Oil),
+    BRENT/USD (Brent Oil).
+  - **Indices** — US30 (Dow Jones), US500 (S&P 500), NAS100 (Nasdaq),
+    GER40 (DAX — the only instrument quoted in EUR rather than USD,
+    which exercises the same live-rate conversion as everything else
+    rather than assuming USD).
+  - **Crypto** — BTC/USD, ETH/USD, SOL/USD, XRP/USD, BNB/USD.
+
+  Pip/tick/point precision and contract size both auto-detect from the
+  pair's `instrumentType` (seven of them: `forex`, `forex-jpy`,
+  `forex-pkr`, `metal`, `energy`, `index`, `crypto`), each with its own
+  genuinely-different convention rather than one borrowed from forex:
+  `0.0001` for standard FX; `0.01` for JPY pairs and for PKR-quoted
+  pairs (PKR's larger nominal value puts its pip at the 2nd decimal,
+  the same reasoning as JPY); a user-selectable `0.01`-or-`0.1` for
+  metals and energy (both conventions are genuinely in use across
+  brokers); a user-selectable `0.1`-or-`1.0` point for indices; and a
+  single, explicitly-labeled-as-non-standard `$1` tick for crypto.
+  Switching pairs always resets the pip/tick selector to the new
+  pair's own default. Contract size per lot is equally
+  instrument-specific (`CONTRACT_SIZES`) — 100,000/10,000/1,000 units
+  for every forex variant, 100/10/1 troy ounces for metals,
+  1,000/100/10 barrels for energy, and a 1/0.1/0.01 stand-in scale for
+  both indices and crypto (labeled in the UI as this calculator's own
+  scale, not an exchange standard, since neither has one). Pip value
+  in the quote currency (`pipSize × contract size`) is converted live
+  to USD and PKR using the same unified, hourly-cached rates payload
+  every other calculator on the platform reads (`lib/fetchRates.js` /
   `app/api/rates/route.js`), with a visible live/fallback status dot
   and a safe fallback-rate table (`lib/currencies.js`) if the live
-  fetch fails — never a blank result. Verified with a Node script
-  covering every pair (EUR/USD → exactly $10/pip on a standard lot;
-  USD/JPY → pip value correctly computed in JPY then converted through
-  the JPY/USD rate; gold at both 0.01 and 0.1 pip sizes; BTC's $1 tick)
-  plus every pair ID resolving to a valid instrument type.
+  fetch fails — never a blank result, and never a build-time crash
+  either (see "Notes on number formatting safety" above for the
+  RangeError this combination caused during SSG before the fix).
+  Verified with a Node script covering all 31 instruments × all 3 lot
+  sizes (93 combinations, none throwing, every USD/PKR conversion
+  finite) plus spot-checks (EUR/USD → exactly $10/pip on a standard
+  lot; USD/PKR → correctly computed in PKR then converted through the
+  live PKR/USD rate; GER40 → correctly computed in EUR, not silently
+  assumed as USD; WTI/USD → $10/pip on a 1,000-barrel standard lot;
+  ETH/USD micro → $0.01 on a 0.01 ETH stand-in contract).
 - **Risk / Reward Ratio Calculator**: deliberately takes raw entry /
   stop-loss / take-profit price levels plus a position size in base-
   asset units rather than a "pips" concept, so the same calculator
