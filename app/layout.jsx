@@ -30,6 +30,7 @@ const NAV_LINKS = [
   { label: "Market Analysis", href: "/market-analysis" },
   { label: "News", href: "/ai-news" },
   { label: "Academy", href: "/learn" },
+  { label: "Community", href: "/community" },
   { label: "About", href: "/#about" },
 ];
 

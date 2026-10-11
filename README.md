@@ -100,6 +100,8 @@ app/
                                 # wrapping components/academy/LessonViewer.jsx
   calculators/
     page.jsx                  # Calculators Hub shell (metadata) wrapping components/calculators/CalculatorsHub.jsx
+  community/
+    page.jsx                  # Community Forum shell (metadata) wrapping components/community/CommunityHub.jsx
   layout.jsx                  # Header, nav, footer
   page.jsx                    # Homepage dashboard
   globals.css
@@ -146,6 +148,14 @@ components/
     InflationCalculator.jsx    # Inflation & Purchasing Power Calculator
     CompoundGrowthCalculator.jsx # Compound Interest / Wealth Growth Calculator (year-by-year table)
     ProfitMarginCalculator.jsx # Business Profit Margin & Markup Calculator
+  community/
+    CommunityHub.jsx           # Stats header + category tabs + search/asset-pill filters + feed
+    TradePostCard.jsx          # One post: avatar, direction badge, Entry/Target/SL, illustrative
+                                # chart placeholder + "Expand Setup" modal, vote/Bullseye counters
+    CreatePostModal.jsx        # "Share Trade Setup / Insight" trigger + form, submits via
+                                # hooks/useCommunityPosts.js's addPost()
+    Modal.jsx                  # Reusable fixed-overlay modal shell (first true overlay modal in
+                                # this codebase; used by both CreatePostModal and the Expand Setup view)
 lib/
   formatNumber.js              # Shared, safely-clamped Intl.NumberFormat wrapper used by every
                                 # number formatter in the project — see "Notes on number
@@ -188,9 +198,15 @@ lib/
                                 # calculateMargin — no React, no fetch, fully unit-testable
   personalCalculators.js        # Pure math: calculateInflation, calculateCompoundGrowth,
                                 # calculateMarginMarkup — no React, no fetch
+  communityData.js              # Community Forum categories, asset tags, bias options, and 9
+                                # seeded/illustrative posts — no React/browser APIs (see its
+                                # header comment on why this seed data is clearly non-authoritative)
 hooks/
   useAcademyProgress.js         # localStorage-backed Academy progress: completed lessons, quiz
                                 # scores, level-unlock logic, overall % — see its header comment
+  useCommunityPosts.js          # localStorage-backed Community Forum state: user-submitted posts,
+                                # per-post vote/Bullseye toggle state — see its header comment on
+                                # why votes are stored as toggle state, not accumulated counts
 ```
 
 ## Environment variables
@@ -931,6 +947,77 @@ Each provider call:
   `ConvertersTabs.jsx` already uses elsewhere on the platform — with
   each calculator keeping a stable `id` anchor (`#lot-size`,
   `#pip-value`, etc.) that mini-widgets and other pages link back to.
+
+## Notes on the Community Forum
+
+- **`app/community/page.jsx`** + **`components/community/CommunityHub.jsx`**:
+  same thin-server-shell/`"use client"`-body split used by the Academy
+  and Calculators modules — the server shell exports `metadata`, the
+  client component owns the interactive state (category tabs, search,
+  asset-tag filter pills, the post feed, and the "Share Trade Setup /
+  Insight" trigger).
+- **Seed data is explicitly illustrative, not live activity.**
+  `lib/communityData.js` ships 9 seeded posts spanning all four
+  categories ("Trade Setups & Ideas", "Macro & News Speculation",
+  "Financial Literacy") and all four asset tags (#Gold, #Forex,
+  #Crypto, #Indices). The forum's stats header is honest about this:
+  - **Active Traders** and **Shared Setups** are genuinely *derived*
+    counts over the visible post data (unique author handles; posts
+    with a Long/Short bias) — real arithmetic on demo data, not
+    invented numbers.
+  - **Accuracy Rate** has no backend that tracks whether any posted
+    Entry/Target/Stop Loss actually played out, so rather than
+    fabricate a percentage, the card reads "Not tracked yet" with a
+    footnote explaining why — the same no-fabrication discipline as
+    the Social Buzz Tracker's persistent "Simulated" badge and the
+    Pip Value Calculator's non-standard-instrument disclaimers.
+- **No real chart images exist anywhere in this app.** Each
+  `TradePostCard.jsx` renders an inline-SVG "chart preview" whose
+  squiggle is deterministically derived from a seeded hash of the
+  post's id (and nudged by its Long/Short bias), so the same post
+  always renders the same squiggle instead of jittering on every
+  re-render — but it is permanently labeled "Illustrative only — not
+  a real chart" directly on the preview, both in the feed and in the
+  "Expand Setup" modal. It is never presented as real market data.
+- **First true overlay modal in this codebase.**
+  `components/community/Modal.jsx` is a `position: fixed` backdrop +
+  centered panel (Escape-to-close, backdrop-click-to-close, body-scroll
+  lock) — distinct from `academy/QuizModule.jsx`'s inline "ScoreCard"
+  swap, which is not an overlay. It's reused by both
+  `CreatePostModal.jsx` (the post-submission form) and
+  `TradePostCard.jsx`'s "Expand Setup" detail view.
+- **Votes and the "Bullseye Setup" tag are toggle state, not
+  accumulating counters.** `hooks/useCommunityPosts.js` persists only
+  the current browser's own choice per post (`"up"`/`"down"`/none for
+  votes, a boolean for Bullseye) in `localStorage`, following the same
+  SSR-safe hydration pattern as `useAcademyProgress.js` (safe empty
+  state on the server, hydrated from storage after mount). The
+  displayed count is always `seed base + (1 if this browser's current
+  toggle matches)`, computed fresh on every render — so clicking the
+  same button again toggles it back off, and reloading the page shows
+  the same count as before rather than one that keeps climbing. This
+  was a deliberate design choice to avoid a trivial exploit (a visitor
+  inflating a count forever just by refreshing and re-clicking).
+- **"Share Trade Setup / Insight" has a genuine local-storage
+  submission fallback.** `CreatePostModal.jsx` validates title/body
+  are non-empty, then calls the hook's `addPost()`, which prepends a
+  fully-formed post (zeroed base counts, `isUserSubmitted: true`,
+  a real `createdAt` timestamp) to `localStorage`-backed state. The new
+  post renders at the top of the feed immediately — no backend,
+  database, or page reload required — and carries a small "Your post"
+  badge so it's clear which posts are the current browser's own.
+- **Verification methodology** (same no-`npm install` constraint as
+  every other module in this project): bracket-balance checked via
+  `/tmp/balcheck.py`, `node --check` on the two plain-`.js` files
+  (`lib/communityData.js`, `hooks/useCommunityPosts.js`), and a Node.js
+  simulation script exercising the extracted pure logic end-to-end —
+  seed-data integrity (every category/asset-tag reference resolves;
+  directional posts have non-null Entry/SL/TP, discussion posts don't);
+  the vote/Bullseye toggle state machine (upvote, re-click toggles off,
+  switching from up to down doesn't stack, counts are stable across a
+  simulated "reload"); `addPost` + category/asset-tag/search filtering;
+  derived stats arithmetic; and the chart-placeholder hash function's
+  determinism and output bounds. All checks passed with 0 failures.
 
 ## Roadmap
 
