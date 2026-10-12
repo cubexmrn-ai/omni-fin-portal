@@ -5,20 +5,22 @@
 // OmniFin Portal's primary site header — extracted out of app/layout.jsx
 // (which previously defined an inline `SiteHeader` function) into its
 // own standalone, self-contained component so it can carry its own
-// interactive state (the "Converters & Calculators" dropdown needs
+// interactive state (the "Tools & Calculators" dropdown needs
 // useState + an outside-click/Escape listener, which a plain server
 // component in layout.jsx can't have without becoming "use client"
 // itself).
 //
 // NAV STRUCTURE:
 //   - Dashboard (/)
-//   - "Converters & Calculators" — a dropdown (click-to-open, not
-//     hover-only, so it works the same on touch devices) grouping:
+//   - "Tools & Calculators" — ONE dropdown (click-to-open, not
+//     hover-only, so it works the same on touch devices) merging what
+//     used to be three separate top-level items ("Metals &
+//     Commodities", "Converters", "Calculators") into:
 //       * Metals & Commodities Converter -> /#metals-calculator
 //       * Universal Currency Converter    -> /converters
 //       * Trading & Financial Calculators -> /calculators
 //   - Market Analysis, News, Academy, Community, About — unchanged,
-//     ungrouped top-level links.
+//     ungrouped top-level links, exactly as before.
 //   - The top-right primary "Open Calculator" button is untouched and
 //     still points directly at the Metals Calculator
 //     (/#metals-calculator), per spec — it's a shortcut to the single
@@ -33,7 +35,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-const CONVERTER_CALCULATOR_LINKS = [
+const TOOLS_CALCULATORS_LINKS = [
   {
     label: "Metals & Commodities Converter",
     description: "Live gold, silver, platinum, and commodity rates.",
@@ -94,10 +96,10 @@ function HeaderLogo() {
   );
 }
 
-/** The "Converters & Calculators" dropdown — click-to-toggle (works on
+/** The "Tools & Calculators" dropdown — click-to-toggle (works on
  * touch and desktop alike), closes on outside click, Escape, or
  * choosing a link. */
-function ConvertersDropdown() {
+function ToolsCalculatorsDropdown() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -130,7 +132,7 @@ function ConvertersDropdown() {
         aria-haspopup="true"
         className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
       >
-        Converters &amp; Calculators
+        Tools &amp; Calculators
         <span className={`text-xs transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true">
           ▾
         </span>
@@ -141,7 +143,7 @@ function ConvertersDropdown() {
           role="menu"
           className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl shadow-slate-900/10"
         >
-          {CONVERTER_CALCULATOR_LINKS.map((item) => (
+          {TOOLS_CALCULATORS_LINKS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -175,7 +177,7 @@ export default function Header() {
             Dashboard
           </Link>
 
-          <ConvertersDropdown />
+          <ToolsCalculatorsDropdown />
 
           {OTHER_NAV_LINKS.map((link) => (
             <Link
@@ -233,8 +235,8 @@ export default function Header() {
       </div>
 
       {/* Mobile nav — flattened (no hover dropdown on touch): a small
-          "Converters & Calculators" group heading followed by its 3
-          links, then the remaining top-level links. */}
+          "Tools & Calculators" group heading followed by its 3 links,
+          then the remaining top-level links. */}
       {mobileOpen && (
         <nav className="border-t border-slate-100 px-4 py-3 md:hidden" aria-label="Primary mobile">
           <div className="flex flex-col gap-0.5">
@@ -247,9 +249,9 @@ export default function Header() {
             </Link>
 
             <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Converters &amp; Calculators
+              Tools &amp; Calculators
             </p>
-            {CONVERTER_CALCULATOR_LINKS.map((item) => (
+            {TOOLS_CALCULATORS_LINKS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
