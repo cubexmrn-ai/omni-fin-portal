@@ -33,21 +33,42 @@ const TOOL_REGISTRY = {
   "margin-calculator": () => <MiniCalculatorWidget calculatorId="margin" />,
 };
 
+// WHY THE DARK FRAME WRAPS THE TOOL RATHER THAN RESTYLING IT: every tool
+// resolved above (GoldCalculator, MiniLotSizeCalculator, the Calculators
+// Hub widgets via MiniCalculatorWidget) is a shared component also used
+// on its own light-themed page elsewhere in the app (the homepage, the
+// Calculators Hub). Recoloring those components' internals to match the
+// Academy's dark theme would also change how they look everywhere else
+// they're used. Instead, this wrapper frames the tool in a dark,
+// glassmorphic card — the same visual language as the rest of the
+// Academy's dark redesign — so the embed fits the page around it without
+// touching the tool's own (intentionally light, white-card) styling,
+// the same way a screenshot or a widget frame doesn't need to match the
+// color of the page it's embedded in.
 export default function EmbeddedTool({ toolId, caption }) {
   const ToolComponent = TOOL_REGISTRY[toolId];
 
   if (!ToolComponent) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-400">
+      <div className="rounded-xl border border-dashed border-gray-700 bg-gray-900 p-4 text-sm text-gray-500">
         Tool &quot;{toolId}&quot; isn&apos;t available yet.
       </div>
     );
   }
 
   return (
-    <div>
-      {caption && <p className="mb-2 text-xs font-medium text-slate-500">{caption}</p>}
-      <ToolComponent />
+    <div className="rounded-xl border border-gray-800 bg-gray-900 p-3 sm:p-4">
+      {caption && (
+        <p className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-gray-400">
+          <span className="text-blue-400" aria-hidden="true">
+            ▸
+          </span>
+          {caption}
+        </p>
+      )}
+      <div className="overflow-hidden rounded-lg">
+        <ToolComponent />
+      </div>
     </div>
   );
 }

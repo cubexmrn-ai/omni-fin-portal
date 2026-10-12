@@ -763,11 +763,17 @@ Each provider call:
   IDs, and that lesson adjacency correctly crosses level boundaries
   (e.g. Rookie's last lesson's "next" is Apprentice's first).
 - Each lesson is a list of typed **sections** — `text` (heading + body
-  + optional bullet list), `proTip` (a highlighted callout), `formula`
-  (a key-formula/concept badge), `visual` (a diagram card), and `tool`
-  (an embedded OmniFin calculator) — rendered generically by
+  + optional bullet list), `proTip` (emerald-accent highlighted
+  callout), `risk` (rose-accent risk-warning callout — leverage,
+  revenge trading, moved stops, and other genuinely dangerous habits,
+  not just a generic "be careful"), `formula` (blue-accent key-formula/
+  concept card), `visual` (a diagram card), and `tool` (an embedded
+  OmniFin calculator) — rendered generically by
   `components/academy/LessonViewer.jsx`, so adding a new lesson is a
-  pure data change in `lib/academyData.js`, no new component code.
+  pure data change in `lib/academyData.js`, no new component code. 3
+  lessons (Position Sizing Math, Risk-to-Reward Ratio, Controlling
+  FOMO & Greed) got a `risk` section added in natural, already-relevant
+  spots rather than being retrofitted everywhere.
 - **`components/academy/LessonVisualCard.jsx`** is a toolkit of ~13
   reusable, parameterized inline-SVG diagram kinds — `candlestick`,
   `support-resistance`, `risk-reward`, `bid-ask`, `ma-crossover`,
@@ -789,9 +795,9 @@ Each provider call:
   per Lot)`, with an explicit note that pip value varies by pair rather
   than presenting its $10/pip default as universal) embedded in both
   "Pips & Lot Sizes" and "Position Sizing Math."
-- **Quiz engine (`components/academy/QuizModule.jsx`)**: one question
-  at a time, the selected option locks and shows instant green
-  (correct)/red (incorrect) highlighting plus that question's
+- **Checkpoint Quiz engine (`components/academy/QuizModule.jsx`)**: one
+  question at a time, the selected option locks and shows instant
+  emerald (correct)/rose (incorrect) highlighting plus that question's
   `explanation`; the final question's "Next" becomes "See Results,"
   which shows a score card — pass/fail against the lesson's
   `passPercent` (80%, i.e. 4 of 5 — `PASS_PERCENT` in
@@ -822,19 +828,94 @@ Each provider call:
   wrapping the actual "use client" hub UI — same page/component split
   as `app/ai-news/page.jsx` + `NewsFeed.jsx` elsewhere in this project,
   since progress lives in `localStorage`, which only exists
-  client-side. Shows the "Level N — X% Completed" progress banner,
-  a 5-card level roadmap (lesson/quiz counts, estimated minutes,
-  "Mastered"/"Locked" states, a per-level progress bar), and a
-  search + `CATEGORIES` topic filter (Forex, Metals, Crypto, Personal
-  Finance, Technicals) that switches the roadmap grid into a flat,
-  filtered lesson list.
+  client-side. Shows the "Level N — X% Completed" progress banner, and
+  either the Master Path roadmap or a Focused Track View — see the
+  dedicated subsection below for both.
 - **`app/learn/[level]/[lesson]/page.jsx`** + **`components/academy/LessonViewer.jsx`**:
   `generateStaticParams()` pre-renders all 20 lessons at build time;
   an unknown level/lesson slug calls `notFound()`. The lesson page
   renders a sticky bottom nav bar (Previous / "Jump to Quiz" / Next),
-  and if the lesson's level is still locked (deep-linked directly),
-  shows a locked notice with a link back to the hub instead of the
-  lesson content.
+  and if the lesson's level is still locked (deep-linked directly on
+  the Master Path), shows a locked notice with a link back to the hub
+  instead of the lesson content.
+
+### Dark theme redesign & the Master Path / Focused Track architecture fix
+
+- **A permanently dark theme, not a toggle.** The whole Academy
+  (`app/learn/**`) now renders on a fixed dark palette — `bg-ink`
+  (`#0b0f19`, a new token added in `tailwind.config.js`) for the page
+  background, Tailwind's own `gray-900` (`#111827`, an exact match for
+  the requested glassmorphic-card color) for cards, and `gray-800`
+  (`#1f2937`, an exact match for the requested muted border color) for
+  borders — regardless of the rest of the (light-themed) site. This is
+  deliberately different from the `dark:`-variant toggle pattern used
+  by `components/MarketOverviewBoard.jsx` elsewhere in this project:
+  the Academy is always dark, not user-togglable, so its components use
+  plain (non-`dark:`-prefixed) classes against these fixed tokens.
+- **A fixed 3-color semantic accent system**, used identically across
+  the hub and every lesson page: Electric Blue (`blue-500`/`#3b82f6` —
+  an exact match for Tailwind's own default `blue-500`) for primary
+  CTAs and the reading-progress stepper; Emerald (`emerald-500`/
+  `#10b981`, also an exact Tailwind default) for pro-tips and
+  mastered/correct states; Soft Rose (`rose-500`/`#f43f5e`, also exact)
+  for risk warnings and incorrect/failing states. No new color tokens
+  were needed for these three — they're exact matches for Tailwind's
+  stock palette, confirmed before using them.
+- **`components/academy/LessonVisualCard.jsx`'s 13 diagram kinds** were
+  recolored for legibility against the new dark cards (labels and
+  structural lines that were tuned for a white background — e.g.
+  `#64748b`, `#334155`, `#1e293b`, `#e2e8f0` — became lighter/darker
+  dark-appropriate equivalents), while the semantic colors (bull
+  green, bear red, the formula-line blue/gold) were left as-is since
+  they already read fine on dark. The diagram "stage" inside each
+  `Frame` is a recessed `bg-black/25` panel on the `gray-900` card, the
+  same look used for every other dark card on this page.
+- **`components/academy/EmbeddedTool.jsx`** now frames each embedded
+  calculator in a dark `gray-900`/`gray-800` card rather than
+  recoloring the calculator itself — those tools (`GoldCalculator`,
+  `MiniLotSizeCalculator`, the `MiniCalculatorWidget` registry) are
+  shared components also used on their own light-themed pages
+  elsewhere (the homepage, the Calculators Hub), so changing their
+  internal colors here would have changed how they look everywhere
+  else too. The frame is the same idea as a screenshot not needing to
+  match the color of the page it's embedded in.
+- **Architecture fix — Master Path vs. Focused Track View.** Previously,
+  selecting a category filter (Forex/Metals/Crypto/etc.) reused the
+  same flat lesson grid as a text search AND still applied the
+  roadmap's level-unlock gating (a locked lesson rendered
+  `pointer-events-none`/grayed out) — so browsing "just the Forex
+  lessons" was full of dead ends past Level 1. Now the first tab is
+  relabeled **Master Path** and is the *only* place level-locking
+  renders at all (it's the 5-level roadmap — sequential unlocking is
+  the entire point there). Every other view — a category tab, or a
+  text search — is a flat, frictionless **Focused Track View**: every
+  matching lesson is always a real, clickable link regardless of its
+  level's unlock state on the Master Path. Verified with a Node script
+  confirming, against the real curriculum data, that the Forex track
+  alone spans Levels 2 through 5 — lessons that would previously have
+  been locked dead ends unless the Master Path had already been
+  cleared in order.
+- **`LessonViewer.jsx`'s new sticky top bar** (`LessonTopBar`) is a
+  real reading-progress stepper — a `scroll`/`resize`-driven percentage
+  of how far down the lesson the visitor has scrolled (not just a
+  static section-count), alongside the lesson's level tag and estimated
+  read time, sticking just below the site's own global header
+  (`sticky top-16`, under the global nav's `sticky top-0`/`h-16`) so
+  the two sticky bars never overlap or fight each other.
+- **Verification methodology**: bracket-balance checked via
+  `/tmp/balcheck.py` across every new/changed file; `node --check` on
+  `lib/academyData.js`; and Node.js scripts (via a small ESM loader
+  that resolves this project's `@/` import alias) that import the real
+  `lib/academyData.js` end-to-end — confirming every section type
+  across all 20 lessons/95 sections is one `LessonViewer.jsx` actually
+  renders, every diagram `kind` is one `LessonVisualCard.jsx` actually
+  renders, every quiz question's `correctOptionId` resolves to a real
+  option, every one of the 5 level `theme`s has a matching entry in
+  both `AcademyHub.jsx`'s and `LessonViewer.jsx`'s theme maps, every
+  category has at least one lesson (so no Focused Track View can ever
+  render empty), and — the architecture fix's key claim — that the
+  Forex Focused Track genuinely spans multiple levels beyond Level 1.
+  All checks passed with 0 failures.
 
 ## Notes on the Calculators Hub
 

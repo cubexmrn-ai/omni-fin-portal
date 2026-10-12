@@ -37,6 +37,15 @@ module.exports = {
           800: "#7d4516",
           900: "#6a3a17",
         },
+        // Dedicated dark-theme background for the OmniFin Academy
+        // (app/learn/**). Deliberately NOT part of the gray/slate scale —
+        // this is a single fixed color (not a toggleable dark: variant),
+        // since the Academy is permanently dark-themed regardless of the
+        // rest of the (light-themed) site. Cards and borders inside the
+        // Academy reuse Tailwind's own gray-900 (#111827) and gray-800
+        // (#1f2937), which already match the requested palette exactly —
+        // no new tokens needed for those.
+        ink: "#0b0f19",
       },
       fontFamily: {
         sans: [
