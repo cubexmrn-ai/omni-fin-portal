@@ -317,7 +317,7 @@ function calcProfitMargin({ cost, price }) {
 // ---------------------------------------------------------------------------
 
 function FieldLabel({ children }) {
-  return <span className="mb-1 block text-xs font-semibold text-slate-400">{children}</span>;
+  return <span className="mb-1 block text-xs font-semibold text-slate-600">{children}</span>;
 }
 
 function TextInput(props) {
@@ -326,7 +326,7 @@ function TextInput(props) {
       type="number"
       step="any"
       {...props}
-      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
     />
   );
 }
@@ -338,7 +338,7 @@ function StatCard({ label, value, sub, tone = "neutral" }) {
     profit: "border-emerald-500/30 bg-emerald-950/40 text-emerald-400",
     loss: "border-rose-500/30 bg-rose-950/40 text-rose-400",
     ratio: "border-blue-500/40 bg-blue-500/10 text-blue-300",
-    neutral: "border-slate-700 bg-slate-800 text-slate-100",
+    neutral: "border-slate-700 bg-slate-900 text-white",
   }[tone];
 
   return (
@@ -353,19 +353,19 @@ function StatCard({ label, value, sub, tone = "neutral" }) {
 function AccordionItem({ title, children, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
-    <div className="border-b border-slate-800 last:border-b-0">
+    <div className="border-b border-slate-200 last:border-b-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-100 hover:text-white"
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-semibold text-slate-900 hover:text-brand-600"
       >
         {title}
-        <span className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true">
+        <span className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true">
           ▾
         </span>
       </button>
-      {open && <div className="px-4 pb-4 text-sm leading-relaxed text-slate-400">{children}</div>}
+      {open && <div className="px-4 pb-4 text-sm leading-relaxed text-slate-600">{children}</div>}
     </div>
   );
 }
@@ -375,7 +375,7 @@ function PairSelect({ value, onChange }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
     >
       {PAIR_CATEGORIES.map((cat) => {
         const pairs = getPairsByCategory(cat.id);
@@ -412,7 +412,7 @@ function PipSizePicker({ pair, pipSize, onChange }) {
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 active
                   ? "border-blue-500 bg-blue-500/15 text-blue-300"
-                  : "border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200"
+                  : "border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200"
               }`}
             >
               {size}
@@ -432,7 +432,7 @@ function LiveRateBadge({ status }) {
     error: { text: "Rates unavailable — using fallback", dot: "bg-rose-500" },
   }[status];
   return (
-    <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-300">
+    <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-300">
       <span className={`h-1.5 w-1.5 rounded-full ${copy.dot}`} />
       {copy.text}
     </span>
@@ -509,11 +509,11 @@ function AllInOnePanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-800 bg-black/20 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 px-5 py-4">
         <div>
-          <h3 className="text-sm font-bold text-slate-50">All-in-One Trade Execution Suite</h3>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <h3 className="text-sm font-bold text-slate-900">All-in-One Trade Execution Suite</h3>
+          <p className="mt-0.5 text-xs text-slate-600">
             Full trade math from one entry: P/L, R:R, pip value, and margin impact.
           </p>
         </div>
@@ -543,7 +543,7 @@ function AllInOnePanel() {
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 direction === "buy"
                   ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300"
-                  : "border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200"
+                  : "border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200"
               }`}
             >
               Buy
@@ -555,7 +555,7 @@ function AllInOnePanel() {
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 direction === "sell"
                   ? "border-rose-500/60 bg-rose-500/15 text-rose-300"
-                  : "border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200"
+                  : "border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200"
               }`}
             >
               Sell
@@ -586,7 +586,7 @@ function AllInOnePanel() {
         <label className="block">
           <FieldLabel>Leverage</FieldLabel>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm text-slate-400">1:</span>
+            <span className="text-sm text-slate-600">1:</span>
             <TextInput min="1" step="1" value={leverage} onChange={(e) => setLeverage(e.target.value)} />
           </div>
         </label>
@@ -594,7 +594,7 @@ function AllInOnePanel() {
         <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
       </div>
 
-      <div className="border-t border-slate-800 bg-black/20 p-5">
+      <div className="border-t border-slate-200/80 p-5">
         {result ? (
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -638,14 +638,14 @@ function AllInOnePanel() {
             </div>
 
             {!result.directionConsistent && (
-              <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-300">
+              <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
                 Heads up: your Take Profit / Stop Loss levels look inconsistent with a{" "}
                 {result.isLong ? "Buy" : "Sell"} order.
               </p>
             )}
           </>
         ) : (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-600">
             Enter a valid pair, lot size, entry, take profit, and stop loss above.
           </p>
         )}
@@ -680,10 +680,10 @@ function LotSizePanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="border-b border-slate-800 bg-black/20 px-5 py-4">
-        <h3 className="text-sm font-bold text-slate-50">Position &amp; Lot Size Calculator</h3>
-        <p className="mt-0.5 text-xs text-slate-400">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200/80 px-5 py-4">
+        <h3 className="text-sm font-bold text-slate-900">Position &amp; Lot Size Calculator</h3>
+        <p className="mt-0.5 text-xs text-slate-600">
           Risk Amount ÷ (Stop-Loss Pips × Pip Value per Lot) = Standard Lots
         </p>
       </div>
@@ -707,11 +707,11 @@ function LotSizePanel() {
         </label>
       </div>
 
-      <div className="border-t border-slate-800 bg-black/20 p-5">
+      <div className="border-t border-slate-200/80 p-5">
         {result ? (
           <div>
-            <p className="text-sm text-slate-400">
-              Risk Amount: <span className="font-bold text-slate-100">${safeFormat(result.riskAmount)}</span>
+            <p className="text-sm text-slate-600">
+              Risk Amount: <span className="font-bold text-slate-900">${safeFormat(result.riskAmount)}</span>
             </p>
             <div className="mt-3 grid grid-cols-3 gap-2">
               <StatCard tone="neutral" label="Standard" value={safeFormat(result.standardLots, 2)} />
@@ -720,7 +720,7 @@ function LotSizePanel() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-slate-400">Enter valid, positive numbers above.</p>
+          <p className="text-sm text-slate-600">Enter valid, positive numbers above.</p>
         )}
         <p className="mt-3 text-[11px] text-slate-500">
           Pip value per standard lot varies by pair and account currency — check your broker&apos;s
@@ -754,11 +754,11 @@ function PipValuePanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-800 bg-black/20 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 px-5 py-4">
         <div>
-          <h3 className="text-sm font-bold text-slate-50">Pip Value Calculator</h3>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <h3 className="text-sm font-bold text-slate-900">Pip Value Calculator</h3>
+          <p className="mt-0.5 text-xs text-slate-600">
             Custom decimal lot size (e.g. 0.18) — not just Standard/Mini/Micro presets.
           </p>
         </div>
@@ -779,30 +779,30 @@ function PipValuePanel() {
         <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
       </div>
 
-      <div className="border-t border-slate-800 bg-black/20 px-5 py-4">
+      <div className="border-t border-slate-200/80 px-5 py-4">
         {result ? (
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <p>
-              <span className="text-slate-400">1 pip ({safeFormat(result.lots, 2)} lots) = </span>
-              <span className="font-bold text-slate-100">
+              <span className="text-slate-600">1 pip ({safeFormat(result.lots, 2)} lots) = </span>
+              <span className="font-bold text-slate-900">
                 {safeFormat(result.pipValueQuote, 2)} {pair.quote}
               </span>
             </p>
             <p>
-              <span className="text-slate-400">≈ </span>
-              <span className="font-bold text-emerald-300">
+              <span className="text-slate-600">≈ </span>
+              <span className="font-bold text-emerald-600">
                 {Number.isFinite(result.pipValueUsd) ? `$${safeFormat(result.pipValueUsd)}` : "—"} USD
               </span>
             </p>
             <p>
-              <span className="text-slate-400">≈ </span>
-              <span className="font-bold text-emerald-300">
+              <span className="text-slate-600">≈ </span>
+              <span className="font-bold text-emerald-600">
                 {Number.isFinite(result.pipValuePkr) ? `Rs ${safeFormat(result.pipValuePkr)}` : "—"} PKR
               </span>
             </p>
           </div>
         ) : (
-          <p className="text-sm text-slate-400">Enter a valid pair and lot size above.</p>
+          <p className="text-sm text-slate-600">Enter a valid pair and lot size above.</p>
         )}
         <p className="mt-2 text-[11px] text-slate-500">For informational purposes only, not financial advice.</p>
       </div>
@@ -825,10 +825,10 @@ function MarginPanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="border-b border-slate-800 bg-black/20 px-5 py-4">
-        <h3 className="text-sm font-bold text-slate-50">Margin &amp; Leverage Calculator</h3>
-        <p className="mt-0.5 text-xs text-slate-400">Required Margin = Position Size ÷ Leverage</p>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200/80 px-5 py-4">
+        <h3 className="text-sm font-bold text-slate-900">Margin &amp; Leverage Calculator</h3>
+        <p className="mt-0.5 text-xs text-slate-600">Required Margin = Position Size ÷ Leverage</p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
@@ -843,13 +843,13 @@ function MarginPanel() {
         <label className="block sm:col-span-2">
           <FieldLabel>Leverage</FieldLabel>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm text-slate-400">1:</span>
+            <span className="text-sm text-slate-600">1:</span>
             <TextInput min="1" step="1" value={leverage} onChange={(e) => setLeverage(e.target.value)} />
           </div>
         </label>
       </div>
 
-      <div className="border-t border-slate-800 bg-black/20 p-5">
+      <div className="border-t border-slate-200/80 p-5">
         {result ? (
           <div>
             <div className="grid grid-cols-3 gap-2">
@@ -866,14 +866,14 @@ function MarginPanel() {
               />
             </div>
             {result.isOverLeveraged && (
-              <p className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-300">
+              <p className="mt-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
                 This position size exceeds your account balance at this leverage — free margin is
                 negative.
               </p>
             )}
           </div>
         ) : (
-          <p className="text-sm text-slate-400">Enter valid, positive numbers above.</p>
+          <p className="text-sm text-slate-600">Enter valid, positive numbers above.</p>
         )}
         <p className="mt-3 text-[11px] text-slate-500">
           Margin level is a simplified Balance ÷ Required Margin figure — your broker&apos;s actual
@@ -900,9 +900,9 @@ function InflationCard() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="border-b border-slate-800 bg-black/20 px-5 py-4">
-        <h3 className="text-sm font-bold text-slate-50">Inflation &amp; Purchasing Power</h3>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200/80 px-5 py-4">
+        <h3 className="text-sm font-bold text-slate-900">Inflation &amp; Purchasing Power</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-3">
         <label className="block">
@@ -918,7 +918,7 @@ function InflationCard() {
           <TextInput min="0" value={annualRate} onChange={(e) => setAnnualRate(e.target.value)} />
         </label>
       </div>
-      <div className="border-t border-slate-800 bg-black/20 p-5">
+      <div className="border-t border-slate-200/80 p-5">
         {result ? (
           <div className="grid grid-cols-2 gap-2">
             <StatCard
@@ -933,7 +933,7 @@ function InflationCard() {
             />
           </div>
         ) : (
-          <p className="text-sm text-slate-400">Enter valid, positive numbers above.</p>
+          <p className="text-sm text-slate-600">Enter valid, positive numbers above.</p>
         )}
       </div>
     </div>
@@ -952,9 +952,9 @@ function CompoundGrowthCard() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="border-b border-slate-800 bg-black/20 px-5 py-4">
-        <h3 className="text-sm font-bold text-slate-50">Compound Interest / Wealth Growth</h3>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200/80 px-5 py-4">
+        <h3 className="text-sm font-bold text-slate-900">Compound Interest / Wealth Growth</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
         <label className="block">
@@ -974,7 +974,7 @@ function CompoundGrowthCard() {
           <TextInput min="0" value={years} onChange={(e) => setYears(e.target.value)} />
         </label>
       </div>
-      <div className="border-t border-slate-800 bg-black/20 p-5">
+      <div className="border-t border-slate-200/80 p-5">
         {result ? (
           <>
             <div className="grid grid-cols-3 gap-2">
@@ -983,19 +983,19 @@ function CompoundGrowthCard() {
               <StatCard tone="neutral" label="Growth" value={`$${safeFormat(result.totalGrowth, 0)}`} />
             </div>
             {result.yearlyTable.length > 0 && (
-              <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-slate-800">
+              <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-slate-700">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-slate-800 text-slate-400">
+                  <thead className="sticky top-0 bg-slate-900 text-slate-400">
                     <tr>
                       <th className="px-3 py-1.5 text-left font-semibold">Year</th>
                       <th className="px-3 py-1.5 text-right font-semibold">Balance</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800">
+                  <tbody className="divide-y divide-slate-800 bg-slate-900">
                     {result.yearlyTable.map((row) => (
                       <tr key={row.year}>
                         <td className="px-3 py-1.5 text-slate-300">{row.year}</td>
-                        <td className="px-3 py-1.5 text-right text-slate-100">${safeFormat(row.balance, 0)}</td>
+                        <td className="px-3 py-1.5 text-right text-white">${safeFormat(row.balance, 0)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1004,7 +1004,7 @@ function CompoundGrowthCard() {
             )}
           </>
         ) : (
-          <p className="text-sm text-slate-400">Enter valid numbers above.</p>
+          <p className="text-sm text-slate-600">Enter valid numbers above.</p>
         )}
       </div>
     </div>
@@ -1018,9 +1018,9 @@ function ProfitMarginCard() {
   const result = useMemo(() => calcProfitMargin({ cost, price }), [cost, price]);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="border-b border-slate-800 bg-black/20 px-5 py-4">
-        <h3 className="text-sm font-bold text-slate-50">Business Profit Margin &amp; Markup</h3>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200/80 px-5 py-4">
+        <h3 className="text-sm font-bold text-slate-900">Business Profit Margin &amp; Markup</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
         <label className="block">
@@ -1032,7 +1032,7 @@ function ProfitMarginCard() {
           <TextInput min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
         </label>
       </div>
-      <div className="border-t border-slate-800 bg-black/20 p-5">
+      <div className="border-t border-slate-200/80 p-5">
         {result ? (
           <div className="grid grid-cols-3 gap-2">
             <StatCard tone="profit" label="Profit" value={`$${safeFormat(result.profit)}`} />
@@ -1040,7 +1040,7 @@ function ProfitMarginCard() {
             <StatCard tone="neutral" label="Markup" value={`${safeFormat(result.markupPercent, 1)}%`} />
           </div>
         ) : (
-          <p className="text-sm text-slate-400">Enter valid, positive numbers above.</p>
+          <p className="text-sm text-slate-600">Enter valid, positive numbers above.</p>
         )}
       </div>
     </div>
@@ -1063,9 +1063,9 @@ function WealthPanel() {
 
 function CalculationGuide() {
   return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
-      <div className="border-b border-slate-800 bg-black/20 px-4 py-3">
-        <h3 className="text-sm font-bold text-slate-50">Calculator Guide &amp; Knowledge Notes</h3>
+    <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-200/80 px-4 py-3">
+        <h3 className="text-sm font-bold text-slate-900">Calculator Guide &amp; Knowledge Notes</h3>
         <p className="mt-0.5 text-xs text-slate-500">
           A quick refresher on pip math, lot sizing, and account-risk rules for beginner traders.
         </p>
@@ -1145,8 +1145,10 @@ export default function CalculatorsPage() {
         </div>
       </section>
 
-      {/* Dark terminal body on the light page */}
-      <section className="bg-slate-950/[0.02]">
+      {/* Terminal body — light page surface; only the calculator panels'
+          input fields and output value boxes stay as dark contrast
+          islands (see components above). */}
+      <section className="bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Mode selector — dropdown on mobile, pill tabs on larger screens */}
           <div className="sm:hidden">
@@ -1155,7 +1157,7 @@ export default function CalculatorsPage() {
               <select
                 value={activeMode}
                 onChange={(e) => setActiveMode(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-slate-100 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 {MODES.map((mode) => (
                   <option key={mode.id} value={mode.id}>
@@ -1179,7 +1181,7 @@ export default function CalculatorsPage() {
                   className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                     active
                       ? "bg-blue-600 text-white shadow-[0_0_16px_-2px_rgba(59,130,246,0.6)]"
-                      : "border border-slate-800 bg-slate-900 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                      : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
                   }`}
                 >
                   {mode.label}
