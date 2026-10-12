@@ -40,17 +40,17 @@ export const CATEGORIES = [
   { id: "technicals", label: "Technicals" },
 ];
 
-// A short, always-unlocked intro blurb per category, used by
+// A short intro blurb per category, used by
 // components/academy/AcademyHub.jsx's Focused Track View. None of the
 // curriculum's actual Level 1 (Rookie) lessons are tagged "forex",
 // "metals", "crypto", or "technicals" (Rookie is deliberately
-// personal-finance-only — see ACADEMY_LEVELS below), so there's no real
-// lesson to point to as a free, always-unlocked "basic introduction"
-// for those topics. Rather than lock every single card in a category
-// track behind Level 1 completion, the hub renders this blurb as a
-// standalone "Overview / Basic Introduction" card — informational only
-// (it doesn't link anywhere), always unlocked, with a banner pointing
-// the visitor at Level 1 for the real deep-dive lessons.
+// personal-finance-only — see ACADEMY_LEVELS below). Every card in a
+// category track is clickable regardless of lock status: an unlocked
+// card navigates straight to the real lesson, while a still-locked
+// card opens a "Locked Module" modal (components/academy/AcademyHub.jsx's
+// LockedModuleModal) that uses this blurb as the topic's "Basic Concept
+// & Introduction" copy, alongside a CTA pointing the visitor at Level 1
+// for the real deep-dive lesson, diagrams, and quiz.
 export const CATEGORY_OVERVIEWS = {
   forex: "Forex (foreign exchange) is the global market for trading one currency against another — EUR/USD, GBP/JPY, USD/PKR, and thousands of other pairs — open across overlapping global sessions nearly 24 hours a day on weekdays.",
   metals: "Precious metals and commodities — gold (XAU), silver (XAG), platinum, and crude oil — are traded both as physical assets and as price contracts, and are often used as a hedge against inflation or currency weakness.",

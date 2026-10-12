@@ -12,19 +12,26 @@
 // lesson Mastered and unlocks the next level.
 //
 // THEME: the page body (header, breadcrumb, plain paragraph text) uses
-// the site's normal light theme for proper contrast — ONLY the
-// callout cards (pro-tip/risk/formula), the sidebar, the top progress
-// bar, the embedded tool frames, the diagrams, and the quiz are dark/
-// glassmorphic (solid gray-900/#111827 cards with colored borders —
-// NOT translucent color tints, which would wash out against a light
-// page instead of reading as a dark card), so they pop against the
-// light body around them. See components/academy/AcademyHub.jsx's
-// header comment for the fuller rationale.
+// the site's normal light theme (bg-slate-50 / #f8fafc) for proper
+// contrast — ONLY the callout cards (pro-tip/risk/formula), the
+// sidebar, the top progress bar, the embedded tool frames, the
+// diagrams, and the quiz are dark/glassmorphic (solid
+// bg-slate-900/#0f172a cards with colored borders — NOT translucent
+// color tints, which would wash out against a light page instead of
+// reading as a dark card), so they pop against the light body around
+// them. See components/academy/AcademyHub.jsx's header comment for the
+// fuller rationale.
 //
 // ACCENT SYSTEM (unchanged): Electric Blue (blue-500/#3b82f6) for
 // primary CTAs/formula cards, Emerald (emerald-500/#10b981) for
 // pro-tips and mastered/correct states, Soft Rose (rose-500/#f43f5e)
 // for risk warnings and incorrect/failing states.
+//
+// LAYOUT: the main content area is a two-column layout once a level is
+// unlocked — a sticky left-column CourseSidebar (level header,
+// progress bar, clickable lesson list, active-lesson highlight) and
+// the right-column lesson reader (content, callouts, mini-tools,
+// quiz). See components/academy/CourseSidebar.jsx.
 //
 // Split out as "use client" (same pattern as components/academy/AcademyHub.jsx)
 // so the page.jsx route itself can stay a server component with its own
@@ -51,13 +58,13 @@ const LEVEL_TAG_THEME = {
 
 function ProTip({ body }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-emerald-500/40 bg-gray-900 p-4 shadow-xl shadow-black/20">
+    <div className="flex gap-3 rounded-xl border border-emerald-500/40 bg-slate-900 p-4 shadow-xl shadow-black/20">
       <span className="text-xl" aria-hidden="true">
         💡
       </span>
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-emerald-400">Pro Tip</p>
-        <p className="mt-1 text-sm text-gray-200">{body}</p>
+        <p className="mt-1 text-sm text-slate-200">{body}</p>
       </div>
     </div>
   );
@@ -65,13 +72,13 @@ function ProTip({ body }) {
 
 function RiskWarning({ body }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-rose-500/40 bg-gray-900 p-4 shadow-xl shadow-black/20">
+    <div className="flex gap-3 rounded-xl border border-rose-500/40 bg-slate-900 p-4 shadow-xl shadow-black/20">
       <span className="text-xl" aria-hidden="true">
         ⚠️
       </span>
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-rose-400">Risk Warning</p>
-        <p className="mt-1 text-sm text-gray-200">{body}</p>
+        <p className="mt-1 text-sm text-slate-200">{body}</p>
       </div>
     </div>
   );
@@ -79,14 +86,14 @@ function RiskWarning({ body }) {
 
 function FormulaBadge({ label, formula, note }) {
   return (
-    <div className="rounded-xl border border-blue-500/40 bg-gray-900 p-4 shadow-xl shadow-black/20">
+    <div className="rounded-xl border border-blue-500/40 bg-slate-900 p-4 shadow-xl shadow-black/20">
       <p className="text-xs font-bold uppercase tracking-wide text-blue-400">
         Key Formula / Concept — {label}
       </p>
-      <p className="mt-1.5 rounded-lg bg-black/40 px-3 py-2 font-mono text-sm font-semibold text-gray-100">
+      <p className="mt-1.5 rounded-lg bg-black/40 px-3 py-2 font-mono text-sm font-semibold text-slate-100">
         {formula}
       </p>
-      {note && <p className="mt-2 text-xs text-gray-400">{note}</p>}
+      {note && <p className="mt-2 text-xs text-slate-400">{note}</p>}
     </div>
   );
 }
@@ -140,16 +147,16 @@ function Section({ section }) {
 function LessonTopBar({ level, lesson, scrollPercent }) {
   const tagTheme = LEVEL_TAG_THEME[level.theme] || LEVEL_TAG_THEME.blue;
   return (
-    <div className="sticky top-16 z-20 border-b border-gray-800 bg-ink/95 backdrop-blur">
+    <div className="sticky top-16 z-20 border-b border-slate-800 bg-slate-900/95 backdrop-blur">
       <div className="mx-auto max-w-3xl px-4 py-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className={`shrink-0 rounded-full border px-2 py-0.5 font-bold ${tagTheme}`}>
             Level {level.order} · {level.title}
           </span>
-          <span className="shrink-0 text-gray-500">~{lesson.estMinutes} min read</span>
-          <span className="shrink-0 font-semibold text-gray-300">{scrollPercent}%</span>
+          <span className="shrink-0 text-slate-500">~{lesson.estMinutes} min read</span>
+          <span className="shrink-0 font-semibold text-slate-300">{scrollPercent}%</span>
         </div>
-        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-gray-800">
+        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-800">
           <div
             className="h-full bg-blue-500 transition-[width] duration-150"
             style={{ width: `${scrollPercent}%` }}
@@ -273,6 +280,9 @@ export default function LessonViewer({ levelId, lessonId }) {
 
       <LessonTopBar level={level} lesson={lesson} scrollPercent={scrollPercent} />
 
+      {/* Two-column lesson reader: a sticky left-column Course Sidebar
+          (level header, progress bar, clickable lesson list) and the
+          right-column reader (content, callouts, mini-tools, quiz). */}
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
           <CourseSidebar levelId={levelId} currentLessonId={lessonId} />
@@ -301,12 +311,12 @@ export default function LessonViewer({ levelId, lessonId }) {
       </section>
 
       {/* Sticky lesson navigation */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-800 bg-ink/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-slate-900/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:px-8">
           {prev ? (
             <Link
               href={`/learn/${prev.level.id}/${prev.lesson.id}`}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-300 shadow-sm hover:border-gray-700 hover:text-gray-100"
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-300 shadow-sm hover:border-slate-700 hover:text-slate-100"
             >
               ← Previous
             </Link>
@@ -326,14 +336,14 @@ export default function LessonViewer({ levelId, lessonId }) {
           {next ? (
             <Link
               href={`/learn/${next.level.id}/${next.lesson.id}`}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-300 shadow-sm hover:border-gray-700 hover:text-gray-100"
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-300 shadow-sm hover:border-slate-700 hover:text-slate-100"
             >
               Next →
             </Link>
           ) : (
             <Link
               href="/learn"
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-300 shadow-sm hover:border-gray-700 hover:text-gray-100"
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-300 shadow-sm hover:border-slate-700 hover:text-slate-100"
             >
               Finish →
             </Link>

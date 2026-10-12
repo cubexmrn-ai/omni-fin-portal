@@ -22,7 +22,7 @@ const PALETTE = {
 
 function Frame({ caption, children, height = 180 }) {
   return (
-    <figure className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+    <figure className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
       <div
         className="flex items-center justify-center bg-black/25 p-4"
         style={{ minHeight: height }}
@@ -30,7 +30,7 @@ function Frame({ caption, children, height = 180 }) {
         {children}
       </div>
       {caption && (
-        <figcaption className="border-t border-gray-800 px-4 py-2.5 text-xs text-gray-400">
+        <figcaption className="border-t border-slate-800 px-4 py-2.5 text-xs text-slate-400">
           {caption}
         </figcaption>
       )}
@@ -170,14 +170,14 @@ function TimelineDiagram({ steps = [] }) {
       {steps.map((step, i) => (
         <div key={step.label || i} className="flex min-w-[110px] flex-1 flex-col items-center text-center">
           <div className="flex items-center gap-1.5">
-            {i > 0 && <span className="h-px w-5 bg-gray-700" />}
+            {i > 0 && <span className="h-px w-5 bg-slate-700" />}
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">
               {i + 1}
             </span>
-            {i < n - 1 && <span className="h-px w-5 bg-gray-700" />}
+            {i < n - 1 && <span className="h-px w-5 bg-slate-700" />}
           </div>
-          <p className="mt-2 text-xs font-semibold text-gray-200">{step.label}</p>
-          {step.caption && <p className="mt-0.5 text-[11px] text-gray-500">{step.caption}</p>}
+          <p className="mt-2 text-xs font-semibold text-slate-200">{step.label}</p>
+          {step.caption && <p className="mt-0.5 text-[11px] text-slate-500">{step.caption}</p>}
         </div>
       ))}
     </div>
@@ -188,11 +188,11 @@ function ComparisonDiagram({ columns = [] }) {
   return (
     <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
       {columns.map((col) => (
-        <div key={col.title} className="rounded-lg border border-gray-800 bg-black/20 p-3">
-          <p className="text-sm font-bold text-gray-100">{col.title}</p>
+        <div key={col.title} className="rounded-lg border border-slate-800 bg-black/20 p-3">
+          <p className="text-sm font-bold text-slate-100">{col.title}</p>
           <ul className="mt-2 space-y-1.5">
             {(col.points || []).map((point, i) => (
-              <li key={i} className="flex gap-1.5 text-xs text-gray-400">
+              <li key={i} className="flex gap-1.5 text-xs text-slate-400">
                 <span className="mt-0.5 text-blue-400">•</span>
                 <span>{point}</span>
               </li>
@@ -268,9 +268,9 @@ function LadderDiagram({ items = [] }) {
       {items.map((item, i) => (
         <div
           key={item.label || i}
-          className="flex items-center justify-between gap-3 rounded-lg border border-gray-800 bg-black/20 px-3 py-2"
+          className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-black/20 px-3 py-2"
         >
-          <span className="text-xs font-semibold text-gray-200">{item.label}</span>
+          <span className="text-xs font-semibold text-slate-200">{item.label}</span>
           <span className="text-xs font-bold text-blue-400">{item.value}</span>
         </div>
       ))}
@@ -335,7 +335,7 @@ export default function LessonVisualCard({ diagram, caption }) {
       break;
     default:
       content = (
-        <p className="text-sm text-gray-500">Diagram: {kind}</p>
+        <p className="text-sm text-slate-500">Diagram: {kind}</p>
       );
   }
 

@@ -992,6 +992,75 @@ went further than intended:
   lesson counts/lists the sidebar's progress tracker and lesson list
   depend on. All checks passed with 0 failures.
 
+### Second refinement: slate color tokens, every card clickable, and a Locked Module modal
+
+A further refinement on the pass above, in response to feedback that
+(a) specified the dark-card tokens as Tailwind's **slate** scale rather
+than **gray**, and (b) asked for every category-track card to be
+clickable regardless of lock status, with locked ones opening a modal
+instead of rendering as a non-clickable grayed-out card:
+
+- **`gray-*` → `slate-*` across every Academy dark-card token.**
+  `AcademyHub.jsx`, `LessonViewer.jsx`, `CourseSidebar.jsx`,
+  `QuizModule.jsx`, `LessonVisualCard.jsx`, and `EmbeddedTool.jsx` all
+  switched their card backgrounds/borders/text from `gray-900`/`gray-800`/
+  etc. (`#111827`/`#1f2937`) to `slate-900`/`slate-800`/etc.
+  (`#0f172a`/`#1e293b`) to match the requested tokens exactly — same
+  relative lightness relationship (card background darker than its
+  border) preserved throughout, so nothing lost contrast in the swap.
+  The two sticky floating widgets on the lesson page (the top progress
+  bar and the bottom prev/next nav) moved off the old one-off `ink`
+  token (`#0b0f19`, still defined in `tailwind.config.js` but now
+  unused) onto `bg-slate-900/95` too, for one consistent dark-chrome
+  color across the whole module. The light page body/container
+  wrappers stay `bg-slate-50` (`#f8fafc`) — already an exact match for
+  the requested light background — and the category/search switcher
+  bar now sits on a `bg-slate-100` (`#f1f5f9`) strip, so both requested
+  light tokens are visibly in use, not just the paler of the two.
+- **Every category-track card is now clickable — no more non-clickable
+  grayed-out cards, and no more separate always-unlocked "Overview"
+  card.** `AcademyHub.jsx`'s `FocusedTrackCard` previously rendered a
+  locked lesson as a `cursor-not-allowed` `<div>`; it's now a real
+  `<button>` that opens a `LockedModuleModal` with the lesson's topic
+  and level, a short "Basic Concept & Introduction" built from
+  `CATEGORY_OVERVIEWS` (`lib/academyData.js`) plus a line naming the
+  specific locked lesson, and the exact requested CTA: "🔒 Full
+  Deep-Dive Module Locked. Complete the foundational levels starting
+  from Level 1: Rookie to unlock the complete interactive lesson &
+  quiz." — plus a "Start Level 1: Rookie →" shortcut. The previous
+  pass's standalone, always-unlocked `CategoryOverviewCard` is removed
+  entirely now that its content lives in the modal instead. Unlocked
+  cards are unchanged — a normal `Link` straight to the real lesson.
+- **The modal reuses the existing shared overlay shell
+  (`components/community/Modal.jsx`)** — built originally for the
+  Community Forum's "Share Trade Setup" flow and "Expand Setup" detail
+  view — rather than a new, Academy-specific modal component.
+  It's deliberately left in that component's normal light styling
+  (matching every other modal already in the app) rather than
+  recolored dark, since a locked-module detail popover reads more like
+  the rest of the light chrome (a tooltip/detail view) than like one of
+  the dark "cards" the brief calls out by name.
+- **The sticky two-column lesson-reader layout** (`CourseSidebar.jsx` +
+  `LessonViewer.jsx`'s `flex flex-col lg:flex-row` section) built in the
+  previous pass already matched this request's re-stated sidebar spec
+  (level header, in-level progress bar, clickable vertical lesson list
+  with the active lesson highlighted, right column for content/
+  callouts/mini-tools/quiz) structurally — this pass only needed the
+  `gray-*` → `slate-*` token pass on it, no layout changes.
+- **Verification methodology**: bracket-balance checked via
+  `/tmp/balcheck.py` across every edited file, and a fresh Node.js
+  simulation (via a recreated `@/`-alias ESM loader) importing the real
+  `lib/academyData.js` to confirm: every category in `CATEGORIES` has a
+  non-empty `CATEGORY_OVERVIEWS` blurb for the modal; the Forex track
+  still has 12 lessons, all 12 of which are locked with fresh progress
+  (0 unlocked) — confirming the modal path is actually reachable, not
+  dead code; every locked Forex lesson resolves all the fields the
+  modal needs (category label, overview blurb, lesson title, level
+  order/title); the "Start Level 1" link target resolves to a real
+  lesson via `getLesson`; and the curriculum totals are unchanged (20
+  lessons, 95 sections, 100 quiz questions). All checks passed with 0
+  failures.
+
 ## Notes on the Calculators Hub
 
 - **`lib/tradingCalculators.js`** and **`lib/personalCalculators.js`**

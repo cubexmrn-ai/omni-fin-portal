@@ -84,13 +84,13 @@ export default function QuizModule({ questions, passPercent = 80, onFinish, onPr
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
-      <div className="flex items-center justify-between border-b border-gray-800 bg-black/20 px-4 py-3">
-        <h3 className="text-sm font-bold text-gray-100">Checkpoint Quiz</h3>
-        <span className="text-xs font-semibold text-gray-400">{progressLabel}</span>
+    <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-800 bg-black/20 px-4 py-3">
+        <h3 className="text-sm font-bold text-slate-100">Checkpoint Quiz</h3>
+        <span className="text-xs font-semibold text-slate-400">{progressLabel}</span>
       </div>
 
-      <div className="h-1.5 w-full bg-gray-800">
+      <div className="h-1.5 w-full bg-slate-800">
         <div
           className="h-full bg-blue-500 transition-all"
           style={{ width: `${((step + (hasAnsweredCurrent ? 1 : 0)) / total) * 100}%` }}
@@ -98,7 +98,7 @@ export default function QuizModule({ questions, passPercent = 80, onFinish, onPr
       </div>
 
       <div className="p-5">
-        <p className="text-base font-semibold text-gray-50">{currentQuestion.prompt}</p>
+        <p className="text-base font-semibold text-slate-50">{currentQuestion.prompt}</p>
 
         <div className="mt-4 space-y-2.5">
           {currentQuestion.options.map((option) => {
@@ -106,14 +106,14 @@ export default function QuizModule({ questions, passPercent = 80, onFinish, onPr
             const isCorrectOption = option.id === currentQuestion.correctOptionId;
 
             let style =
-              "border-gray-800 bg-gray-900 text-gray-300 hover:border-blue-500/40 hover:bg-blue-500/10";
+              "border-slate-800 bg-slate-900 text-slate-300 hover:border-blue-500/40 hover:bg-blue-500/10";
             if (hasAnsweredCurrent) {
               if (isCorrectOption) {
                 style = "border-emerald-500/40 bg-emerald-500/10 text-emerald-300";
               } else if (isSelected) {
                 style = "border-rose-500/40 bg-rose-500/10 text-rose-300";
               } else {
-                style = "border-gray-800 bg-gray-900 text-gray-500";
+                style = "border-slate-800 bg-slate-900 text-slate-500";
               }
             }
 
@@ -154,7 +154,7 @@ export default function QuizModule({ questions, passPercent = 80, onFinish, onPr
             <p className="font-semibold">
               {currentAnswer === currentQuestion.correctOptionId ? "Correct!" : "Not quite."}
             </p>
-            <p className="mt-1 text-gray-300">{currentQuestion.explanation}</p>
+            <p className="mt-1 text-slate-300">{currentQuestion.explanation}</p>
           </div>
         )}
 
@@ -177,7 +177,7 @@ function ScoreCard({ result, questions, answers, onRetake, onProceed, canProceed
   const { score, total, percent, passed } = result;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+    <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
       <div
         className={`px-5 py-6 text-center ${
           passed
@@ -188,11 +188,11 @@ function ScoreCard({ result, questions, answers, onRetake, onProceed, canProceed
         <p className="text-4xl" aria-hidden="true">
           {passed ? "🎉" : "📘"}
         </p>
-        <h3 className="mt-2 text-lg font-extrabold text-gray-50">
+        <h3 className="mt-2 text-lg font-extrabold text-slate-50">
           {passed ? "Module Mastered!" : "Almost there"}
         </h3>
-        <p className="mt-1 text-sm text-gray-400">
-          You scored <span className="font-bold text-gray-100">{score} / {total}</span> ({percent}%)
+        <p className="mt-1 text-sm text-slate-400">
+          You scored <span className="font-bold text-slate-100">{score} / {total}</span> ({percent}%)
           {" — "}
           {passed
             ? "you've cleared the pass threshold for this module."
@@ -200,32 +200,32 @@ function ScoreCard({ result, questions, answers, onRetake, onProceed, canProceed
         </p>
       </div>
 
-      <div className="divide-y divide-gray-800 border-t border-gray-800">
+      <div className="divide-y divide-slate-800 border-t border-slate-800">
         {questions.map((q, i) => {
           const givenAnswerId = answers[i];
           const wasCorrect = givenAnswerId === q.correctOptionId;
           const correctOption = q.options.find((o) => o.id === q.correctOptionId);
           return (
             <div key={q.id} className="px-5 py-3">
-              <p className="flex items-start gap-2 text-sm font-medium text-gray-200">
+              <p className="flex items-start gap-2 text-sm font-medium text-slate-200">
                 <span className={wasCorrect ? "text-emerald-400" : "text-rose-400"} aria-hidden="true">
                   {wasCorrect ? "✓" : "✕"}
                 </span>
                 {q.prompt}
               </p>
-              <p className="mt-1 pl-5 text-xs text-gray-500">
-                Correct answer: <span className="font-semibold text-gray-300">{correctOption?.text}</span>
+              <p className="mt-1 pl-5 text-xs text-slate-500">
+                Correct answer: <span className="font-semibold text-slate-300">{correctOption?.text}</span>
               </p>
             </div>
           );
         })}
       </div>
 
-      <div className="flex flex-wrap justify-end gap-3 border-t border-gray-800 bg-black/20 px-5 py-4">
+      <div className="flex flex-wrap justify-end gap-3 border-t border-slate-800 bg-black/20 px-5 py-4">
         <button
           type="button"
           onClick={onRetake}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-900 px-5 py-2.5 text-sm font-semibold text-gray-300 shadow-sm transition-colors hover:border-gray-600 hover:text-gray-100"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-300 shadow-sm transition-colors hover:border-slate-600 hover:text-slate-100"
         >
           Retake Quiz
         </button>

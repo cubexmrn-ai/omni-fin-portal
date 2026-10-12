@@ -45,21 +45,21 @@ export default function CourseSidebar({ levelId, currentLessonId }) {
 
   return (
     <aside className="hidden lg:block lg:w-72 lg:shrink-0">
-      <div className="lg:sticky lg:top-28 lg:self-start rounded-2xl border border-gray-800 bg-gray-900 p-4 shadow-xl shadow-black/20">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500">
+      <div className="lg:sticky lg:top-28 lg:self-start rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl shadow-black/20">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
           Level {level.order}
         </p>
-        <h2 className="mt-0.5 text-base font-extrabold text-gray-50">{level.title}</h2>
-        <p className="mt-0.5 text-xs text-gray-400">{level.subtitle}</p>
+        <h2 className="mt-0.5 text-base font-extrabold text-slate-50">{level.title}</h2>
+        <p className="mt-0.5 text-xs text-slate-400">{level.subtitle}</p>
 
         <div className="mt-3">
-          <div className="flex items-center justify-between text-[11px] text-gray-500">
+          <div className="flex items-center justify-between text-[11px] text-slate-500">
             <span>
               {completedCount} / {stats.lessonCount} lessons
             </span>
-            <span className="font-semibold text-gray-300">{percent}%</span>
+            <span className="font-semibold text-slate-300">{percent}%</span>
           </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-800">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
             <div className={`h-full ${theme.bar} transition-all`} style={{ width: `${percent}%` }} />
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function CourseSidebar({ levelId, currentLessonId }) {
                 className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-medium transition-colors ${
                   isCurrent
                     ? theme.active
-                    : "border-transparent text-gray-400 hover:border-gray-800 hover:bg-black/20 hover:text-gray-200"
+                    : "border-transparent text-slate-400 hover:border-slate-800 hover:bg-black/20 hover:text-slate-200"
                 }`}
               >
                 <span
@@ -85,7 +85,7 @@ export default function CourseSidebar({ levelId, currentLessonId }) {
                       ? "bg-emerald-500/20 text-emerald-400"
                       : isCurrent
                       ? "bg-white/15 text-white"
-                      : "bg-gray-800 text-gray-500"
+                      : "bg-slate-800 text-slate-500"
                   }`}
                   aria-hidden="true"
                 >

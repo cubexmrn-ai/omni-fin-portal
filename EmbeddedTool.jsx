@@ -50,16 +50,16 @@ export default function EmbeddedTool({ toolId, caption }) {
 
   if (!ToolComponent) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-700 bg-gray-900 p-4 text-sm text-gray-500">
+      <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900 p-4 text-sm text-slate-500">
         Tool &quot;{toolId}&quot; isn&apos;t available yet.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900 p-3 sm:p-4">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-4">
       {caption && (
-        <p className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-gray-400">
+        <p className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-slate-400">
           <span className="text-blue-400" aria-hidden="true">
             ▸
           </span>
