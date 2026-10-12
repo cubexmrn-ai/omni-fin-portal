@@ -28,13 +28,14 @@
 // converter with the new initial values baked in, which reads to the
 // user as "the window updated instantly."
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GoldCalculator from "@/components/GoldCalculator";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import UnitConverter from "@/components/UnitConverter";
 import { UNIT_CATEGORIES, getCategoryKeys } from "@/lib/conversionMath";
 import { parseUnitSlug, FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { FEATURED_FX_PAIRS } from "@/lib/fxSlugs";
+import { useBaseCurrency } from "@/lib/baseCurrencyContext";
 
 const TOOL_TABS = [
   { key: "currency", label: "Currency & Crypto" },
@@ -55,14 +56,32 @@ const CATEGORY_CARDS = [
 const VALID_UNIT_CATEGORIES = new Set(getCategoryKeys());
 
 export default function ConvertersWorkspace() {
+  const { baseCurrency } = useBaseCurrency();
   const [activeTool, setActiveTool] = useState("currency");
   const [currencySelection, setCurrencySelection] = useState({ from: "USD", to: "PKR" });
+  // Once the person has clicked a card/pill or changed a dropdown
+  // inside the converter itself, their choice always wins — this only
+  // ever adjusts the as-yet-untouched default "to" currency.
+  const [currencyTouched, setCurrencyTouched] = useState(false);
   const [unitSelection, setUnitSelection] = useState({ category: "length", from: undefined, to: undefined });
   // Bumped on every card/pill click so the `key` below always changes,
   // forcing UnitConverter/CurrencyConverter to remount with the fresh
   // initial* props even if the same category/pair is clicked twice.
   const [selectionVersion, setSelectionVersion] = useState(0);
   const converterRef = useRef(null);
+
+  // Inherits the header's global Base Currency as the converter's
+  // default "to" currency, exactly as requirement 3 asks — but only
+  // while untouched, so clicking any "Popular Currency Conversions"
+  // pill or picking a different asset inside the converter always
+  // takes priority over this default.
+  useEffect(() => {
+    if (!currencyTouched && baseCurrency && baseCurrency !== currencySelection.to) {
+      setCurrencySelection((prev) => ({ ...prev, to: baseCurrency }));
+      setSelectionVersion((v) => v + 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseCurrency, currencyTouched]);
 
   function scrollToConverter() {
     converterRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -79,6 +98,7 @@ export default function ConvertersWorkspace() {
   function openCurrencyPair(from, to) {
     setActiveTool("currency");
     setCurrencySelection({ from, to });
+    setCurrencyTouched(true);
     setSelectionVersion((v) => v + 1);
     scrollToConverter();
   }

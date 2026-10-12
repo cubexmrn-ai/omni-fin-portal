@@ -9,19 +9,25 @@ import {
 } from "@/lib/conversionMath";
 import { fetchRates } from "@/lib/fetchRates";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { CURRENCIES, FALLBACK_RATES as FIAT_FALLBACK_RATES } from "@/lib/currencies";
+import { useBaseCurrency } from "@/lib/baseCurrencyContext";
 
 // ---------------------------------------------------------------------------
 // Static reference data (UI-level — the math itself lives in lib/conversionMath.js)
 // ---------------------------------------------------------------------------
 
-const CURRENCIES = [
-  { code: "PKR", label: "Pakistani Rupee", symbol: "Rs" },
-  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
-  { code: "EUR", label: "Euro", symbol: "€" },
-  { code: "INR", label: "Indian Rupee", symbol: "₹" },
-  { code: "AED", label: "UAE Dirham", symbol: "AED" },
-  { code: "NGN", label: "Nigerian Naira", symbol: "₦" },
-];
+// "Local Currency" now sources its options from lib/currencies.js's
+// full 140+ currency list (previously a hand-picked 6-entry array),
+// so it's never more restrictive than the Universal Currency
+// Converter's picker. `CURRENCIES` is already in scope via the import
+// above; this local alias just keeps the `.label` field name every
+// render call-site below already expects, instead of touching every
+// usage to the imported list's `.name` field.
+const LOCAL_CURRENCY_OPTIONS = CURRENCIES.map((c) => ({
+  code: c.code,
+  label: c.name,
+  symbol: c.symbol,
+}));
 
 // Six selectable assets. `kind: "metal"` reads its live price from
 // data.metals[code] (USD per troy ounce) and supports the weight-unit
@@ -68,15 +74,11 @@ const UNIT_OPTIONS = ["troy_ounce", "gram", "tola", "kilogram"];
 // when the selected asset is gold (XAU) — see ASSET_OPTIONS above.
 const KARAT_OPTIONS = ["24K", "22K"];
 
-const FALLBACK_RATES = {
-  USD: 1,
-  PKR: 278.5,
-  AUD: 1.52,
-  EUR: 0.92,
-  INR: 83.9,
-  AED: 3.6725,
-  NGN: 1550,
-};
+// Fiat fallback rates now come from lib/currencies.js's full 140+
+// list (imported above as FIAT_FALLBACK_RATES), replacing a
+// hand-picked 7-entry object — so a currency switched to here always
+// has a sane fallback value even before the first live fetch resolves.
+const FALLBACK_RATES = FIAT_FALLBACK_RATES;
 
 // Delegates to lib/formatNumber.js, which now owns the clamp this
 // function used to do by hand (see that file's header comment) — a
@@ -91,10 +93,12 @@ function formatNumber(value, maximumFractionDigits = 2) {
 // ---------------------------------------------------------------------------
 
 export default function GoldCalculator() {
+  const { baseCurrency } = useBaseCurrency();
   const [assetCode, setAssetCode] = useState("XAU");
   const [baseUsdPrice, setBaseUsdPrice] = useState(DEFAULT_BASE_PRICE_BY_ASSET.XAU);
   const [baseTouched, setBaseTouched] = useState(false);
-  const [currencyCode, setCurrencyCode] = useState("PKR");
+  const [currencyCode, setCurrencyCode] = useState(baseCurrency);
+  const [currencyTouched, setCurrencyTouched] = useState(false);
   const [unitCode, setUnitCode] = useState("tola");
   const [karatCode, setKaratCode] = useState("24K");
   const [quantity, setQuantity] = useState(1);
@@ -127,6 +131,16 @@ export default function GoldCalculator() {
   useEffect(() => {
     assetRatesRef.current = assetRates;
   }, [assetRates]);
+
+  // Keeps "Local Currency" synced to the global Base Currency chosen
+  // in the header, but only until the person picks a different
+  // currency from THIS tool's own dropdown — a manual override here
+  // always wins over the header default, matching how `baseTouched`
+  // above already protects a manually-typed spot price from being
+  // silently overwritten.
+  useEffect(() => {
+    if (!currencyTouched) setCurrencyCode(baseCurrency);
+  }, [baseCurrency, currencyTouched]);
 
   const loadRates = useCallback(async () => {
     setRateStatus((prev) => (prev === "live" ? "live" : "loading"));
@@ -193,7 +207,7 @@ export default function GoldCalculator() {
   }
 
   const selectedCurrency =
-    CURRENCIES.find((c) => c.code === currencyCode) || CURRENCIES[0];
+    LOCAL_CURRENCY_OPTIONS.find((c) => c.code === currencyCode) || LOCAL_CURRENCY_OPTIONS[0];
   const exchangeRate = rates[currencyCode] ?? FALLBACK_RATES[currencyCode];
   const isCommodity = selectedAsset.kind === "commodity";
   const isGold = assetCode === "XAU";
@@ -330,15 +344,23 @@ export default function GoldCalculator() {
                 <select
                   id="currency-select"
                   value={currencyCode}
-                  onChange={(e) => setCurrencyCode(e.target.value)}
+                  onChange={(e) => {
+                    setCurrencyTouched(true);
+                    setCurrencyCode(e.target.value);
+                  }}
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm transition-colors focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                 >
-                  {CURRENCIES.map((c) => (
+                  {LOCAL_CURRENCY_OPTIONS.map((c) => (
                     <option key={c.code} value={c.code}>
                       {c.code} — {c.label}
                     </option>
                   ))}
                 </select>
+                <p className="mt-1.5 text-xs text-slate-400">
+                  {currencyTouched
+                    ? "Manually selected — overrides the header's Base Currency for this tool."
+                    : "Synced to the header's Base Currency; pick a different one to override."}
+                </p>
               </div>
 
               {!isCommodity && (

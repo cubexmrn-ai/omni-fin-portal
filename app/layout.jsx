@@ -1,13 +1,14 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import SiteStructuredData from "@/components/SiteStructuredData";
+import { BaseCurrencyProvider } from "@/lib/baseCurrencyContext";
 import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
 const SITE_URL = getSiteUrl();
 const SITE_NAME = "OmniFin Portal";
 const SITE_DESCRIPTION =
-  "OmniFin Portal — a universal currency, crypto & metals converter, a metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), a worldwide unit converter, live market charts & AI-aggregated finance news, trading & personal-finance calculators, and a free Academy, for PKR, AUD, EUR, INR, AED and NGN.";
+  "OmniFin Portal — a universal currency, crypto & metals converter supporting 140+ world currencies and major cryptocurrencies, a metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), a worldwide unit converter, live market charts & AI-aggregated finance news, and trading & personal-finance calculators with a global Base Currency synced across every tool.";
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
@@ -115,12 +116,14 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-slate-50">
-        <SiteStructuredData />
-        <Header />
-        <main id="dashboard" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
+        <BaseCurrencyProvider>
+          <SiteStructuredData />
+          <Header />
+          <main id="dashboard" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
+        </BaseCurrencyProvider>
       </body>
     </html>
   );

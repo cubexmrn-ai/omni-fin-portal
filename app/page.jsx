@@ -1,6 +1,8 @@
 import Link from "next/link";
 import ConvertersTabs from "@/components/ConvertersTabs";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { CURRENCIES } from "@/lib/currencies";
+import { CRYPTO_ASSETS } from "@/lib/crypto";
 
 export const revalidate = 3600; // Align page-level ISR with the unified rates API cache.
 
@@ -47,14 +49,6 @@ const ECOSYSTEM_MODULES = [
   },
 ];
 
-const SUPPORTED_CURRENCIES = [
-  { code: "PKR", label: "Pakistan" },
-  { code: "AUD", label: "Australia" },
-  { code: "EUR", label: "Eurozone" },
-  { code: "INR", label: "India" },
-  { code: "AED", label: "UAE" },
-  { code: "NGN", label: "Nigeria" },
-];
 
 const FEATURES = [
   {
@@ -89,9 +83,9 @@ function Hero() {
           </h1>
           <p className="mt-4 text-base text-slate-600 sm:text-lg">
             A clean, modern dashboard for converting live gold, silver,
-            platinum, palladium, copper and crude oil spot prices, 36
-            world currencies and major crypto — by weight unit, karat
-            purity, or any asset you&rsquo;re pricing against.
+            platinum, palladium, copper and crude oil spot prices, {CURRENCIES.length}+
+            world currencies and {CRYPTO_ASSETS.length} major cryptocurrencies — by weight
+            unit, karat purity, or any asset you&rsquo;re pricing against.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
@@ -216,31 +210,58 @@ function EcosystemSection() {
   );
 }
 
+/** A dense, scannable chip grid — not a 6-entry hand-picked list — so
+ * this section honestly reflects the full currency range every
+ * dropdown in the app (Header's Base Currency switcher, the Universal
+ * Currency Converter, the Metals Calculator) actually supports, which
+ * now comes straight from lib/currencies.js / lib/crypto.js rather
+ * than a short curated array baked into this page. */
+function CurrencyChips({ items }) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item.code}
+          title={item.name}
+          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm"
+        >
+          {item.flag && <span aria-hidden="true">{item.flag}</span>}
+          {item.code}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function SupportedCurrencies() {
   return (
     <section id="rates" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="flex items-end justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">
-            Supported Currencies
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            All rates are sourced against a USD base and cached hourly
-            via Incremental Static Regeneration.
-          </p>
-        </div>
+      <div>
+        <h2 className="text-lg font-bold text-slate-900">
+          Supported Currencies &amp; Crypto
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          {CURRENCIES.length} fiat currencies and {CRYPTO_ASSETS.length} major
+          cryptocurrencies — sourced against a USD base from
+          ExchangeRate-API and CoinGecko, cached hourly via Incremental
+          Static Regeneration. No hardcoded short list — pick any of
+          these as your global Base Currency in the header, or inside
+          any individual converter or calculator.
+        </p>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {SUPPORTED_CURRENCIES.map((c) => (
-          <div
-            key={c.code}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-4 text-center shadow-card"
-          >
-            <p className="text-base font-bold text-slate-900">{c.code}</p>
-            <p className="mt-0.5 text-xs text-slate-500">{c.label}</p>
-          </div>
-        ))}
+      <div className="mt-6">
+        <h3 className="text-sm font-bold text-slate-900">
+          {CURRENCIES.length} Fiat Currencies
+        </h3>
+        <CurrencyChips items={CURRENCIES} />
+      </div>
+
+      <div className="mt-8">
+        <h3 className="text-sm font-bold text-slate-900">
+          {CRYPTO_ASSETS.length} Major Cryptocurrencies
+        </h3>
+        <CurrencyChips items={CRYPTO_ASSETS.map((c) => ({ code: c.code, name: c.name }))} />
       </div>
     </section>
   );

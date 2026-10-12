@@ -43,6 +43,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
+// Global Base Currency sync — WITHOUT an import.
+//
+// components/Header.jsx's Base Currency switcher writes its choice to
+// lib/baseCurrencyContext.js's BaseCurrencyProvider, which persists it
+// to localStorage under the key below and also fires a same-tab
+// CustomEvent (the native "storage" event only fires in OTHER tabs).
+// This page deliberately has ZERO imports of any other project file
+// (see the header comment above) so it can never break from a
+// missing-import deploy error — so instead of importing that Context,
+// it reads/writes the exact same localStorage key and listens for the
+// exact same event name, by literal string. If either constant is
+// ever renamed in lib/baseCurrencyContext.js, update the two literals
+// below to match.
+const GLOBAL_BASE_CURRENCY_STORAGE_KEY = "omnifin:baseCurrency";
+const GLOBAL_BASE_CURRENCY_EVENT = "omnifin:baseCurrencyChange";
+
+// ---------------------------------------------------------------------------
 // Inlined data: tradable instruments, contract sizes, pip sizes,
 // fallback rates. All self-contained — nothing imported from lib/.
 // ---------------------------------------------------------------------------
@@ -110,17 +127,33 @@ const CONTRACT_SIZES = {
 
 // Static USD-base fallback rates, used whenever the live /api/rates
 // fetch fails or is unreachable — this page never shows a blank result
-// just because a network call didn't come back.
+// just because a network call didn't come back. Duplicated (not
+// imported) from lib/currencies.js's FALLBACK_RATES for the same
+// zero-imports reason explained at the top of this file — this is the
+// full 140+ currency set, so the "Account / Local Currency" picker
+// below is never more restrictive than the rest of the site's
+// dropdowns.
 const FALLBACK_RATES = {
-  USD: 1,
-  PKR: 278.5,
-  EUR: 0.92,
-  GBP: 0.79,
-  JPY: 149.5,
-  AUD: 1.52,
-  CAD: 1.36,
-  CHF: 0.88,
-  NZD: 1.66,
+  USD: 1, EUR: 0.92, GBP: 0.79, JPY: 149.5, CHF: 0.88, CAD: 1.36, AUD: 1.52, NZD: 1.66,
+  CNY: 7.24, HKD: 7.82, SGD: 1.34,
+  PKR: 278.5, INR: 83.9, BDT: 119.5, LKR: 304, NPR: 134, BTN: 83.9, MVR: 15.4,
+  THB: 34.8, IDR: 15750, PHP: 56.8, VND: 25400, MYR: 4.47, MMK: 2100, KHR: 4100, LAK: 21700, BND: 1.34,
+  KRW: 1365, TWD: 32.4, MOP: 8.05, MNT: 3450,
+  FJD: 2.27, PGK: 4.0, WST: 2.75, TOP: 2.37, SBD: 8.45, VUV: 119,
+  KZT: 480, UZS: 12800, TJS: 10.6, KGS: 87.5, TMT: 3.5, AMD: 387, AZN: 1.7, GEL: 2.66,
+  AED: 3.6725, SAR: 3.75, QAR: 3.64, KWD: 0.307, OMR: 0.385, BHD: 0.376,
+  ILS: 3.7, JOD: 0.709, LBP: 89500, IQD: 1310, IRR: 42000, YER: 250, AFN: 70, TRY: 34.1,
+  EGP: 48.5, NGN: 1550, ZAR: 18.3, DZD: 134.5, AOA: 920, XOF: 610, XAF: 610,
+  BWP: 13.6, CDF: 2850, DJF: 177.7, ETB: 123, GHS: 15.6, GNF: 8600, KES: 129,
+  LSL: 18.3, LYD: 4.85, MAD: 10.0, MGA: 4550, MUR: 46.5, MWK: 1740, MZN: 63.9,
+  NAD: 18.3, RWF: 1390, SCR: 13.6, SDG: 601, SLL: 22700, SOS: 571, SSP: 4500,
+  SZL: 18.3, TND: 3.11, TZS: 2520, UGX: 3700, XPF: 109, ZMW: 26.8, ZWL: 26.8,
+  CVE: 101, GMD: 72, KMF: 450, MRU: 39.8, STN: 22.3, ERN: 15, BIF: 2890,
+  SEK: 10.4, NOK: 10.7, DKK: 6.86, ISK: 138, PLN: 4.0, CZK: 23.5, HUF: 385,
+  RON: 4.58, BGN: 1.80, UAH: 41.5, RSD: 108, ALL: 94, MKD: 56.8, BAM: 1.80, MDL: 17.7, BYN: 3.3, RUB: 96.5,
+  MXN: 18.2, BRL: 5.65, ARS: 990, CLP: 970, COP: 4300, PEN: 3.78, UYU: 42.5, BOB: 6.91,
+  PYG: 7850, VES: 50, GYD: 209, SRD: 36.5, TTD: 6.78, JMD: 158, BSD: 1.0, BBD: 2.0,
+  BZD: 2.02, XCD: 2.70, HTG: 132, DOP: 60.0, CRC: 505, GTQ: 7.72, HNL: 24.8, NIO: 36.8, PAB: 1.0, CUP: 24.0,
 };
 
 // ---------------------------------------------------------------------------
@@ -144,8 +177,10 @@ function round(value, decimals) {
 }
 
 /** Pip value for an arbitrary custom lot size (e.g. 0.18 lots), live-
- * rate converted to USD/PKR. */
-function calcPipValueForLots({ pairId, lots, pipSize, rates }) {
+ * rate converted to USD and to `accountCurrency` — the global Base
+ * Currency from the header by default, or whatever the panel's own
+ * "Account / Local Currency" dropdown was manually overridden to. */
+function calcPipValueForLots({ pairId, lots, pipSize, rates, accountCurrency }) {
   const pair = getPair(pairId);
   const lotsNum = Number(lots);
   if (!pair || !Number.isFinite(lotsNum) || lotsNum <= 0) return null;
@@ -160,14 +195,24 @@ function calcPipValueForLots({ pairId, lots, pipSize, rates }) {
   const safeRates = rates && typeof rates === "object" ? rates : {};
   const quoteCode = pair.quote.toUpperCase();
   const quoteRate = quoteCode === "USD" ? 1 : safeRates[quoteCode];
-  const pkrRate = safeRates.PKR;
+  const accountCode = (accountCurrency || "PKR").toUpperCase();
+  const accountRate = accountCode === "USD" ? 1 : safeRates[accountCode];
 
   const pipValueUsd =
     Number.isFinite(quoteRate) && quoteRate > 0 ? pipValueQuote / quoteRate : null;
-  const pipValuePkr =
-    Number.isFinite(pipValueUsd) && Number.isFinite(pkrRate) ? pipValueUsd * pkrRate : null;
+  const pipValueAccountCcy =
+    Number.isFinite(pipValueUsd) && Number.isFinite(accountRate) ? pipValueUsd * accountRate : null;
 
-  return { pair, pipSize: resolvedPipSize, units, lots: lotsNum, pipValueQuote, pipValueUsd, pipValuePkr };
+  return {
+    pair,
+    pipSize: resolvedPipSize,
+    units,
+    lots: lotsNum,
+    pipValueQuote,
+    pipValueUsd,
+    accountCurrency: accountCode,
+    pipValueAccountCcy,
+  };
 }
 
 /** The All-in-One combined calculation: profit/loss ($ & pips), R:R,
@@ -184,8 +229,9 @@ function calcTradeExecution({
   rates,
   accountBalance,
   leverage,
+  accountCurrency,
 }) {
-  const pipInfo = calcPipValueForLots({ pairId, lots, pipSize, rates });
+  const pipInfo = calcPipValueForLots({ pairId, lots, pipSize, rates, accountCurrency });
   if (!pipInfo) return null;
 
   const e = Number(entry);
@@ -193,7 +239,15 @@ function calcTradeExecution({
   const sl = Number(stopLoss);
   if (![e, tp, sl].every(Number.isFinite) || e <= 0 || e === sl) return null;
 
-  const { pair, pipSize: resolvedPipSize, units, pipValueUsd, pipValuePkr, pipValueQuote } = pipInfo;
+  const {
+    pair,
+    pipSize: resolvedPipSize,
+    units,
+    pipValueUsd,
+    pipValueAccountCcy,
+    accountCurrency: resolvedAccountCurrency,
+    pipValueQuote,
+  } = pipInfo;
 
   const profitPips = Math.abs(tp - e) / resolvedPipSize;
   const lossPips = Math.abs(e - sl) / resolvedPipSize;
@@ -227,7 +281,8 @@ function calcTradeExecution({
     pair,
     pipValueQuote,
     pipValueUsd,
-    pipValuePkr,
+    accountCurrency: resolvedAccountCurrency,
+    pipValueAccountCcy,
     profitPips,
     lossPips,
     profitUsd,
@@ -470,15 +525,82 @@ function useLiveRates() {
 }
 
 // ---------------------------------------------------------------------------
+// Global Base Currency sync hook (inline — see the literal-constant
+// note at the top of this file for why this reads localStorage/a
+// CustomEvent directly instead of importing
+// lib/baseCurrencyContext.js). Returns the header's current Base
+// Currency selection so a panel can use it as its default "Account /
+// Local Currency", without ever importing another project file.
+// ---------------------------------------------------------------------------
+
+function useGlobalBaseCurrency() {
+  const [baseCurrency, setBaseCurrencyState] = useState("USD");
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(GLOBAL_BASE_CURRENCY_STORAGE_KEY);
+      if (stored) setBaseCurrencyState(stored);
+    } catch {
+      // Private browsing / blocked storage — stay on the "USD" default.
+    }
+
+    function handleChange(e) {
+      const next = e?.detail || e?.newValue;
+      if (next) setBaseCurrencyState(next);
+    }
+
+    window.addEventListener(GLOBAL_BASE_CURRENCY_EVENT, handleChange);
+    window.addEventListener("storage", handleChange);
+    return () => {
+      window.removeEventListener(GLOBAL_BASE_CURRENCY_EVENT, handleChange);
+      window.removeEventListener("storage", handleChange);
+    };
+  }, []);
+
+  return baseCurrency;
+}
+
+/** "Account / Local Currency" dropdown shared by the panels that
+ * display a secondary-currency figure (All-in-One, Pip Value) —
+ * defaults to the header's global Base Currency, but a manual pick
+ * here always overrides it for that panel (same pattern as the pip
+ * size / pair pickers elsewhere on this page). */
+function AccountCurrencySelect({ value, onChange, touched }) {
+  const codes = Object.keys(FALLBACK_RATES);
+  return (
+    <label className="block">
+      <FieldLabel>Account / Local Currency</FieldLabel>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-blue-500 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      >
+        {codes.map((code) => (
+          <option key={code} value={code}>
+            {code}
+          </option>
+        ))}
+      </select>
+      <p className="mt-1 text-[11px] text-slate-400">
+        {touched ? "Manually selected." : "Synced to the header's Base Currency."}
+      </p>
+    </label>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Mode 1 — All-in-One Trade Execution Suite
 // ---------------------------------------------------------------------------
 
 function AllInOnePanel() {
   const { rates, status } = useLiveRates();
+  const globalBaseCurrency = useGlobalBaseCurrency();
   const [pairId, setPairId] = useState("EURUSD");
   const [lots, setLots] = useState(0.18);
   const [direction, setDirection] = useState("buy");
   const [accountBalance, setAccountBalance] = useState(10000);
+  const [accountCurrency, setAccountCurrency] = useState(globalBaseCurrency);
+  const [accountCurrencyTouched, setAccountCurrencyTouched] = useState(false);
   const [entry, setEntry] = useState(1.123);
   const [takeProfit, setTakeProfit] = useState(1.223);
   const [stopLoss, setStopLoss] = useState(1.073);
@@ -491,6 +613,12 @@ function AllInOnePanel() {
     setPairId(nextId);
     setPipSize(getDefaultPipSize(getPair(nextId).instrumentType));
   }
+
+  // Keeps Account Currency synced to the header's global Base
+  // Currency until the person manually picks a different one here.
+  useEffect(() => {
+    if (!accountCurrencyTouched) setAccountCurrency(globalBaseCurrency);
+  }, [globalBaseCurrency, accountCurrencyTouched]);
 
   const result = useMemo(
     () =>
@@ -505,8 +633,9 @@ function AllInOnePanel() {
         rates,
         accountBalance,
         leverage,
+        accountCurrency,
       }),
-    [pair.id, lots, direction, entry, takeProfit, stopLoss, pipSize, rates, accountBalance, leverage]
+    [pair.id, lots, direction, entry, takeProfit, stopLoss, pipSize, rates, accountBalance, leverage, accountCurrency]
   );
 
   return (
@@ -593,6 +722,15 @@ function AllInOnePanel() {
         </label>
 
         <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
+
+        <AccountCurrencySelect
+          value={accountCurrency}
+          touched={accountCurrencyTouched}
+          onChange={(code) => {
+            setAccountCurrencyTouched(true);
+            setAccountCurrency(code);
+          }}
+        />
       </div>
 
       <div className="border-t border-blue-100 p-5">
@@ -621,7 +759,11 @@ function AllInOnePanel() {
                 tone="neutral"
                 label="Pip Value"
                 value={Number.isFinite(result.pipValueUsd) ? `$${safeFormat(result.pipValueUsd)}` : "—"}
-                sub={Number.isFinite(result.pipValuePkr) ? `≈ Rs ${safeFormat(result.pipValuePkr)}` : "—"}
+                sub={
+                  Number.isFinite(result.pipValueAccountCcy)
+                    ? `≈ ${safeFormat(result.pipValueAccountCcy)} ${result.accountCurrency}`
+                    : "—"
+                }
               />
             </div>
 
@@ -738,9 +880,12 @@ function LotSizePanel() {
 
 function PipValuePanel() {
   const { rates, status } = useLiveRates();
+  const globalBaseCurrency = useGlobalBaseCurrency();
   const [pairId, setPairId] = useState("EURUSD");
   const [lots, setLots] = useState(0.18);
   const [pipSize, setPipSize] = useState(getDefaultPipSize("forex"));
+  const [accountCurrency, setAccountCurrency] = useState(globalBaseCurrency);
+  const [accountCurrencyTouched, setAccountCurrencyTouched] = useState(false);
 
   const pair = getPair(pairId);
 
@@ -749,9 +894,13 @@ function PipValuePanel() {
     setPipSize(getDefaultPipSize(getPair(nextId).instrumentType));
   }
 
+  useEffect(() => {
+    if (!accountCurrencyTouched) setAccountCurrency(globalBaseCurrency);
+  }, [globalBaseCurrency, accountCurrencyTouched]);
+
   const result = useMemo(
-    () => calcPipValueForLots({ pairId: pair.id, lots, pipSize, rates }),
-    [pair.id, lots, pipSize, rates]
+    () => calcPipValueForLots({ pairId: pair.id, lots, pipSize, rates, accountCurrency }),
+    [pair.id, lots, pipSize, rates, accountCurrency]
   );
 
   return (
@@ -778,6 +927,15 @@ function PipValuePanel() {
           <TextInput min="0" step="0.01" value={lots} onChange={(e) => setLots(e.target.value)} />
         </label>
         <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
+
+        <AccountCurrencySelect
+          value={accountCurrency}
+          touched={accountCurrencyTouched}
+          onChange={(code) => {
+            setAccountCurrencyTouched(true);
+            setAccountCurrency(code);
+          }}
+        />
       </div>
 
       <div className="border-t border-blue-100 px-5 py-4">
@@ -798,7 +956,8 @@ function PipValuePanel() {
             <p>
               <span className="text-slate-600">≈ </span>
               <span className="font-bold text-emerald-600">
-                {Number.isFinite(result.pipValuePkr) ? `Rs ${safeFormat(result.pipValuePkr)}` : "—"} PKR
+                {Number.isFinite(result.pipValueAccountCcy) ? `${safeFormat(result.pipValueAccountCcy)}` : "—"}{" "}
+                {result.accountCurrency}
               </span>
             </p>
           </div>
@@ -1077,7 +1236,9 @@ function CalculationGuide() {
           for an instrument — 0.0001 for most forex pairs, 0.01 for JPY/PKR pairs and
           metals/energy on some brokers. Pip value in your account currency = pip size ×
           contract size (units per lot) × your lot size, converted from the quote currency to
-          USD/PKR using the current exchange rate — exactly what Modes 1 and 3 compute live.
+          USD and then to your selected Account / Local Currency (defaults to the Base Currency
+          set in the header) using the current exchange rate — exactly what Modes 1 and 3 compute
+          live.
         </AccordionItem>
         <AccordionItem title="Lot sizing formulas">
           Position size is solved backward from how much you&apos;re willing to lose: Risk

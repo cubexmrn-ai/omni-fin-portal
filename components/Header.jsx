@@ -26,14 +26,24 @@
 //     (/#metals-calculator), per spec — it's a shortcut to the single
 //     most-used tool, not part of the new dropdown.
 //
-// This file has ZERO imports beyond next/link and React itself — no
-// other component or lib file is required for it to render correctly,
-// so dropping it into components/Header.jsx and importing it from
-// app/layout.jsx (replacing the old inline SiteHeader) is a clean,
-// self-contained swap.
+// GLOBAL BASE CURRENCY SWITCHER: this header also owns the site-wide
+// Base Currency dropdown (USD, EUR, GBP, INR, PKR, AED, and every
+// other currency in lib/currencies.js). It reads/writes the shared
+// BaseCurrencyProvider context (see lib/baseCurrencyContext.js, wired
+// up in app/layout.jsx) rather than local state, so the choice made
+// here becomes the default account/local currency across the Metals
+// Calculator, the Universal Currency Converter, and the Trading
+// Calculator Suite — while every one of those tools keeps its own
+// manual-override dropdown intact. This is the one deliberate
+// exception to this file's original "zero imports" design note below
+// (now out of date): a Context import carries no risk of a missing
+// *component* dependency, since lib/baseCurrencyContext.js has no
+// imports of its own beyond React/Next primitives.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { CURRENCIES, POPULAR_CURRENCY_CODES, getCurrency } from "@/lib/currencies";
+import { useBaseCurrency } from "@/lib/baseCurrencyContext";
 
 const TOOLS_CALCULATORS_LINKS = [
   {
@@ -43,7 +53,7 @@ const TOOLS_CALCULATORS_LINKS = [
   },
   {
     label: "Universal Currency Converter",
-    description: "Convert between 35+ world currencies.",
+    description: "Convert between 140+ world currencies & major crypto.",
     href: "/converters",
   },
   {
@@ -161,6 +171,60 @@ function ToolsCalculatorsDropdown() {
   );
 }
 
+/** Sleek Base Currency dropdown for the top nav — a native <select> so
+ * it's fully keyboard/touch accessible, grouped into a short
+ * "Popular" set plus every other supported currency, styled to sit
+ * naturally beside the other header controls. Changing it updates
+ * BaseCurrencyProvider immediately, which every synced tool (Metals
+ * Calculator, Currency Converter, Trading Calculators) picks up as
+ * its new default — without touching any manual override the person
+ * already made inside a specific tool. */
+function BaseCurrencySelect({ className = "" }) {
+  const { baseCurrency, setBaseCurrency } = useBaseCurrency();
+  const popular = POPULAR_CURRENCY_CODES.map((code) => getCurrency(code)).filter(Boolean);
+  const popularCodes = new Set(POPULAR_CURRENCY_CODES);
+  const rest = CURRENCIES.filter((c) => !popularCodes.has(c.code));
+
+  return (
+    <label className={`relative ${className}`}>
+      <span className="sr-only">Base currency</span>
+      <select
+        value={baseCurrency}
+        onChange={(e) => setBaseCurrency(e.target.value)}
+        aria-label="Base currency"
+        title="Base currency — sets the default account/local currency across OmniFin Portal's tools"
+        className="appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-7 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+      >
+        <optgroup label="Popular">
+          {popular.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag} {c.code}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="All Currencies">
+          {rest.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag} {c.code} — {c.name}
+            </option>
+          ))}
+        </optgroup>
+      </select>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+      >
+        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </label>
+  );
+}
+
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -191,10 +255,14 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <span className="hidden items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 sm:inline-flex">
+          <span className="hidden items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 lg:inline-flex">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             Live rates · hourly cache
           </span>
+
+          {/* Global Base Currency switcher — desktop only; mobile gets
+              its own copy inside the slide-down menu below. */}
+          <BaseCurrencySelect className="hidden sm:block" />
 
           {/* Primary action — untouched, still a direct shortcut to the
               Metals Calculator, independent of the dropdown above. */}
@@ -240,6 +308,13 @@ export default function Header() {
       {mobileOpen && (
         <nav className="border-t border-slate-100 px-4 py-3 md:hidden" aria-label="Primary mobile">
           <div className="flex flex-col gap-0.5">
+            <div className="flex items-center justify-between gap-3 px-3 py-1.5 sm:hidden">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Base Currency
+              </span>
+              <BaseCurrencySelect />
+            </div>
+
             <Link
               href="/"
               onClick={() => setMobileOpen(false)}
