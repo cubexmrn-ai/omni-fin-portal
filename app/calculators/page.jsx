@@ -24,11 +24,12 @@
 // layout isn't something page.jsx imports; Next.js wires it up by
 // folder convention.
 //
-// THEME: page background is the clean light surface (bg-slate-50 /
-// #f8fafc); every interactive card — the mode selector, each
-// calculator panel, the output dashboard, the accordion — is a dark,
-// glassmorphic bg-slate-900 (#111827-ish) card so it pops against the
-// light page around it, per spec.
+// THEME: a clean, light, "border-only" look. The page and every
+// panel/card use a white or slate-50 background with no heavy fills;
+// the only strong color is a precise blue (border-blue-500) outline on
+// interactive elements — inputs, dropdowns, toggle buttons, and result
+// value boxes. Profit/loss/ratio are conveyed with text color
+// (emerald/rose/blue), never a colored background block.
 //
 // MODES (one Selector Bar, five panels):
 //   1. All-in-One Trade Execution Suite — combined profit/loss, R:R,
@@ -326,7 +327,7 @@ function TextInput(props) {
       type="number"
       step="any"
       {...props}
-      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      className="w-full rounded-lg border border-blue-500 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
     />
   );
 }
@@ -335,17 +336,17 @@ function TextInput(props) {
  * palette for profit (emerald) / loss (rose) / neutral (slate/blue). */
 function StatCard({ label, value, sub, tone = "neutral" }) {
   const toneClasses = {
-    profit: "border-emerald-500/30 bg-emerald-950/40 text-emerald-400",
-    loss: "border-rose-500/30 bg-rose-950/40 text-rose-400",
-    ratio: "border-blue-500/40 bg-blue-500/10 text-blue-300",
-    neutral: "border-slate-700 bg-slate-900 text-white",
+    profit: "border-blue-500 bg-white text-emerald-600",
+    loss: "border-blue-500 bg-white text-rose-600",
+    ratio: "border-blue-500 bg-white text-blue-600",
+    neutral: "border-blue-500 bg-white text-slate-900",
   }[tone];
 
   return (
     <div className={`rounded-xl border p-3 text-center ${toneClasses}`}>
-      <p className="text-[11px] font-bold uppercase tracking-wide opacity-80">{label}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-xl font-extrabold">{value}</p>
-      {sub && <p className="mt-0.5 text-xs opacity-80">{sub}</p>}
+      {sub && <p className="mt-0.5 text-xs text-slate-500">{sub}</p>}
     </div>
   );
 }
@@ -353,7 +354,7 @@ function StatCard({ label, value, sub, tone = "neutral" }) {
 function AccordionItem({ title, children, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
   return (
-    <div className="border-b border-slate-200 last:border-b-0">
+    <div className="border-b border-blue-100 last:border-b-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -375,7 +376,7 @@ function PairSelect({ value, onChange }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      className="w-full rounded-lg border border-blue-500 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
     >
       {PAIR_CATEGORIES.map((cat) => {
         const pairs = getPairsByCategory(cat.id);
@@ -411,8 +412,8 @@ function PipSizePicker({ pair, pipSize, onChange }) {
               aria-pressed={active}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 active
-                  ? "border-blue-500 bg-blue-500/15 text-blue-300"
-                  : "border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-blue-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600"
               }`}
             >
               {size}
@@ -432,7 +433,7 @@ function LiveRateBadge({ status }) {
     error: { text: "Rates unavailable — using fallback", dot: "bg-rose-500" },
   }[status];
   return (
-    <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-300">
+    <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-blue-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600">
       <span className={`h-1.5 w-1.5 rounded-full ${copy.dot}`} />
       {copy.text}
     </span>
@@ -509,8 +510,8 @@ function AllInOnePanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b border-blue-100 px-5 py-4">
         <div>
           <h3 className="text-sm font-bold text-slate-900">All-in-One Trade Execution Suite</h3>
           <p className="mt-0.5 text-xs text-slate-600">
@@ -542,8 +543,8 @@ function AllInOnePanel() {
               aria-pressed={direction === "buy"}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 direction === "buy"
-                  ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300"
-                  : "border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-blue-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600"
               }`}
             >
               Buy
@@ -554,8 +555,8 @@ function AllInOnePanel() {
               aria-pressed={direction === "sell"}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 direction === "sell"
-                  ? "border-rose-500/60 bg-rose-500/15 text-rose-300"
-                  : "border-slate-700 bg-slate-900 text-slate-400 hover:text-slate-200"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-blue-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600"
               }`}
             >
               Sell
@@ -594,7 +595,7 @@ function AllInOnePanel() {
         <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
       </div>
 
-      <div className="border-t border-slate-200/80 p-5">
+      <div className="border-t border-blue-100 p-5">
         {result ? (
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -680,8 +681,8 @@ function LotSizePanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200/80 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="border-b border-blue-100 px-5 py-4">
         <h3 className="text-sm font-bold text-slate-900">Position &amp; Lot Size Calculator</h3>
         <p className="mt-0.5 text-xs text-slate-600">
           Risk Amount ÷ (Stop-Loss Pips × Pip Value per Lot) = Standard Lots
@@ -707,7 +708,7 @@ function LotSizePanel() {
         </label>
       </div>
 
-      <div className="border-t border-slate-200/80 p-5">
+      <div className="border-t border-blue-100 p-5">
         {result ? (
           <div>
             <p className="text-sm text-slate-600">
@@ -754,8 +755,8 @@ function PipValuePanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b border-blue-100 px-5 py-4">
         <div>
           <h3 className="text-sm font-bold text-slate-900">Pip Value Calculator</h3>
           <p className="mt-0.5 text-xs text-slate-600">
@@ -779,7 +780,7 @@ function PipValuePanel() {
         <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
       </div>
 
-      <div className="border-t border-slate-200/80 px-5 py-4">
+      <div className="border-t border-blue-100 px-5 py-4">
         {result ? (
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <p>
@@ -825,8 +826,8 @@ function MarginPanel() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200/80 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="border-b border-blue-100 px-5 py-4">
         <h3 className="text-sm font-bold text-slate-900">Margin &amp; Leverage Calculator</h3>
         <p className="mt-0.5 text-xs text-slate-600">Required Margin = Position Size ÷ Leverage</p>
       </div>
@@ -849,7 +850,7 @@ function MarginPanel() {
         </label>
       </div>
 
-      <div className="border-t border-slate-200/80 p-5">
+      <div className="border-t border-blue-100 p-5">
         {result ? (
           <div>
             <div className="grid grid-cols-3 gap-2">
@@ -900,8 +901,8 @@ function InflationCard() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200/80 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="border-b border-blue-100 px-5 py-4">
         <h3 className="text-sm font-bold text-slate-900">Inflation &amp; Purchasing Power</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-3">
@@ -918,7 +919,7 @@ function InflationCard() {
           <TextInput min="0" value={annualRate} onChange={(e) => setAnnualRate(e.target.value)} />
         </label>
       </div>
-      <div className="border-t border-slate-200/80 p-5">
+      <div className="border-t border-blue-100 p-5">
         {result ? (
           <div className="grid grid-cols-2 gap-2">
             <StatCard
@@ -952,8 +953,8 @@ function CompoundGrowthCard() {
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200/80 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="border-b border-blue-100 px-5 py-4">
         <h3 className="text-sm font-bold text-slate-900">Compound Interest / Wealth Growth</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
@@ -974,7 +975,7 @@ function CompoundGrowthCard() {
           <TextInput min="0" value={years} onChange={(e) => setYears(e.target.value)} />
         </label>
       </div>
-      <div className="border-t border-slate-200/80 p-5">
+      <div className="border-t border-blue-100 p-5">
         {result ? (
           <>
             <div className="grid grid-cols-3 gap-2">
@@ -983,19 +984,19 @@ function CompoundGrowthCard() {
               <StatCard tone="neutral" label="Growth" value={`$${safeFormat(result.totalGrowth, 0)}`} />
             </div>
             {result.yearlyTable.length > 0 && (
-              <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-slate-700">
+              <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-blue-500">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-slate-900 text-slate-400">
+                  <thead className="sticky top-0 bg-blue-50 text-slate-600">
                     <tr>
                       <th className="px-3 py-1.5 text-left font-semibold">Year</th>
                       <th className="px-3 py-1.5 text-right font-semibold">Balance</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800 bg-slate-900">
+                  <tbody className="divide-y divide-blue-100 bg-white">
                     {result.yearlyTable.map((row) => (
                       <tr key={row.year}>
-                        <td className="px-3 py-1.5 text-slate-300">{row.year}</td>
-                        <td className="px-3 py-1.5 text-right text-white">${safeFormat(row.balance, 0)}</td>
+                        <td className="px-3 py-1.5 text-slate-600">{row.year}</td>
+                        <td className="px-3 py-1.5 text-right text-slate-900">${safeFormat(row.balance, 0)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1018,8 +1019,8 @@ function ProfitMarginCard() {
   const result = useMemo(() => calcProfitMargin({ cost, price }), [cost, price]);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200/80 px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="border-b border-blue-100 px-5 py-4">
         <h3 className="text-sm font-bold text-slate-900">Business Profit Margin &amp; Markup</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
@@ -1032,7 +1033,7 @@ function ProfitMarginCard() {
           <TextInput min="0" value={price} onChange={(e) => setPrice(e.target.value)} />
         </label>
       </div>
-      <div className="border-t border-slate-200/80 p-5">
+      <div className="border-t border-blue-100 p-5">
         {result ? (
           <div className="grid grid-cols-3 gap-2">
             <StatCard tone="profit" label="Profit" value={`$${safeFormat(result.profit)}`} />
@@ -1063,8 +1064,8 @@ function WealthPanel() {
 
 function CalculationGuide() {
   return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200/80 px-4 py-3">
+    <div className="mt-6 overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="border-b border-blue-100 px-4 py-3">
         <h3 className="text-sm font-bold text-slate-900">Calculator Guide &amp; Knowledge Notes</h3>
         <p className="mt-0.5 text-xs text-slate-500">
           A quick refresher on pip math, lot sizing, and account-risk rules for beginner traders.
@@ -1145,9 +1146,9 @@ export default function CalculatorsPage() {
         </div>
       </section>
 
-      {/* Terminal body — light page surface; only the calculator panels'
-          input fields and output value boxes stay as dark contrast
-          islands (see components above). */}
+      {/* Terminal body — light page surface; every panel, input, and
+          result box below uses the clean white/blue-border look (see
+          components above). */}
       <section className="bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Mode selector — dropdown on mobile, pill tabs on larger screens */}
@@ -1157,7 +1158,7 @@ export default function CalculatorsPage() {
               <select
                 value={activeMode}
                 onChange={(e) => setActiveMode(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-blue-500 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 {MODES.map((mode) => (
                   <option key={mode.id} value={mode.id}>
@@ -1178,10 +1179,10 @@ export default function CalculatorsPage() {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setActiveMode(mode.id)}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                     active
-                      ? "bg-blue-600 text-white shadow-[0_0_16px_-2px_rgba(59,130,246,0.6)]"
-                      : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-blue-100 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600"
                   }`}
                 >
                   {mode.label}
