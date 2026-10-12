@@ -2,8 +2,8 @@
 
 // components/calculators/PipValueCustomCalculator.jsx
 //
-// "Pip Value & Custom Trade Math" tab of the Trading Calculator
-// Terminal (components/calculators/TradingTerminal.jsx) — the same
+// "Pip Value Calculator" mode of the Trading Calculator Suite
+// (components/calculators/TradingTerminal.jsx) — the same
 // pair registry and live-rate conversion as
 // components/calculators/PipValueCalculator.jsx, but with a free-form
 // decimal Lot Size input (e.g. 0.18 lots) instead of the fixed
@@ -87,9 +87,9 @@ export default function PipValueCustomCalculator() {
     <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl shadow-black/20">
       <div className="flex items-center justify-between gap-2 border-b border-slate-800 bg-black/20 px-5 py-4">
         <div>
-          <h3 className="text-sm font-bold text-slate-50">Pip Value &amp; Custom Trade Math</h3>
+          <h3 className="text-sm font-bold text-slate-50">Pip Value Calculator</h3>
           <p className="mt-0.5 text-xs text-slate-400">
-            Any decimal lot size — not just Standard/Mini/Micro presets.
+            Custom decimal lot size (e.g. 0.18 lots) — not just Standard/Mini/Micro presets.
           </p>
         </div>
         <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] font-medium text-slate-300">

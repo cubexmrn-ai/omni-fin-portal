@@ -20,6 +20,14 @@ import ProfitMarginCalculator from "@/components/calculators/ProfitMarginCalcula
 // Calculators Hub for the rest of the suite — no separate "mini"
 // version of each calculator's logic needs to exist.
 //
+// The Calculators Hub's trading tools now live inside
+// components/calculators/TradingTerminal.jsx's mode Selector Bar
+// (client-side tab state, not page anchors), so only "profit-margin"
+// — the one calculator still rendered as its own anchored section on
+// that page — gets a real `#id` link below; every other id links to
+// the hub itself and lets the visitor pick the matching mode.
+//
+
 // This file itself isn't a client component (no hooks of its own) —
 // each calculator it renders is its own "use client" component, same
 // as how components/academy/EmbeddedTool.jsx wraps client tools from a
@@ -54,7 +62,7 @@ export default function MiniCalculatorWidget({ calculatorId }) {
           Quick Calculator
         </span>
         <Link
-          href={`/calculators#${calculator.id}`}
+          href={calculator.id === "profit-margin" ? "/calculators#profit-margin" : "/calculators"}
           className="text-xs font-medium text-brand-600 hover:text-brand-700"
         >
           Open full Calculators Hub →

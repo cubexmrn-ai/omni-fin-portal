@@ -1,19 +1,26 @@
 // app/calculators/page.jsx
 //
-// Trading & Universal Financial Calculators Hub — a server component
-// shell (so it can export metadata) wrapping
-// components/calculators/CalculatorsHub.jsx, the "use client" component
-// that renders the category tabs and the calculator grid (same
+// Trading Calculator Suite — a server component shell (so it can
+// export metadata) wrapping components/calculators/CalculatorsHub.jsx,
+// the "use client" component that renders the unified Suite (same
 // page/component split as app/learn/page.jsx + AcademyHub.jsx and
 // app/ai-news/page.jsx + NewsFeed.jsx elsewhere in this project).
+//
+// The page itself is now just this one Suite — components/calculators/
+// TradingTerminal.jsx — covering 5 modes (All-in-One Trade Execution,
+// Position Sizing & Lot, Pip Value, Margin & Leverage, Inflation &
+// Wealth Growth) via a single Selector Bar, plus a standalone Business
+// Profit Margin & Markup card beneath it.
 
 import CalculatorsHub from "@/components/calculators/CalculatorsHub";
 
 export const metadata = {
-  title: "Trading & Financial Calculators | OmniFin Portal",
+  title: "Trading Calculator Suite | OmniFin Portal",
   description:
-    "Free calculators for traders and households: Position & Lot Size, Pip Value, Risk/Reward Ratio, Margin & Leverage, Inflation & Purchasing Power, Compound Interest / Wealth Growth, and Business Profit Margin & Markup.",
+    "A unified Trading Calculator Suite for traders and households: All-in-One Trade Execution (profit/loss, R:R, pip value, margin in one pass), Position Sizing & Lot, Pip Value, Margin & Leverage, Inflation & Wealth Growth, and Business Profit Margin & Markup.",
   keywords: [
+    "trading calculator suite",
+    "all-in-one trade calculator",
     "lot size calculator",
     "pip value calculator",
     "risk reward ratio calculator",
