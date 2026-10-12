@@ -10,29 +10,21 @@
 // server component with its own metadata export — progress lives in
 // localStorage, which only exists client-side.
 //
-// DARK THEME: the Academy is permanently dark-themed (its own fixed
-// palette — bg-ink/#0b0f19 page background, gray-900/#111827
-// glassmorphic cards, gray-800/#1f2937 borders) regardless of the rest
-// of the (light-themed) site, rather than a toggleable `dark:` variant —
-// see the header comment in tailwind.config.js's "ink" color entry.
+// THEME — light page, dark component islands: the Academy's own page
+// background is a clean light surface (bg-slate-50), matching the rest
+// of the site. ONLY the individual cards — the Master Path's level
+// cards, a category track's lesson cards, and the progress-summary box
+// — keep the sleek dark bg-slate-900/text-white treatment, for sharp
+// contrast against the light page around them. There is no full-page
+// dark wrapper anymore.
 //
-// ARCHITECTURE FIX — "Master Path" vs. Category Tracks:
-// Previously, selecting a category filter (Forex/Metals/Crypto/etc.)
-// reused the same flat lesson grid as a text search AND still applied
-// the roadmap's level-unlock gating (locked lessons rendered
-// pointer-events-none/grayed out) — so browsing "just the Forex
-// lessons" was full of artificial dead ends for anything past Level 1.
-// Now:
-//   - "Master Path" (the former "All Topics" tab) is the ONLY place
-//     level-locking is shown at all — it's the 5-level roadmap, where
-//     sequential unlocking is the entire point.
-//   - Every other view (a category tab, or a search) is a flat,
-//     frictionless "Focused Track" list: every matching lesson is
-//     always a real link, regardless of whether its level is unlocked
-//     on the Master Path. A lesson's own page still shows its progress
-//     (see LessonViewer.jsx) — browsing it out of sequence just means
-//     the person made that choice deliberately, not that the site is
-//     broken.
+// LEVEL LOCKING — same standard everywhere: Level 1 is unlocked by
+// default; Levels 2-5 stay LOCKED (with a visible "Locked 🔒" badge)
+// until every lesson in the previous level is mastered. This applies
+// identically on the Master Path roadmap AND on every category track
+// (Forex, Metals, Crypto, Technicals, Personal Finance) — a locked
+// lesson's card is inert (no link, cursor-not-allowed) everywhere it
+// appears, so clicking it never opens the lesson.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -93,17 +85,17 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border bg-gray-900/80 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] backdrop-blur transition-all ${
-        unlocked ? `${theme.border} ${theme.glow}` : "border-gray-800 opacity-70"
+      className={`relative overflow-hidden rounded-2xl border bg-slate-900 p-5 text-white shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] transition-all ${
+        unlocked ? `${theme.border} ${theme.glow}` : "border-slate-800 opacity-70"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-500">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
             Level {level.order}
           </p>
-          <h3 className="mt-0.5 text-lg font-extrabold text-gray-50">{level.title}</h3>
-          <p className="text-sm font-medium text-gray-400">{level.subtitle}</p>
+          <h3 className="mt-0.5 text-lg font-extrabold text-white">{level.title}</h3>
+          <p className="text-sm font-medium text-slate-400">{level.subtitle}</p>
         </div>
         {mastered ? (
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${theme.badge}`}>
@@ -111,17 +103,17 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
           </span>
         ) : !unlocked ? (
           <span
-            className="shrink-0 rounded-full border border-gray-700 bg-gray-800/60 px-2.5 py-1 text-xs font-bold text-gray-500"
+            className="shrink-0 rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-xs font-bold text-slate-400"
             title="Complete the previous level's quizzes to unlock this one"
           >
-            🔒 Locked
+            Locked 🔒
           </span>
         ) : null}
       </div>
 
-      <p className="mt-3 text-sm text-gray-400">{level.description}</p>
+      <p className="mt-3 text-sm text-slate-400">{level.description}</p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
         <span>{stats.lessonCount} lessons</span>
         <span>·</span>
         <span>{stats.quizCount} quizzes</span>
@@ -131,10 +123,10 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
 
       {unlocked && (
         <div className="mt-3">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-800">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
             <div className={`h-full ${theme.bar}`} style={{ width: `${progressPercent}%` }} />
           </div>
-          <p className="mt-1 text-[11px] font-medium text-gray-500">{progressPercent}% complete</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-500">{progressPercent}% complete</p>
         </div>
       )}
 
@@ -147,7 +139,7 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
             {progressPercent > 0 && progressPercent < 100 ? "Continue" : "Start"} Level {level.order} →
           </Link>
         ) : (
-          <span className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-500">
+          <span className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-500">
             Complete Level {level.order - 1} first
           </span>
         )}
@@ -156,12 +148,41 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
   );
 }
 
-function FocusedTrackCard({ level, lesson, completed }) {
+/** A lesson card inside a category track (Forex / Metals / Crypto /
+ * Technicals / Personal Finance). Same standard level-locking as the
+ * Master Path: if the lesson's level isn't unlocked yet, this renders
+ * as an inert, non-clickable card with a "Locked 🔒" badge instead of
+ * a Link — browsing a category never bypasses progression. */
+function FocusedTrackCard({ level, lesson, completed, unlocked }) {
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
+
+  if (!unlocked) {
+    return (
+      <div
+        className="cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900 p-4 text-white opacity-60 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset]"
+        title="Complete the previous level's quizzes to unlock this lesson"
+        aria-disabled="true"
+      >
+        <div className="flex items-center justify-between">
+          <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
+            Level {level.order} · {level.title}
+          </span>
+          <span
+            className="shrink-0 rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] font-bold text-slate-400"
+          >
+            Locked 🔒
+          </span>
+        </div>
+        <p className="mt-2 text-sm font-semibold text-slate-400">{lesson.title}</p>
+        <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} min</p>
+      </div>
+    );
+  }
+
   return (
     <Link
       href={`/learn/${level.id}/${lesson.id}`}
-      className="rounded-xl border border-gray-800 bg-gray-900/80 p-4 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] transition-all hover:border-gray-700 hover:bg-gray-900"
+      className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-white shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] transition-all hover:border-slate-700 hover:bg-slate-800"
     >
       <div className="flex items-center justify-between">
         <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
@@ -173,8 +194,8 @@ function FocusedTrackCard({ level, lesson, completed }) {
           </span>
         )}
       </div>
-      <p className="mt-2 text-sm font-semibold text-gray-100">{lesson.title}</p>
-      <p className="mt-1 text-xs text-gray-500">~{lesson.estMinutes} min</p>
+      <p className="mt-2 text-sm font-semibold text-white">{lesson.title}</p>
+      <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} min</p>
     </Link>
   );
 }
@@ -204,42 +225,41 @@ export default function AcademyHub() {
     return results;
   }, [query, activeCategory]);
 
-  // Showing a flat, frictionless list (no level-locking) whenever we're
-  // NOT on the Master Path roadmap — a category track or a text search.
   const isFocusedView = query.trim().length > 0 || activeCategory !== "all";
   const activeCategoryMeta = CATEGORIES.find((c) => c.id === activeCategory);
 
   return (
-    <div className="min-h-screen bg-ink text-gray-100">
-      {/* Progress Banner */}
-      <section className="border-b border-gray-800 bg-gradient-to-b from-blue-950/40 via-ink to-ink">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Header — light surface, matching the rest of the site */}
+      <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-          <nav className="text-xs text-gray-500">
-            <Link href="/" className="hover:text-blue-400">
+          <nav className="text-xs text-slate-400">
+            <Link href="/" className="hover:text-brand-600">
               Dashboard
             </Link>
             <span className="mx-1.5">/</span>
-            <span className="text-gray-400">Academy</span>
+            <span className="text-slate-500">Academy</span>
           </nav>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-gray-50 sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
             OmniFin Academy
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-400">
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
             A free, gamified path from the basics of money to professional risk management —
             5 levels, bite-sized lessons, and a checkpoint quiz at the end of every module.
           </p>
 
+          {/* Progress summary — one of the Academy's dark "info containers" */}
           {progress.hydrated && currentLevel && (
-            <div className="mt-6 max-w-xl rounded-xl border border-gray-800 bg-gray-900/80 p-4 shadow-[0_0_30px_-10px_rgba(59,130,246,0.25)]">
+            <div className="mt-6 max-w-xl rounded-xl border border-slate-800 bg-slate-900 p-4 text-white shadow-[0_8px_30px_-12px_rgba(15,23,42,0.35)]">
               <div className="flex items-center justify-between text-sm">
-                <p className="font-bold text-gray-100">
+                <p className="font-bold text-white">
                   Level {currentLevel.order} {currentLevel.title} — {currentLevelPercent}% Completed
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-400">
                   {progress.overallCompletedCount} / {progress.overallTotalLessons} lessons overall
                 </p>
               </div>
-              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-gray-800">
+              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
                 <div
                   className="h-full bg-blue-500 transition-all"
                   style={{ width: `${progress.overallPercent}%` }}
@@ -250,7 +270,7 @@ export default function AcademyHub() {
         </div>
       </section>
 
-      {/* Path / Category Switcher & Search */}
+      {/* Path / Category Switcher & Search — light controls on the light page */}
       <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Master Path or category track">
@@ -266,7 +286,7 @@ export default function AcademyHub() {
                   className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                     active
                       ? "bg-blue-600 text-white shadow-[0_0_16px_-2px_rgba(59,130,246,0.6)]"
-                      : "border border-gray-800 bg-gray-900 text-gray-400 hover:border-gray-700 hover:text-gray-200"
+                      : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
                   }`}
                 >
                   {cat.label}
@@ -282,31 +302,33 @@ export default function AcademyHub() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search lessons…"
               aria-label="Search lessons"
-              className="w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
       </section>
 
-      {/* Either the Master Path roadmap, or a Focused Track View */}
+      {/* Either the Master Path roadmap, or a Focused Track View — both
+          apply the exact same Level 1 unlocked / Level 2-5 locked
+          standard, via each card's own `unlocked` prop. */}
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {isFocusedView ? (
           <div>
-            <p className="mb-3 text-xs text-gray-500">
+            <p className="mb-3 text-xs text-slate-500">
               {activeCategoryMeta ? (
-                <span className="font-semibold text-gray-300">
+                <span className="font-semibold text-slate-700">
                   {activeCategoryMeta.label} Track
                 </span>
               ) : (
-                <span className="font-semibold text-gray-300">Search results</span>
+                <span className="font-semibold text-slate-700">Search results</span>
               )}
               {" — "}
               {filteredLessons.length} lesson{filteredLessons.length === 1 ? "" : "s"}
-              {query.trim() ? ` matching "${query.trim()}"` : ""}, from every level — no
-              need to clear earlier levels first.
+              {query.trim() ? ` matching "${query.trim()}"` : ""}. Locked levels still show
+              their lessons here, with a 🔒 badge, so you can see what&apos;s ahead.
             </p>
             {filteredLessons.length === 0 ? (
-              <p className="py-10 text-center text-sm text-gray-500">
+              <p className="py-10 text-center text-sm text-slate-500">
                 No lessons match your filters — try a different topic or search term.
               </p>
             ) : (
@@ -317,6 +339,7 @@ export default function AcademyHub() {
                     level={level}
                     lesson={lesson}
                     completed={progress.hydrated && progress.isLessonCompleted(level.id, lesson.id)}
+                    unlocked={progress.hydrated ? progress.isLevelUnlocked(level.id) : level.order === 1}
                   />
                 ))}
               </div>
@@ -324,8 +347,8 @@ export default function AcademyHub() {
           </div>
         ) : (
           <div>
-            <p className="mb-4 text-xs text-gray-500">
-              <span className="font-semibold text-gray-300">Master Path</span> — the full
+            <p className="mb-4 text-xs text-slate-500">
+              <span className="font-semibold text-slate-700">Master Path</span> — the full
               5-level curriculum, in order. Each level unlocks once every lesson in the
               previous one is mastered.
             </p>
