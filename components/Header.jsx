@@ -40,10 +40,21 @@
 // *component* dependency, since lib/baseCurrencyContext.js has no
 // imports of its own beyond React/Next primitives.
 
+// LANGUAGE SWITCHER: this header also owns a compact Language pill,
+// right beside the Base Currency one, backed by LanguageProvider (see
+// lib/i18n/LanguageContext.js, wired up in app/layout.jsx). It covers
+// 16 languages — including Roman Urdu as a prominent, dedicated entry
+// alongside Urdu's own script — and its `t()` helper translates this
+// header's own nav labels via lib/i18n/translations.js's core-term
+// dictionary (Dashboard, Tools & Calculators, Open Calculator, Base
+// Currency, Language, and the per-link nav terms below).
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CURRENCIES, POPULAR_CURRENCY_CODES, getCurrency } from "@/lib/currencies";
 import { useBaseCurrency } from "@/lib/baseCurrencyContext";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { LANGUAGES } from "@/lib/i18n/translations";
 
 const TOOLS_CALCULATORS_LINKS = [
   {
@@ -63,12 +74,16 @@ const TOOLS_CALCULATORS_LINKS = [
   },
 ];
 
+// `labelKey` maps each link to lib/i18n/translations.js's dictionary;
+// `label` stays as the English fallback/default for anywhere this
+// array is read without a translator (there is none currently, but
+// it keeps the array self-describing).
 const OTHER_NAV_LINKS = [
-  { label: "Market Analysis", href: "/market-analysis" },
-  { label: "News", href: "/ai-news" },
-  { label: "Academy", href: "/learn" },
-  { label: "Community", href: "/community" },
-  { label: "About", href: "/about" },
+  { label: "Market Analysis", labelKey: "marketAnalysis", href: "/market-analysis" },
+  { label: "News", labelKey: "news", href: "/ai-news" },
+  { label: "Academy", labelKey: "academy", href: "/learn" },
+  { label: "Community", labelKey: "community", href: "/community" },
+  { label: "About", labelKey: "about", href: "/about" },
 ];
 
 function HeaderLogo() {
@@ -110,6 +125,7 @@ function HeaderLogo() {
  * touch and desktop alike), closes on outside click, Escape, or
  * choosing a link. */
 function ToolsCalculatorsDropdown() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -142,7 +158,7 @@ function ToolsCalculatorsDropdown() {
         aria-haspopup="true"
         className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
       >
-        Tools &amp; Calculators
+        {t("toolsCalculators")}
         <span className={`text-xs transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true">
           ▾
         </span>
@@ -227,7 +243,47 @@ function BaseCurrencySelect({ className = "" }) {
   );
 }
 
+/** Compact Language pill, styled identically to BaseCurrencySelect
+ * right next to it — 16 languages including Roman Urdu as a
+ * dedicated, prominent entry (not folded into "Urdu"). Changing it
+ * updates LanguageProvider immediately, which re-translates this
+ * header's own nav labels via useLanguage()'s t() helper. */
+function LanguageSelect({ className = "" }) {
+  const { language, setLanguage } = useLanguage();
+
+  return (
+    <label className={`relative inline-flex ${className}`}>
+      <span className="sr-only">Language</span>
+      <select
+        value={language}
+        onChange={(e) => setLanguage(e.target.value)}
+        aria-label="Language"
+        title="Language — translates OmniFin Portal's core navigation and trading terms"
+        className="appearance-none rounded-full border border-blue-500/30 bg-blue-50/60 px-2 py-1 pr-5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-500/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      >
+        {LANGUAGES.map((lang) => (
+          <option key={lang.code} value={lang.code}>
+            {lang.native}
+          </option>
+        ))}
+      </select>
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400"
+      >
+        <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </label>
+  );
+}
+
 export default function Header() {
+  const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -240,7 +296,7 @@ export default function Header() {
             href="/"
             className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
-            Dashboard
+            {t("dashboard")}
           </Link>
 
           <ToolsCalculatorsDropdown />
@@ -251,7 +307,7 @@ export default function Header() {
               href={link.href}
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
-              {link.label}
+              {t(link.labelKey)}
             </Link>
           ))}
         </nav>
@@ -262,9 +318,12 @@ export default function Header() {
             Live rates · hourly cache
           </span>
 
-          {/* Global Base Currency switcher — desktop only; mobile gets
-              its own copy inside the slide-down menu below. */}
-          <BaseCurrencySelect className="hidden sm:block" />
+          {/* Global Base Currency + Language switchers — desktop only;
+              mobile gets its own copies inside the slide-down menu below. */}
+          <div className="hidden items-center gap-1.5 sm:flex">
+            <BaseCurrencySelect />
+            <LanguageSelect />
+          </div>
 
           {/* Primary action — untouched, still a direct shortcut to the
               Metals Calculator, independent of the dropdown above. */}
@@ -272,7 +331,7 @@ export default function Header() {
             href="/#metals-calculator"
             className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-700"
           >
-            Open Calculator
+            {t("openCalculator")}
           </Link>
 
           {/* Mobile menu toggle */}
@@ -312,9 +371,15 @@ export default function Header() {
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center justify-between gap-3 px-3 py-1.5 sm:hidden">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Base Currency
+                {t("baseCurrency")}
               </span>
               <BaseCurrencySelect />
+            </div>
+            <div className="flex items-center justify-between gap-3 px-3 py-1.5 sm:hidden">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {t("language")}
+              </span>
+              <LanguageSelect />
             </div>
 
             <Link
@@ -322,11 +387,11 @@ export default function Header() {
               onClick={() => setMobileOpen(false)}
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             >
-              Dashboard
+              {t("dashboard")}
             </Link>
 
             <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Tools &amp; Calculators
+              {t("toolsCalculators")}
             </p>
             {TOOLS_CALCULATORS_LINKS.map((item) => (
               <Link
@@ -347,7 +412,7 @@ export default function Header() {
                   onClick={() => setMobileOpen(false)}
                   className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 >
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               ))}
             </div>

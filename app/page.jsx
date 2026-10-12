@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ConvertersTabs from "@/components/ConvertersTabs";
+import EconomicNewsStrip from "@/components/EconomicNewsStrip";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { CURRENCIES } from "@/lib/currencies";
 import { CRYPTO_ASSETS } from "@/lib/crypto";
@@ -472,6 +473,7 @@ function SupportedCurrencies() {
 export default function HomePage() {
   return (
     <>
+      <EconomicNewsStrip />
       <Hero />
       {/* id preserved here (rather than inside ConvertersTabs itself) so
           the nav's "/#metals-calculator" link and the hero's CTA above

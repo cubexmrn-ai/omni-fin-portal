@@ -1,12 +1,15 @@
 import Link from "next/link";
 import NewsFeed from "@/components/NewsFeed";
 import SocialBuzzTracker from "@/components/SocialBuzzTracker";
+import EconomicCalendar from "@/components/EconomicCalendar";
+import NewsPageTabs from "@/components/NewsPageTabs";
 import { getAggregatedNews } from "@/lib/newsAggregator";
+import { getUpcomingEvents } from "@/lib/economicCalendar";
 
 export const metadata = {
-  title: "Financial News — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
+  title: "Financial News & Economic Calendar — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
   description:
-    "Live, categorized finance headlines across Forex, Crypto, Commodities and Stocks, aggregated from multiple public sources with search and category filters. AI-generated summaries arriving soon.",
+    "Live, categorized finance headlines across Forex, Crypto, Commodities and Stocks, plus a filterable High/Medium/Low-impact economic calendar covering USD, EUR, GBP, JPY, AUD, CAD and more.",
 };
 
 export const revalidate = 900; // Align with /api/news-ai's ISR cache.
@@ -36,6 +39,92 @@ export default async function AiNewsPage() {
   const assetBreakdownEntries = Object.entries(assetSentimentBreakdown).sort(
     (a, b) => b[1].Bullish + b[1].Bearish + b[1].Neutral - (a[1].Bullish + a[1].Bearish + a[1].Neutral)
   );
+  const calendarEvents = getUpcomingEvents();
+
+  const feedTab = (
+    <>
+      <section className="mb-10 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900">Headline Sentiment by Asset</h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+              Rule-based
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-400">
+            A keyword scan of the {sentimentTotal} headlines below, broken down by which
+            instrument each one appears to impact — not AI-generated.
+          </p>
+
+          {assetBreakdownEntries.length === 0 ? (
+            <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-400">
+              None of the current headlines were keyword-matched to a specific asset.
+            </p>
+          ) : (
+            <div className="mt-3 space-y-2.5">
+              {assetBreakdownEntries.map(([asset, counts]) => {
+                const total = counts.Bullish + counts.Bearish + counts.Neutral;
+                return (
+                  <div key={asset} className="flex items-center gap-3">
+                    <span className="w-20 shrink-0 truncate text-xs font-semibold text-slate-600">
+                      {asset}
+                    </span>
+                    <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full bg-emerald-400"
+                        style={{ width: `${(counts.Bullish / total) * 100}%` }}
+                        title={`Bullish ${counts.Bullish}`}
+                      />
+                      <div
+                        className="h-full bg-slate-300"
+                        style={{ width: `${(counts.Neutral / total) * 100}%` }}
+                        title={`Neutral ${counts.Neutral}`}
+                      />
+                      <div
+                        className="h-full bg-rose-400"
+                        style={{ width: `${(counts.Bearish / total) * 100}%` }}
+                        title={`Bearish ${counts.Bearish}`}
+                      />
+                    </div>
+                    <span className="w-20 shrink-0 text-right text-[11px] text-slate-400">
+                      {counts.Bullish}B / {counts.Neutral}N / {counts.Bearish}Be
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <SocialBuzzTracker />
+      </section>
+
+      <section>
+        {loadError && (
+          <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            Couldn&apos;t load the news feed right now ({loadError}). Please
+            try again shortly.
+          </div>
+        )}
+
+        {data?.warnings?.length > 0 && (
+          <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+            Some sources were unavailable: {data.warnings.join(" · ")}
+          </div>
+        )}
+
+        {!loadError && items.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No headlines available right now — please check back shortly.
+          </p>
+        ) : (
+          <NewsFeed items={items} />
+        )}
+      </section>
+    </>
+  );
+
+  const calendarTab = <EconomicCalendar events={calendarEvents} />;
 
   return (
     <>
@@ -83,85 +172,8 @@ export default async function AiNewsPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-900">Headline Sentiment by Asset</h2>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-                Rule-based
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-slate-400">
-              A keyword scan of the {sentimentTotal} headlines below, broken down by which
-              instrument each one appears to impact — not AI-generated.
-            </p>
-
-            {assetBreakdownEntries.length === 0 ? (
-              <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-400">
-                None of the current headlines were keyword-matched to a specific asset.
-              </p>
-            ) : (
-              <div className="mt-3 space-y-2.5">
-                {assetBreakdownEntries.map(([asset, counts]) => {
-                  const total = counts.Bullish + counts.Bearish + counts.Neutral;
-                  return (
-                    <div key={asset} className="flex items-center gap-3">
-                      <span className="w-20 shrink-0 truncate text-xs font-semibold text-slate-600">
-                        {asset}
-                      </span>
-                      <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full bg-emerald-400"
-                          style={{ width: `${(counts.Bullish / total) * 100}%` }}
-                          title={`Bullish ${counts.Bullish}`}
-                        />
-                        <div
-                          className="h-full bg-slate-300"
-                          style={{ width: `${(counts.Neutral / total) * 100}%` }}
-                          title={`Neutral ${counts.Neutral}`}
-                        />
-                        <div
-                          className="h-full bg-rose-400"
-                          style={{ width: `${(counts.Bearish / total) * 100}%` }}
-                          title={`Bearish ${counts.Bearish}`}
-                        />
-                      </div>
-                      <span className="w-20 shrink-0 text-right text-[11px] text-slate-400">
-                        {counts.Bullish}B / {counts.Neutral}N / {counts.Bearish}Be
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <SocialBuzzTracker />
-        </div>
-      </section>
-
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        {loadError && (
-          <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            Couldn&apos;t load the news feed right now ({loadError}). Please
-            try again shortly.
-          </div>
-        )}
-
-        {data?.warnings?.length > 0 && (
-          <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-            Some sources were unavailable: {data.warnings.join(" · ")}
-          </div>
-        )}
-
-        {!loadError && items.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No headlines available right now — please check back shortly.
-          </p>
-        ) : (
-          <NewsFeed items={items} />
-        )}
+        <NewsPageTabs feed={feedTab} calendar={calendarTab} />
       </section>
     </>
   );

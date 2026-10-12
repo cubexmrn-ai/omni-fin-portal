@@ -2,6 +2,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import SiteStructuredData from "@/components/SiteStructuredData";
 import { BaseCurrencyProvider } from "@/lib/baseCurrencyContext";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
@@ -116,14 +117,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-slate-50">
-        <BaseCurrencyProvider>
-          <SiteStructuredData />
-          <Header />
-          <main id="dashboard" className="flex-1">
-            {children}
-          </main>
-          <SiteFooter />
-        </BaseCurrencyProvider>
+        <LanguageProvider>
+          <BaseCurrencyProvider>
+            <SiteStructuredData />
+            <Header />
+            <main id="dashboard" className="flex-1">
+              {children}
+            </main>
+            <SiteFooter />
+          </BaseCurrencyProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

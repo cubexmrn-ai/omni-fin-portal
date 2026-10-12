@@ -59,6 +59,36 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const GLOBAL_BASE_CURRENCY_STORAGE_KEY = "omnifin:baseCurrency";
 const GLOBAL_BASE_CURRENCY_EVENT = "omnifin:baseCurrencyChange";
 
+// Same zero-imports pattern as above, for the Language switcher (see
+// lib/i18n/LanguageContext.js / lib/i18n/translations.js): this page
+// reads the identical localStorage key and CustomEvent name by literal
+// string, and keeps just the 4 trading terms it actually displays
+// (Buy, Sell, Potential Profit, Potential Loss) as a small inline
+// dictionary — a duplicate of those 4 keys from each language's entry
+// in lib/i18n/translations.js, not the full dictionary, since that's
+// all this page needs translated. Keep these in sync if those 4
+// values ever change there.
+const GLOBAL_LANGUAGE_STORAGE_KEY = "omnifin:language";
+const GLOBAL_LANGUAGE_EVENT = "omnifin:languageChange";
+const CALC_TERMS_BY_LANGUAGE = {
+  en: { buy: "Buy", sell: "Sell", profit: "Potential Profit", loss: "Potential Loss" },
+  "ur-Latn": { buy: "Khareedna", sell: "Bechna", profit: "Mumkin Nafa", loss: "Mumkin Nuqsan" },
+  ur: { buy: "خریدیں", sell: "بیچیں", profit: "ممکنہ نفع", loss: "ممکنہ نقصان" },
+  hi: { buy: "खरीदें", sell: "बेचें", profit: "संभावित लाभ", loss: "संभावित हानि" },
+  ar: { buy: "شراء", sell: "بيع", profit: "الربح المحتمل", loss: "الخسارة المحتملة" },
+  es: { buy: "Comprar", sell: "Vender", profit: "Ganancia Potencial", loss: "Pérdida Potencial" },
+  fr: { buy: "Acheter", sell: "Vendre", profit: "Profit Potentiel", loss: "Perte Potentielle" },
+  de: { buy: "Kaufen", sell: "Verkaufen", profit: "Möglicher Gewinn", loss: "Möglicher Verlust" },
+  tr: { buy: "Al", sell: "Sat", profit: "Olası Kâr", loss: "Olası Zarar" },
+  zh: { buy: "买入", sell: "卖出", profit: "潜在盈利", loss: "潜在亏损" },
+  ja: { buy: "買い", sell: "売り", profit: "潜在利益", loss: "潜在損失" },
+  ko: { buy: "매수", sell: "매도", profit: "예상 수익", loss: "예상 손실" },
+  pt: { buy: "Comprar", sell: "Vender", profit: "Lucro Potencial", loss: "Perda Potencial" },
+  ru: { buy: "Купить", sell: "Продать", profit: "Потенциальная Прибыль", loss: "Потенциальный Убыток" },
+  id: { buy: "Beli", sell: "Jual", profit: "Potensi Untung", loss: "Potensi Rugi" },
+  vi: { buy: "Mua", sell: "Bán", profit: "Lợi Nhuận Dự Kiến", loss: "Lỗ Dự Kiến" },
+};
+
 // ---------------------------------------------------------------------------
 // Inlined data: tradable instruments, contract sizes, pip sizes,
 // fallback rates. All self-contained — nothing imported from lib/.
@@ -560,6 +590,37 @@ function useGlobalBaseCurrency() {
   return baseCurrency;
 }
 
+/** Mirrors useGlobalBaseCurrency() above for the Language switcher —
+ * returns just the 4 translated trading terms this page displays
+ * (buy/sell/profit/loss), re-synced live when the header's Language
+ * pill changes. */
+function useCalcTerms() {
+  const [language, setLanguage] = useState("en");
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(GLOBAL_LANGUAGE_STORAGE_KEY);
+      if (stored) setLanguage(stored);
+    } catch {
+      // Private browsing / blocked storage — stay on the "en" default.
+    }
+
+    function handleChange(e) {
+      const next = e?.detail || e?.newValue;
+      if (next) setLanguage(next);
+    }
+
+    window.addEventListener(GLOBAL_LANGUAGE_EVENT, handleChange);
+    window.addEventListener("storage", handleChange);
+    return () => {
+      window.removeEventListener(GLOBAL_LANGUAGE_EVENT, handleChange);
+      window.removeEventListener("storage", handleChange);
+    };
+  }, []);
+
+  return CALC_TERMS_BY_LANGUAGE[language] || CALC_TERMS_BY_LANGUAGE.en;
+}
+
 /** "Account / Local Currency" dropdown shared by the panels that
  * display a secondary-currency figure (All-in-One, Pip Value) —
  * defaults to the header's global Base Currency, but a manual pick
@@ -595,6 +656,7 @@ function AccountCurrencySelect({ value, onChange, touched }) {
 function AllInOnePanel() {
   const { rates, status } = useLiveRates();
   const globalBaseCurrency = useGlobalBaseCurrency();
+  const terms = useCalcTerms();
   const [pairId, setPairId] = useState("EURUSD");
   const [lots, setLots] = useState(0.18);
   const [direction, setDirection] = useState("buy");
@@ -676,7 +738,7 @@ function AllInOnePanel() {
                   : "border-blue-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600"
               }`}
             >
-              Buy
+              {terms.buy}
             </button>
             <button
               type="button"
@@ -688,7 +750,7 @@ function AllInOnePanel() {
                   : "border-blue-200 bg-white text-slate-500 hover:border-blue-400 hover:text-blue-600"
               }`}
             >
-              Sell
+              {terms.sell}
             </button>
           </div>
         </label>
@@ -739,13 +801,13 @@ function AllInOnePanel() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 tone="profit"
-                label="Potential Profit"
+                label={terms.profit}
                 value={Number.isFinite(result.profitUsd) ? `$${safeFormat(result.profitUsd)}` : "—"}
                 sub={`${safeFormat(result.profitPips, 1)} pips`}
               />
               <StatCard
                 tone="loss"
-                label="Potential Loss"
+                label={terms.loss}
                 value={Number.isFinite(result.lossUsd) ? `$${safeFormat(result.lossUsd)}` : "—"}
                 sub={`${safeFormat(result.lossPips, 1)} pips`}
               />
@@ -783,7 +845,7 @@ function AllInOnePanel() {
             {!result.directionConsistent && (
               <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
                 Heads up: your Take Profit / Stop Loss levels look inconsistent with a{" "}
-                {result.isLong ? "Buy" : "Sell"} order.
+                {result.isLong ? terms.buy : terms.sell} order.
               </p>
             )}
           </>
