@@ -7,7 +7,10 @@
 // learning-portal pattern: current level header, an in-level progress
 // tracker, and a clickable vertical list of every lesson in that level
 // so a visitor can jump straight to any of them without going back to
-// the main Academy hub.
+// the main Academy hub. Occupies the left column (`lg:col-span-1`) of
+// LessonViewer.jsx's 4-column grid — the remaining 3 columns are the
+// main reader — and stays sticky (`lg:sticky lg:top-28`) as the right
+// column scrolls.
 //
 // WHY EVERY ROW IS CLICKABLE: hooks/useAcademyProgress.js locks and
 // unlocks whole LEVELS, not individual lessons within a level — there's
@@ -44,7 +47,7 @@ export default function CourseSidebar({ levelId, currentLessonId }) {
   const completedCount = Math.round((percent / 100) * stats.lessonCount);
 
   return (
-    <aside className="hidden lg:block lg:w-72 lg:shrink-0">
+    <aside className="hidden lg:col-span-1 lg:block">
       <div className="lg:sticky lg:top-28 lg:self-start rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-xl shadow-black/20">
         <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
           Level {level.order}

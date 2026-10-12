@@ -19,26 +19,22 @@
 // against the light page around them instead of blending into a
 // uniformly dark page.
 //
-// ARCHITECTURE — "Master Path" vs. Category Tracks:
-//   - "Master Path" (the first tab) is the 5-level roadmap, where
-//     sequential level-locking is the entire point.
+// ARCHITECTURE — "Master Path" vs. Category Tracks, and lock rules:
+//   - "Master Path" (the first tab) is the 5-level roadmap: Level 1 is
+//     unlocked from the start, and each later level stays locked (a
+//     plain, non-clickable card with a clear "🔒 Locked" badge) until
+//     every lesson in the previous level is mastered.
 //   - A category tab (Forex/Metals/Crypto/etc.) or a text search shows
 //     a flat "Focused Track" list of matching lessons, gated by the
-//     SAME level-unlock rule as the Master Path.
-//   - EVERY card is clickable regardless of lock status: an unlocked
-//     card is a normal link straight to the real lesson; a still-locked
-//     card is a button that opens the LockedModuleModal below instead —
-//     a quick "Basic Concept & Introduction" for that topic (reusing
-//     CATEGORY_OVERVIEWS from lib/academyData.js) plus a CTA pointing
-//     at Level 1 for the real deep-dive lesson, diagrams, and quiz.
-//     Nothing in a category track is ever a dead end or a non-clickable
-//     grayed-out card.
+//     SAME level-unlock rule — a locked lesson in a category track
+//     renders the same way, a non-clickable card carrying the same
+//     clear "🔒 Locked" badge, so the lock state reads identically
+//     everywhere in the Academy.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ACADEMY_LEVELS, CATEGORIES, CATEGORY_OVERVIEWS, getLevelStats } from "@/lib/academyData";
+import { ACADEMY_LEVELS, CATEGORIES, getLevelStats } from "@/lib/academyData";
 import { useAcademyProgress } from "@/hooks/useAcademyProgress";
-import Modal from "@/components/community/Modal";
 
 // Per-level accent used on the Master Path roadmap cards — a trim
 // color/glow for visual hierarchy between the 5 levels, distinct from
@@ -157,31 +153,34 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
   );
 }
 
-function FocusedTrackCard({ level, lesson, category, unlocked, completed, onLockedClick }) {
+/** A lesson card inside a category Focused Track View. Locked lessons
+ * are a plain, non-clickable card — not a link, not a button that
+ * opens anything — carrying the same "🔒 Locked" badge language as the
+ * Master Path's LevelCard, so the lock state reads identically
+ * everywhere in the Academy rather than behaving differently per view. */
+function FocusedTrackCard({ level, lesson, unlocked, completed }) {
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
 
   if (!unlocked) {
-    // Every card is clickable regardless of lock status — a locked
-    // card opens the LockedModuleModal (a quick topic intro + CTA)
-    // instead of either being a dead, non-clickable div or navigating
-    // straight into a lesson the visitor hasn't unlocked yet.
     return (
-      <button
-        type="button"
-        onClick={() => onLockedClick({ level, lesson, category })}
-        className="rounded-xl border border-slate-800 bg-slate-900/80 p-4 text-left shadow-xl shadow-black/20 transition-all hover:border-slate-700 hover:bg-slate-900"
+      <div
+        className="cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900/60 p-4 opacity-60"
+        title={`Complete Level ${level.order - 1} first to unlock this lesson`}
       >
         <div className="flex items-center justify-between">
           <span className="rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] font-bold text-slate-400">
             Level {level.order} · {level.title}
           </span>
-          <span className="text-slate-400" aria-hidden="true">
-            🔒
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] font-bold text-slate-400"
+            title="Complete the previous level first to unlock this lesson"
+          >
+            🔒 Locked
           </span>
         </div>
-        <p className="mt-2 text-sm font-semibold text-slate-200">{lesson.title}</p>
-        <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} min · tap for a basic intro</p>
-      </button>
+        <p className="mt-2 text-sm font-semibold text-slate-400">{lesson.title}</p>
+        <p className="mt-1 text-xs text-slate-600">~{lesson.estMinutes} min</p>
+      </div>
     );
   }
 
@@ -206,62 +205,10 @@ function FocusedTrackCard({ level, lesson, category, unlocked, completed, onLock
   );
 }
 
-/** Opened by a locked FocusedTrackCard. Light-themed (matches every
- * other overlay modal in this app — components/community/Modal.jsx is
- * the shared shell) so it reads as a normal detail popover rather than
- * another dark widget: a short "Basic Concept & Introduction" for the
- * topic (CATEGORY_OVERVIEWS), plus the exact unlock CTA, plus a
- * shortcut straight to Level 1. */
-function LockedModuleModal({ info, onClose }) {
-  const open = Boolean(info);
-  const level = info?.level;
-  const lesson = info?.lesson;
-  const category = info?.category;
-  const firstLevel = ACADEMY_LEVELS[0];
-
-  return (
-    <Modal open={open} onClose={onClose} title={lesson?.title} widthClassName="max-w-md">
-      {info && (
-        <div>
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">
-            {category?.label || "Academy"} · Level {level.order} · {level.title}
-          </span>
-
-          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">
-            Basic Concept &amp; Introduction
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-            {category ? CATEGORY_OVERVIEWS[category.id] : null} This specific module, &quot;
-            {lesson.title}&quot;, pairs that foundation with a full interactive lesson —
-            diagrams, Pro-Tip and Risk-Warning callouts, and a Checkpoint Quiz — once it&apos;s
-            unlocked.
-          </p>
-
-          <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-            <p className="text-xs font-medium leading-relaxed text-amber-800">
-              🔒 Full Deep-Dive Module Locked. Complete the foundational levels starting from
-              Level 1: Rookie to unlock the complete interactive lesson &amp; quiz.
-            </p>
-          </div>
-
-          <Link
-            href={`/learn/${firstLevel.id}/${firstLevel.lessons[0].id}`}
-            onClick={onClose}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-500"
-          >
-            Start Level 1: Rookie →
-          </Link>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
 export default function AcademyHub() {
   const progress = useAcademyProgress();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
-  const [lockedInfo, setLockedInfo] = useState(null);
 
   const currentLevel = progress.currentLevel;
   const currentLevelPercent = currentLevel ? progress.getLevelProgressPercent(currentLevel.id) : 0;
@@ -379,8 +326,8 @@ export default function AcademyHub() {
               )}
               {" — "}
               {filteredLessons.length} lesson{filteredLessons.length === 1 ? "" : "s"}
-              {query.trim() ? ` matching "${query.trim()}"` : ""}, across every level. Every
-              card is clickable — locked lessons open a quick intro and point you at Level 1.
+              {query.trim() ? ` matching "${query.trim()}"` : ""}, across every level. Locked
+              lessons still require completing earlier levels on the Master Path.
             </p>
             {filteredLessons.length === 0 ? (
               <p className="py-10 text-center text-sm text-slate-500">
@@ -391,19 +338,13 @@ export default function AcademyHub() {
                 {filteredLessons.map(({ level, lesson }) => {
                   const unlocked = progress.hydrated ? progress.isLevelUnlocked(level.id) : level.order === 1;
                   const completed = progress.hydrated && progress.isLessonCompleted(level.id, lesson.id);
-                  const cardCategory =
-                    activeCategoryMeta ||
-                    CATEGORIES.find((c) => (lesson.categories || []).includes(c.id)) ||
-                    null;
                   return (
                     <FocusedTrackCard
                       key={`${level.id}/${lesson.id}`}
                       level={level}
                       lesson={lesson}
-                      category={cardCategory}
                       unlocked={unlocked}
                       completed={completed}
-                      onLockedClick={setLockedInfo}
                     />
                   );
                 })}
@@ -414,8 +355,8 @@ export default function AcademyHub() {
           <div>
             <p className="mb-4 text-xs text-slate-500">
               <span className="font-semibold text-slate-700">Master Path</span> — the full
-              5-level curriculum, in order. Each level unlocks once every lesson in the
-              previous one is mastered.
+              5-level curriculum, in order. Level 1 is unlocked from the start; each later
+              level unlocks once every lesson in the previous one is mastered.
             </p>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {ACADEMY_LEVELS.map((level) => {
@@ -436,8 +377,6 @@ export default function AcademyHub() {
           </div>
         )}
       </section>
-
-      <LockedModuleModal info={lockedInfo} onClose={() => setLockedInfo(null)} />
     </div>
   );
 }

@@ -281,13 +281,15 @@ export default function LessonViewer({ levelId, lessonId }) {
       <LessonTopBar level={level} lesson={lesson} scrollPercent={scrollPercent} />
 
       {/* Two-column lesson reader: a sticky left-column Course Sidebar
-          (level header, progress bar, clickable lesson list) and the
-          right-column reader (content, callouts, mini-tools, quiz). */}
+          (1 of 4 grid columns — level header, progress bar, clickable
+          lesson list) and the right-column reader (3 of 4 columns —
+          content, callouts, mini-tools, quiz). Stacks to one column
+          below the lg breakpoint. */}
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 lg:items-start">
           <CourseSidebar levelId={levelId} currentLessonId={lessonId} />
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 lg:col-span-3">
             <div className="mx-auto max-w-3xl space-y-6">
               {lesson.sections.map((section, i) => (
                 <Section key={i} section={section} />

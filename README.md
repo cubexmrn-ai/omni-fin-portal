@@ -1061,6 +1061,43 @@ instead of rendering as a non-clickable grayed-out card:
   lessons, 95 sections, 100 quiz questions). All checks passed with 0
   failures.
 
+### Clean-up pass: drop the Locked Module modal, restore plain "🔒 Locked" cards
+
+A clean-up on the pass directly above, reverting its modal-based
+locked-card treatment back to a simpler, plainly-marked lock state:
+
+- **`FocusedTrackCard` is non-clickable again when locked**, and the
+  `LockedModuleModal`/`Modal` import are both removed from
+  `AcademyHub.jsx` entirely — a locked category-track card is back to a
+  plain `<div>` (not a `<button>`, not a `<Link>`) carrying an explicit
+  "🔒 Locked" badge, the same badge language `LevelCard` already uses
+  on the Master Path, so the lock state now reads identically in every
+  view instead of category tracks opening a modal while the Master
+  Path shows a static badge.
+- **Lock rules are unchanged** (this was never actually altered by any
+  earlier pass): Level 1 (Rookie) is unlocked from the start, and every
+  later level — on the Master Path and inside a category track alike —
+  stays locked until every lesson in the previous level is mastered,
+  per `hooks/useAcademyProgress.js`'s `isLevelUnlocked`.
+- **Two-column lesson layout now uses an explicit 4-column CSS grid**
+  (`LessonViewer.jsx`'s `grid grid-cols-1 lg:grid-cols-4`) instead of a
+  flex row, so the sidebar/reader split is literally 1 column of 4 for
+  `CourseSidebar.jsx` (`lg:col-span-1`) and 3 of 4 for the main reader
+  (`lg:col-span-3`) — same sticky behavior and content as before, just
+  expressed as a grid to match that exact proportion. Stacks to a
+  single column below the `lg` breakpoint, same as previously.
+- **Page body/background untouched** — already `bg-slate-50`
+  (`#f8fafc`) with only the cards/widgets dark, from the previous pass;
+  nothing to change here.
+- **Verification**: bracket-balance checked via `/tmp/balcheck.py`
+  across all three edited files, and a fresh Node simulation against
+  the real `lib/academyData.js` confirming the lock-gating facts are
+  still exactly as before: Level 1 is order 1 and unlocked by default;
+  the Forex track still has 12 lessons, all 12 locked with fresh
+  progress (0 unlocked); 20 lessons total; and `getLevel`/
+  `getLevelStats` still resolve correctly for Level 2. All checks
+  passed with 0 failures.
+
 ## Notes on the Calculators Hub
 
 - **`lib/tradingCalculators.js`** and **`lib/personalCalculators.js`**
