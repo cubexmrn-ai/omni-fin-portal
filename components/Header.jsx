@@ -211,7 +211,7 @@ function BaseCurrencySelect({ className = "" }) {
         onChange={(e) => setBaseCurrency(e.target.value)}
         aria-label="Base currency"
         title="Base currency — sets the default account/local currency across OmniFin Portal's tools"
-        className="appearance-none rounded-full border border-blue-500/30 bg-blue-50/60 px-2 py-1 pr-5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-500/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-[76px] appearance-none truncate overflow-hidden whitespace-nowrap rounded-full border border-blue-500/30 bg-blue-50/60 px-2 py-1 pr-5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-500/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
         <optgroup label="Popular">
           {popular.map((c) => (
@@ -259,7 +259,7 @@ function LanguageSelect({ className = "" }) {
         onChange={(e) => setLanguage(e.target.value)}
         aria-label="Language"
         title="Language — translates OmniFin Portal's core navigation and trading terms"
-        className="appearance-none rounded-full border border-blue-500/30 bg-blue-50/60 px-2 py-1 pr-5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-500/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-[76px] appearance-none truncate overflow-hidden whitespace-nowrap rounded-full border border-blue-500/30 bg-blue-50/60 px-2 py-1 pr-5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-500/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
         {LANGUAGES.map((lang) => (
           <option key={lang.code} value={lang.code}>
