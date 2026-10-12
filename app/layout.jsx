@@ -1,11 +1,23 @@
 import Link from "next/link";
 import Header from "@/components/Header";
+import SiteStructuredData from "@/components/SiteStructuredData";
+import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
+const SITE_URL = getSiteUrl();
+const SITE_NAME = "OmniFin Portal";
+const SITE_DESCRIPTION =
+  "OmniFin Portal — a universal currency, crypto & metals converter, a metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), a worldwide unit converter, live market charts & AI-aggregated finance news, trading & personal-finance calculators, and a free Academy, for PKR, AUD, EUR, INR, AED and NGN.";
+
 export const metadata = {
-  title: "OmniFin Portal | Currency, Metals & Commodities, and Unit Converters",
-  description:
-    "OmniFin Portal — a universal currency converter, a metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), a worldwide unit converter, and live market charts with AI news, for PKR, AUD, EUR, INR, AED and NGN.",
+  metadataBase: new URL(SITE_URL),
+  // A plain default title, NOT a `{ default, template }` object — every
+  // child route in this project already appends its own "| OmniFin
+  // Portal" suffix by hand (see app/converters/page.jsx,
+  // app/learn/page.jsx, etc.), so a root `template: "%s | OmniFin
+  // Portal"` would double that suffix on every single page.
+  title: `${SITE_NAME} | Currency, Metals & Commodities, and Unit Converters`,
+  description: SITE_DESCRIPTION,
   keywords: [
     "metals and commodities calculator",
     "gold rate calculator",
@@ -19,8 +31,27 @@ export const metadata = {
     "22k gold price",
     "24k gold price",
     "live gold chart",
+    "forex trading calculator",
+    "position size calculator",
+    "pip value calculator",
+    "trading academy free course",
     "OmniFin Portal",
   ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | Currency, Metals & Commodities, and Unit Converters`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: `${SITE_NAME} | Currency, Metals & Commodities, and Unit Converters`,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 const FOOTER_LINKS = [
@@ -84,6 +115,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-slate-50">
+        <SiteStructuredData />
         <Header />
         <main id="dashboard" className="flex-1">
           {children}

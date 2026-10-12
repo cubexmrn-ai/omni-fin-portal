@@ -1,24 +1,49 @@
 import Link from "next/link";
 import ConvertersTabs from "@/components/ConvertersTabs";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export const revalidate = 3600; // Align page-level ISR with the unified rates API cache.
 
-const MODULES = [
+// The 5 pillars of the "Explore OmniFin Ecosystem" section — each a
+// real, already-shipped module, not a placeholder. Keyword-rich
+// title/description pairs feed both the on-page <h3>s and the matching
+// JSON-LD ItemList below, so the same copy serves readers and search
+// engines at once.
+const ECOSYSTEM_MODULES = [
   {
-    title: "Converters",
-    tagline: "Module 1",
-    description:
-      "Currency pricing, a 6-asset metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), plus a universal unit converter — length, area, weight, volume, speed, temperature and more, including Tola, Maund, Marla & Kanal.",
-    href: "/converters",
-    cta: "Open Converters",
-  },
-  {
-    title: "Market Analysis",
-    tagline: "Module 2",
-    description:
-      "Real-time TradingView charts for gold, forex, indices, oil and crypto, plus an aggregated finance news feed (AI summaries coming soon).",
+    title: "Market Insights",
     href: "/market-analysis",
     cta: "View Live Charts",
+    description:
+      "Real-time TradingView charts for gold, forex, major indices, crude oil and crypto, plus an aggregated finance news feed covering forex, crypto, commodities and stocks.",
+  },
+  {
+    title: "Live Rates & Converters",
+    href: "/converters",
+    cta: "Open Converters",
+    description:
+      "A universal currency & crypto converter, a 6-asset metals & commodities calculator (gold, silver, platinum, palladium, copper, crude oil), and a worldwide unit converter — including Tola, Maund, Marla & Kanal.",
+  },
+  {
+    title: "Trading Calculators",
+    href: "/calculators",
+    cta: "Open Calculators",
+    description:
+      "A free Trading Calculator Suite: position & lot size, pip value, margin & leverage, risk/reward, and inflation & compound-growth calculators, synced to live rates.",
+  },
+  {
+    title: "OmniFin Academy",
+    href: "/learn",
+    cta: "Start Learning",
+    description:
+      "A free, gamified trading & personal-finance curriculum — 5 levels from money basics to professional risk management, with quizzes and embedded calculators.",
+  },
+  {
+    title: "Community",
+    href: "/community",
+    cta: "Join the Discussion",
+    description:
+      "A trader community forum for sharing trade setups, market calls and discussion across forex, crypto, metals and commodities.",
   },
 ];
 
@@ -104,29 +129,66 @@ function Hero() {
   );
 }
 
-function ModulesGrid() {
+/** JSON-LD ItemList for the "Explore OmniFin Ecosystem" section — lets
+ * search engines index the 5 modules as a structured list of the
+ * site's own tools, in the same order they appear on the page. Same
+ * honesty bar as components/ConverterStructuredData.jsx: no fabricated
+ * rating/review fields, just the real module list. */
+function EcosystemStructuredData() {
+  const siteUrl = getSiteUrl();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "OmniFin Portal Ecosystem",
+    description: "The finance tools and resources available across OmniFin Portal.",
+    itemListElement: ECOSYSTEM_MODULES.map((m, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: m.title,
+      description: m.description,
+      url: `${siteUrl}${m.href}`,
+    })),
+  };
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <h2 className="text-lg font-bold text-slate-900">
-        Explore the Platform
+    <script
+      type="application/ld+json"
+      // eslint-disable-next-line react/no-danger
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+}
+
+/** "Explore OmniFin Ecosystem" — a clean, keyword-rich structural
+ * section (h2 section heading, h3 per module) covering every shipped
+ * module: Market Insights, Live Rates, Calculators, Academy and
+ * Community. Deliberately short per module (one sentence) rather than
+ * duplicating each module's own full landing-page copy. */
+function EcosystemSection() {
+  return (
+    <section
+      aria-labelledby="explore-ecosystem-heading"
+      className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
+    >
+      <EcosystemStructuredData />
+      <h2
+        id="explore-ecosystem-heading"
+        className="text-lg font-bold text-slate-900"
+      >
+        Explore OmniFin Ecosystem
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        OmniFin Portal is growing into a full finance utilities suite.
+        Market insights, live currency &amp; commodity rates, trading calculators, a free
+        Academy, and a trader community — one finance portal.
       </p>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {MODULES.map((m) => (
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {ECOSYSTEM_MODULES.map((m) => (
           <Link
             key={m.href}
             href={m.href}
             className="group rounded-xl border border-slate-200 bg-white p-6 shadow-card transition-shadow hover:shadow-card-hover"
           >
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
-              {m.tagline}
-            </span>
-            <h3 className="mt-3 text-base font-bold text-slate-900">
-              {m.title}
-            </h3>
+            <h3 className="text-base font-bold text-slate-900">{m.title}</h3>
             <p className="mt-1.5 text-sm text-slate-500">{m.description}</p>
             <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 group-hover:text-brand-700">
               {m.cta}
@@ -194,7 +256,7 @@ export default function HomePage() {
       <div id="metals-calculator">
         <ConvertersTabs defaultTab="metals" />
       </div>
-      <ModulesGrid />
+      <EcosystemSection />
       <SupportedCurrencies />
     </>
   );

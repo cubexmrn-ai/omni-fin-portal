@@ -1,24 +1,10 @@
-import Link from "next/link";
-import ConvertersTabs from "@/components/ConvertersTabs";
-import { UNIT_CATEGORIES } from "@/lib/conversionMath";
-import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
-import { FEATURED_FX_PAIRS } from "@/lib/fxSlugs";
+import ConvertersWorkspace from "@/components/ConvertersWorkspace";
 
 export const metadata = {
   title: "Currency, Crypto, Metals & Commodities, Unit Converter | OmniFin Portal",
   description:
     "Convert between fiat currencies, crypto and metals & commodities (gold, silver, platinum, palladium, copper, crude oil), and worldwide units (length, area, weight, volume, speed, temperature) — including Tola, Maund, Marla and Kanal — instantly and for free.",
 };
-
-const CATEGORY_SUMMARY = [
-  { key: "length", example: "Kilometers, Miles, Feet, Inches" },
-  { key: "area", example: "Marla, Kanal, Acre, Hectare, Sq. Feet" },
-  { key: "weight", example: "Kilogram, Pound, Tola, Maund, Seer" },
-  { key: "volume", example: "Liter, Gallon, Quart, Cubic Meter" },
-  { key: "speed", example: "km/h, mph, Knots" },
-  { key: "data", example: "MB, GB, TB" },
-  { key: "temperature", example: "Celsius, Fahrenheit, Kelvin" },
-];
 
 export default function ConvertersPage() {
   return (
@@ -40,66 +26,13 @@ export default function ConvertersPage() {
             weight, volume, speed, digital storage and temperature —
             worldwide and regional units alike.
           </p>
-
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {CATEGORY_SUMMARY.map((c) => (
-              <div
-                key={c.key}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-card"
-              >
-                <p className="text-sm font-semibold text-slate-900">
-                  {UNIT_CATEGORIES[c.key]?.label || "Temperature"}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">{c.example}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      <div className="py-10">
-        <ConvertersTabs defaultTab="currency" />
-      </div>
-
-      <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
-        <h2 className="text-lg font-bold text-slate-900">
-          Popular Currency Conversions
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Direct links to the most-searched currency pairs.
-        </p>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {FEATURED_FX_PAIRS.map((pair) => (
-            <Link
-              key={pair.slug}
-              href={`/converters/${pair.slug}`}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-card transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
-            >
-              {pair.title}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
-        <h2 className="text-lg font-bold text-slate-900">
-          Popular Unit Conversions
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Direct links to the most-searched unit conversions.
-        </p>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {FEATURED_UNIT_PAIRS.map((pair) => (
-            <Link
-              key={pair.slug}
-              href={`/converters/unit/${pair.slug}`}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-card transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
-            >
-              {pair.title}
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Every category card, tool tab, and "Popular" pill below is
+          wired to one shared selection — clicking any of them updates
+          the converter window in place, with no page reload. */}
+      <ConvertersWorkspace />
     </>
   );
 }
