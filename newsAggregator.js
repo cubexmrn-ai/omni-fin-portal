@@ -1,0 +1,437 @@
+// lib/newsAggregator.js
+//
+// Shared news-aggregation logic for Module 2 (Market AI & News). This
+// used to live inline in app/api/news-ai/route.js, with
+// app/ai-news/page.jsx calling that route over HTTP (via
+// lib/fetchNews.js) to get its data during server-side rendering.
+//
+// That self-fetch was the root cause of the page breaking in production
+// with "Unexpected token '<', <!DOCTYPE ... is not valid JSON": a Next.js
+// Server Component fetching its OWN API route by absolute URL during
+// static generation/ISR is a well-known Next.js/Vercel footgun — the
+// deployment the URL points to isn't guaranteed to be live/routable yet
+// at that point, and whatever intercepts the request (Vercel's edge
+// routing, a protection/interstitial page, a cold-start timeout) returns
+// an HTML page instead of JSON, which then fails res.json() upstream.
+//
+// The fix is architectural: the actual aggregation logic lives HERE, as
+// a plain async function with no dependency on Request/Response or any
+// HTTP round trip. Both the public API route (for any external/
+// client-side caller) and the server component (for its own SSR) call
+// `getAggregatedNews()` directly — no self-fetch, so this failure mode
+// is eliminated entirely rather than just handled gracefully.
+
+const REVALIDATE_SECONDS = 900;
+const MAX_ITEMS_PER_FEED = 20;
+const MAX_ITEMS = 60;
+const FETCH_TIMEOUT_MS = 8000;
+
+// Public, no-auth-required finance RSS feeds, each tagged with the
+// category shown in the AI News page's filter pills. Reuters' and
+// Bloomberg's own RSS feeds were discontinued/blocked years ago (both
+// now return robots-disallowed or access-blocked responses), so these
+// are their closest still-live, freely-embeddable equivalents per
+// category — verified reachable before wiring them in here.
+const FEEDS = [
+  {
+    name: "Yahoo Finance",
+    url: "https://finance.yahoo.com/news/rssindex",
+    category: "Stocks",
+  },
+  {
+    name: "MarketWatch",
+    url: "https://feeds.marketwatch.com/marketwatch/topstories/",
+    category: "Stocks",
+  },
+  {
+    name: "CNBC Markets",
+    url: "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    category: "Stocks",
+  },
+  {
+    name: "FXStreet",
+    url: "https://www.fxstreet.com/rss/news",
+    category: "Forex",
+  },
+  {
+    name: "CoinDesk",
+    url: "https://www.coindesk.com/arc/outboundfeeds/rss/",
+    category: "Crypto",
+  },
+  {
+    name: "Cointelegraph",
+    url: "https://cointelegraph.com/rss",
+    category: "Crypto",
+  },
+  {
+    name: "OilPrice.com",
+    url: "https://oilprice.com/rss/main",
+    category: "Commodities",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Rule-based sentiment — a keyword-scoring pass over each headline's
+// title + excerpt. Deliberately simple and deterministic (not an LLM
+// call): a small, hand-picked word list per direction, scored by net
+// match count. Labeled "Rule-based" wherever it's shown in the UI so
+// it's never mistaken for AI/NLP-derived sentiment — same honesty bar
+// as the rest of this project's "coming soon" labeling.
+//
+// Declared BEFORE MOCK_FALLBACK_ITEMS below, which calls computeSentiment()
+// immediately inside its own module-level `.map()` — if this block came
+// after it instead (as an earlier version of this file had it), that
+// `.map()` call would run before BULLISH_WORDS/BEARISH_WORDS's `const`
+// declarations below it had executed, throwing "Cannot access
+// 'BULLISH_WORDS' before initialization" (a temporal-dead-zone error —
+// function declarations are hoisted, but the `const` bindings a hoisted
+// function closes over are not initialized until their own line runs).
+// This broke the Vercel production build with a minified
+// "Cannot access 'i' before initialization" error.
+// ---------------------------------------------------------------------------
+
+const BULLISH_WORDS = [
+  "surge", "surges", "surged", "rally", "rallies", "rallied", "soar", "soars", "soared",
+  "jump", "jumps", "jumped", "gain", "gains", "gained", "climb", "climbs", "climbed",
+  "rise", "rises", "rising", "rose", "record high", "all-time high", "bullish",
+  "upgrade", "upgraded", "beat", "beats", "beating", "outperform", "optimis",
+  "rebound", "rebounds", "rally", "strengthen", "strengthens", "strengthened",
+  "boost", "boosts", "boosted", "recover", "recovers", "recovery",
+];
+
+const BEARISH_WORDS = [
+  "plunge", "plunges", "plunged", "slump", "slumps", "slumped", "crash", "crashes", "crashed",
+  "fall", "falls", "fell", "falling", "drop", "drops", "dropped", "decline", "declines", "declined",
+  "sink", "sinks", "sank", "tumble", "tumbles", "tumbled", "bearish", "downgrade", "downgraded",
+  "miss", "misses", "missing", "underperform", "pessimis", "slide", "slides", "slid",
+  "weaken", "weakens", "weakened", "sell-off", "selloff", "losses", "loss", "recession",
+  "warn", "warns", "warning", "concern", "concerns", "risk", "risks", "fear", "fears",
+];
+
+function computeSentiment(title, excerpt) {
+  const text = `${title || ""} ${excerpt || ""}`.toLowerCase();
+  let bullishScore = 0;
+  let bearishScore = 0;
+
+  for (const word of BULLISH_WORDS) {
+    if (text.includes(word)) bullishScore += 1;
+  }
+  for (const word of BEARISH_WORDS) {
+    if (text.includes(word)) bearishScore += 1;
+  }
+
+  if (bullishScore === 0 && bearishScore === 0) return "Neutral";
+  if (bullishScore > bearishScore) return "Bullish";
+  if (bearishScore > bullishScore) return "Bearish";
+  return "Neutral";
+}
+
+// ---------------------------------------------------------------------------
+// Per-asset relevance tagging — which instrument(s) a headline is about,
+// so the News page can break sentiment down "which market does this
+// headline impact" instead of one abstract aggregate count. Same
+// rule-based, deterministic approach as computeSentiment() above: a
+// hand-picked keyword list per asset, matched with word boundaries so
+// e.g. "Goldman Sachs" or "golden visa" never falsely tags "Gold".
+//
+// Declared BEFORE MOCK_FALLBACK_ITEMS below for the exact same reason
+// BULLISH_WORDS/BEARISH_WORDS are — MOCK_FALLBACK_ITEMS's module-level
+// `.map()` calls detectRelatedAssets() immediately, so the `const`s it
+// closes over must already be initialized by the time that line runs.
+// See the TDZ comment above for the full explanation.
+// ---------------------------------------------------------------------------
+
+const ASSET_KEYWORDS = {
+  Gold: ["gold", "xau"],
+  Silver: ["silver", "xag"],
+  Oil: ["oil", "crude", "wti", "brent"],
+  BTC: ["bitcoin", "btc"],
+  ETH: ["ethereum", "eth"],
+  USD: ["dollar", "usd", "greenback", "federal reserve", "fed", "fomc"],
+  EUR: ["euro", "eur", "eurozone", "ecb"],
+  GBP: ["pound", "gbp", "sterling", "bank of england", "boe"],
+  "S&P 500": ["s&p 500", "s&p500", "wall street", "stocks", "equities", "nasdaq", "dow jones"],
+};
+
+function escapeRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Pre-build one word-boundary regex per keyword, once, rather than on
+// every call.
+const ASSET_KEYWORD_PATTERNS = Object.entries(ASSET_KEYWORDS).map(([asset, keywords]) => ({
+  asset,
+  patterns: keywords.map((kw) => new RegExp(`\\b${escapeRegex(kw)}\\b`, "i")),
+}));
+
+/**
+ * Returns the list of asset codes/names (e.g. ["Gold", "USD"]) a
+ * headline's title+excerpt appears to be about, via word-boundary
+ * keyword matching. A headline can relate to more than one asset (e.g.
+ * "Gold slips as dollar strengthens" → ["Gold", "USD"]); returns an
+ * empty array when nothing matches rather than guessing.
+ */
+function detectRelatedAssets(title, excerpt) {
+  const text = `${title || ""} ${excerpt || ""}`;
+  const related = [];
+  for (const { asset, patterns } of ASSET_KEYWORD_PATTERNS) {
+    if (patterns.some((re) => re.test(text))) related.push(asset);
+  }
+  return related;
+}
+
+// Last-resort static items, used only when every single live feed fails
+// (e.g. this deployment's outbound network is blocked entirely). These
+// keep the page populated and functional — search/filter still work —
+// rather than showing an empty state during a total outage. Clearly
+// labeled via `source`/`isMock` so they're never mistaken for live news.
+const MOCK_FALLBACK_ITEMS = [
+  {
+    title: "Markets await central bank commentary for rate-path signals",
+    category: "Stocks",
+    source: "OmniFin Portal (cached)",
+    excerpt:
+      "Equity indices trade in a narrow range as investors wait on commentary from policymakers for clues on the next move in interest rates.",
+  },
+  {
+    title: "Dollar steadies against major peers ahead of data releases",
+    category: "Forex",
+    source: "OmniFin Portal (cached)",
+    excerpt:
+      "The US dollar holds recent gains against a basket of major currencies as traders position ahead of upcoming economic data.",
+  },
+  {
+    title: "Bitcoin consolidates near recent range as volatility eases",
+    category: "Crypto",
+    source: "OmniFin Portal (cached)",
+    excerpt:
+      "Bitcoin and major altcoins trade sideways following a period of elevated volatility, with traders watching key support and resistance levels.",
+  },
+  {
+    title: "Oil prices hold steady amid mixed supply and demand signals",
+    category: "Commodities",
+    source: "OmniFin Portal (cached)",
+    excerpt:
+      "Crude benchmarks trade little changed as markets weigh global demand expectations against ongoing supply-side developments.",
+  },
+].map((item, idx) => ({
+  ...item,
+  link: null,
+  publishedAt: null,
+  sentiment: computeSentiment(item.title, item.excerpt),
+  relatedAssets: detectRelatedAssets(item.title, item.excerpt),
+  summary: null,
+  summaryStatus: "pending_ai_key",
+  isMock: true,
+  id: `mock-${idx}`,
+}));
+
+function decodeEntities(text) {
+  if (!text) return "";
+  return text
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .trim();
+}
+
+function extractTag(block, tag) {
+  const match = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
+  return match ? decodeEntities(match[1]) : "";
+}
+
+function stripHtml(text) {
+  return text.replace(/<[^>]*>/g, "").trim();
+}
+
+/**
+ * Minimal, dependency-free RSS 2.0 parser. Good enough for standard
+ * <item> feeds; not a full XML parser, but avoids pulling in an extra
+ * package for a handful of regex-extractable fields.
+ */
+function parseRssItems(xml, sourceName, category) {
+  const items = [];
+  const itemBlocks = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
+
+  for (const block of itemBlocks.slice(0, MAX_ITEMS_PER_FEED)) {
+    const title = extractTag(block, "title");
+    const link = extractTag(block, "link") || extractTag(block, "guid");
+    const pubDate = extractTag(block, "pubDate") || extractTag(block, "dc:date");
+    const rawDescription =
+      extractTag(block, "description") || extractTag(block, "content:encoded");
+
+    if (!title) continue;
+
+    // Guard against an unparseable pubDate throwing on .toISOString()
+    // (new Date("garbage") is an "Invalid Date", not null) — one bad
+    // date shouldn't take down this feed's whole item list.
+    const parsedDate = pubDate ? new Date(pubDate) : null;
+    const publishedAt =
+      parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate.toISOString()
+        : null;
+
+    const excerpt = stripHtml(rawDescription).slice(0, 220);
+
+    items.push({
+      title,
+      link: link.trim(),
+      source: sourceName,
+      category,
+      publishedAt,
+      excerpt,
+      // Rule-based keyword sentiment — see computeSentiment() above.
+      // Always computed (doesn't need an API key); clearly a different
+      // thing from the AI-written `summary` below.
+      sentiment: computeSentiment(title, excerpt),
+      // Which instrument(s) this headline appears to be about — see
+      // detectRelatedAssets() above. Empty array if nothing matches.
+      relatedAssets: detectRelatedAssets(title, excerpt),
+      // --- Placeholder for Phase 2 AI summarization ---
+      summary: null,
+      summaryStatus: "pending_ai_key",
+      // TODO (Phase 2, once ANTHROPIC_API_KEY is configured — see
+      // hasAiKey in getAggregatedNews() below): call the Claude API
+      // here with `excerpt` and set `summary` + `summaryStatus: "ready"`
+      // on the returned item.
+    });
+  }
+
+  return items;
+}
+
+async function fetchFeed(feed) {
+  // A hard timeout so one slow/hanging RSS host can't stall the whole
+  // aggregator (or a Vercel build doing static prerendering) — same
+  // guard used for the three providers in app/api/rates/route.js.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(feed.url, {
+      next: { revalidate: REVALIDATE_SECONDS },
+      signal: controller.signal,
+      headers: {
+        // Some finance RSS endpoints reject requests with no UA header.
+        "User-Agent":
+          "Mozilla/5.0 (compatible; OmniFinPortalBot/1.0; +https://omnifinportal.app)",
+        Accept: "application/rss+xml, application/xml, text/xml",
+      },
+    });
+
+    if (!res.ok) throw new Error(`${feed.name} responded with ${res.status}`);
+
+    const contentType = res.headers.get("content-type") || "";
+    const xml = await res.text();
+
+    // Belt-and-suspenders: some feed hosts return a 200 with an HTML
+    // error/interstitial page instead of RSS (rate-limit page, WAF
+    // challenge, etc). Detect that here — rather than feeding HTML into
+    // the regex-based parser and silently returning zero items — so it
+    // surfaces as a normal per-feed warning instead.
+    const looksLikeHtml =
+      contentType.includes("text/html") || /^\s*<!DOCTYPE html/i.test(xml);
+    if (looksLikeHtml) {
+      throw new Error(`${feed.name} returned an HTML page instead of RSS/XML`);
+    }
+
+    return parseRssItems(xml, feed.name, feed.category);
+  } catch (err) {
+    // A single failing feed should never break the whole aggregator.
+    return { error: `${feed.name}: ${err.message || "unknown error"}` };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * Fetches and merges all configured RSS feeds into one de-duplicated,
+ * date-sorted, category-tagged list. Never throws: every feed call is
+ * individually guarded above, and if every single one fails, this falls
+ * back to a small set of clearly-labeled static placeholder items
+ * instead of returning an empty list.
+ */
+export async function getAggregatedNews() {
+  const feedResults = await Promise.all(FEEDS.map(fetchFeed));
+
+  const items = [];
+  const errors = [];
+
+  for (const result of feedResults) {
+    if (Array.isArray(result)) {
+      items.push(...result);
+    } else if (result?.error) {
+      errors.push(result.error);
+    }
+  }
+
+  const usingMockFallback = items.length === 0;
+  const finalItems = usingMockFallback ? MOCK_FALLBACK_ITEMS : items;
+
+  finalItems.sort((a, b) => {
+    const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+    const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+    return dateB - dateA;
+  });
+
+  const pageItems = finalItems.slice(0, MAX_ITEMS);
+
+  // Rule-based headline-sentiment tally (Bullish/Bearish/Neutral counts
+  // across the current page of items) — real, computed from the actual
+  // live headlines above, NOT a placeholder. Distinct from true social
+  // sentiment (X/Twitter, Reddit chatter), which isn't wired to any
+  // source here — see the separate placeholder card on app/ai-news/page.jsx.
+  const sentimentTally = { Bullish: 0, Bearish: 0, Neutral: 0 };
+  for (const item of pageItems) {
+    if (sentimentTally[item.sentiment] !== undefined) sentimentTally[item.sentiment] += 1;
+  }
+
+  // Per-asset breakdown of the same rule-based sentiment, using each
+  // item's relatedAssets (see detectRelatedAssets() above) — e.g.
+  // { Gold: { Bullish: 2, Bearish: 1, Neutral: 0 }, USD: {...}, ... }.
+  // Only assets that actually appear in at least one headline are
+  // included, so the UI can skip rendering empty rows.
+  const assetSentimentBreakdown = {};
+  for (const item of pageItems) {
+    for (const asset of item.relatedAssets || []) {
+      if (!assetSentimentBreakdown[asset]) {
+        assetSentimentBreakdown[asset] = { Bullish: 0, Bearish: 0, Neutral: 0 };
+      }
+      if (assetSentimentBreakdown[asset][item.sentiment] !== undefined) {
+        assetSentimentBreakdown[asset][item.sentiment] += 1;
+      }
+    }
+  }
+
+  // ANTHROPIC_API_KEY check — same pattern as app/api/market-ai/route.js.
+  // No key is configured in this deployment (and the per-headline Claude
+  // call itself isn't implemented yet either — see the TODO on
+  // parseRssItems() above), so `enabled` stays false either way; the
+  // note is just more specific about which of the two is still missing.
+  const hasAiKey = Boolean(process.env.ANTHROPIC_API_KEY);
+
+  return {
+    items: pageItems,
+    usingMockFallback,
+    sentimentTally,
+    assetSentimentBreakdown,
+    aiSummarization: {
+      enabled: false,
+      status: hasAiKey ? "key_configured_not_wired" : "pending_ai_key",
+      note: usingMockFallback
+        ? "Live news sources are temporarily unreachable, so cached sample headlines are shown instead. AI-generated summaries will appear here once an Anthropic API key is configured on the server."
+        : hasAiKey
+        ? "An Anthropic API key is configured, but per-headline AI summarization isn't wired up yet — see the TODO in lib/newsAggregator.js. Showing rule-based sentiment only for now."
+        : "Headlines are live from RSS, with rule-based sentiment badges. AI-generated summaries will appear here once an Anthropic API key is configured on the server.",
+    },
+    fetchedAt: new Date().toISOString(),
+    revalidateSeconds: REVALIDATE_SECONDS,
+    ...(errors.length ? { warnings: errors } : {}),
+  };
+}
+
+export { REVALIDATE_SECONDS as NEWS_REVALIDATE_SECONDS };
