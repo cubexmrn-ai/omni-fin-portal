@@ -102,7 +102,17 @@ app/
     page.jsx                  # Calculators Hub shell (metadata) wrapping components/calculators/CalculatorsHub.jsx
   community/
     page.jsx                  # Community Forum shell (metadata) wrapping components/community/CommunityHub.jsx
-  layout.jsx                  # Header, nav, footer
+  about/
+    page.jsx                  # About Us — purpose, educational/utility mandate, data transparency
+  disclaimer/
+    page.jsx                  # Financial Disclaimer — "educational only, not financial advice"
+  privacy/
+    page.jsx                  # Privacy Policy — AdSense-required disclosures
+  terms/
+    page.jsx                  # Terms of Service — AdSense-required disclosures
+  sitemap.js                  # Next.js sitemap convention -> served at /sitemap.xml
+  robots.js                   # Next.js robots convention -> served at /robots.txt
+  layout.jsx                  # Header, nav, footer (footer now links About/Privacy/Terms/Disclaimer/Sitemap)
   page.jsx                    # Homepage dashboard
   globals.css
 components/
@@ -1018,6 +1028,94 @@ Each provider call:
   simulated "reload"); `addPost` + category/asset-tag/search filtering;
   derived stats arithmetic; and the chart-placeholder hash function's
   determinism and output bounds. All checks passed with 0 failures.
+
+## Notes on Compliance, Legal Pages & Dynamic SEO Indexing
+
+- **Four static legal/compliance pages** (`app/about`, `app/disclaimer`,
+  `app/privacy`, `app/terms`), each a plain server component — no
+  `"use client"` split needed, since there's no interactive state —
+  styled consistently with the rest of the site (breadcrumb nav,
+  gradient header section, `max-w-3xl` prose body).
+  - **About Us** states OmniFin Portal's educational/utility mandate
+    up front and is explicit about what's real vs. simulated/rule-based
+    across the site (rates, technical analysis, Social Buzz Tracker,
+    Community Forum chart placeholders, aggregated news) — the same
+    no-fabrication convention already used throughout the product,
+    now written down as a user-facing policy rather than just an
+    in-UI label.
+  - **Financial Disclaimer** is the load-bearing page: an explicit,
+    unambiguous "nothing on this site is financial, investment,
+    trading, legal, or tax advice" banner up top, plus numbered
+    sections covering no-warranty-on-data, simulated/illustrative
+    content, user-generated Community Forum content, past-performance,
+    trading risk, and limitation of liability.
+  - **Privacy Policy** and **Terms of Service** cover the standard set
+    Google AdSense requires — cookies/advertising, third-party data
+    providers, analytics, children's privacy, acceptable use,
+    intellectual property, and limitation of liability — and are
+    specific about a real architectural detail: Academy progress and
+    Community Forum vote/Bullseye/post state live only in the visitor's
+    own browser's `localStorage` and are never transmitted to a server,
+    which both policies state plainly rather than describing a generic
+    "we may collect..." data flow that doesn't match how the app
+    actually works.
+  - All four pages cross-link each other (About → Disclaimer → Privacy
+    → Terms) so a reader lands on the right policy regardless of which
+    one they opened first.
+- **`app/sitemap.js`** uses Next.js's built-in sitemap file convention
+  (a default-exported function returning `{url, lastModified,
+  changeFrequency, priority}` entries), served automatically at
+  `/sitemap.xml` — no hand-written XML template. It lists every static
+  route (including the four new legal pages) plus every dynamic route
+  that's actually pre-rendered at build time, reusing each route's own
+  `generateStaticParams()` source list rather than a separate hard-coded
+  copy, so the sitemap can never silently drift out of sync with what's
+  really pre-rendered:
+  - `/converters/[pair]` — `lib/pairSlugs.js`'s `FEATURED_PAIRS` (14 pairs)
+  - `/converters/unit/[slug]` — `lib/unitSlugs.js`'s `FEATURED_UNIT_PAIRS` (12 pairs)
+  - `/learn/[level]/[lesson]` — `lib/academyData.js`'s `getAllLessonsFlat()` (every lesson, all 5 levels)
+
+  `changeFrequency`/`priority` are tiered by how often each page's
+  content actually changes: the homepage and rate-driven pages
+  (converters, market analysis, news, community) are `daily`; the
+  Academy and unit converters (pure math, nothing time-sensitive) are
+  `weekly`/`monthly`; the four legal pages are `monthly`/`yearly`
+  with low priority, since they're compliance pages, not traffic pages.
+- **`app/robots.js`** uses the matching built-in robots convention,
+  served at `/robots.txt`, allowing all crawlers everywhere except
+  `/api/*` (live data endpoints meant for this app's own client code,
+  not indexing) and `/_next/` (build output, not a real route), and
+  points its `Sitemap:` directive at the exact same `getSiteUrl()` the
+  sitemap uses, so the two can never point at different hosts.
+- **Footer now carries real compliance links.** `app/layout.jsx`'s
+  `SiteFooter` previously had no links at all (just a copyright line);
+  it now renders an explicit `FOOTER_LINKS` row — About, Privacy
+  Policy, Terms of Service, Financial Disclaimer, and Sitemap — plus an
+  inline link to the Disclaimer next to the existing "informational
+  purposes only" line. The header nav's "About" link, which previously
+  pointed to a `/#about` anchor inside the footer (there was no real
+  About page yet), now points to the real `/about` page; the footer's
+  old `id="about"` anchor was removed since nothing links to it anymore.
+- **Verification methodology**: bracket-balance checked via
+  `/tmp/balcheck.py` across all 7 new/changed files (all 4 legal pages
+  needed their JSX-text apostrophes escaped to `&apos;` per this
+  project's established convention — the balance checker treats a raw
+  `'` as a string delimiter everywhere, so an unescaped contraction like
+  "it's" can swallow real brackets after it; the two `metadata.description`
+  strings that happened to contain an apostrophe were deliberately left
+  as real `'` characters, since those are plain JS string literals, not
+  JSX text, and `&apos;` would render literally in a `<meta>` tag rather
+  than being decoded); `node --check` on `sitemap.js`/`robots.js`; and a
+  Node.js script that actually imports the real `lib/pairSlugs.js`,
+  `lib/unitSlugs.js`, and `lib/academyData.js` modules (via a small ESM
+  loader that resolves this project's `@/` import alias, since Node
+  can't resolve it natively) and runs `app/sitemap.js`'s and
+  `app/robots.js`'s actual default exports end-to-end — confirming all
+  60 sitemap entries are well-formed absolute URLs with valid dates,
+  known `changeFrequency` values, in-range priorities, and no
+  duplicates, and that the three dynamic-route counts exactly match
+  each page's own `generateStaticParams()` list length. All checks
+  passed with 0 failures.
 
 ## Roadmap
 
