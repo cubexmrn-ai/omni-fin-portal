@@ -147,6 +147,8 @@ components/
                                 # Fibonacci, timeline, comparison, flow, gauge, grid, ladder)
     EmbeddedTool.jsx           # toolId -> real OmniFin tool component registry (used inside lessons)
     MiniLotSizeCalculator.jsx  # Small position-sizing calculator embedded in two lessons
+    CourseSidebar.jsx          # Sticky current-level header + progress tracker + clickable
+                                # lesson list on the lesson page (desktop, lg breakpoint+)
   calculators/
     CalculatorsHub.jsx         # Category tabs (Trading Tools / Wealth & Personal Finance) + calculator grid
     MiniCalculatorWidget.jsx   # calculatorId -> full calculator component, embedded in Academy lessons
@@ -916,6 +918,79 @@ Each provider call:
   render empty), and — the architecture fix's key claim — that the
   Forex Focused Track genuinely spans multiple levels beyond Level 1.
   All checks passed with 0 failures.
+
+### Refinement pass: light page body, locked category tracks, course sidebar
+
+A follow-up pass on the dark redesign above, in response to feedback
+that the fully-dark page body (everywhere, not just the cards) hurt
+contrast and that removing level-locking entirely from category tracks
+went further than intended:
+
+- **Page body reverted to the site's normal light theme.** `bg-ink`
+  (`#0b0f19`) is no longer the page background anywhere — `AcademyHub.jsx`
+  and `LessonViewer.jsx`'s outer wrappers, header/breadcrumb sections,
+  and plain paragraph text (`TextSection`) are back to the same light
+  slate/white/`brand` palette as every other page on the site. `ink`
+  stays defined in `tailwind.config.js`, but is now used only for the
+  floating dark widget chrome that's meant to visibly "pop" over the
+  light page — the lesson page's sticky top progress bar and sticky
+  bottom prev/next nav.
+- **Callout cards changed from translucent tints to solid dark cards.**
+  `ProTip`/`RiskWarning`/`FormulaBadge` in `LessonViewer.jsx` previously
+  used e.g. `bg-emerald-500/10` with no opaque base — that read as a
+  dark glass card only because the page behind it was also dark. Now
+  that the page is light, the same translucent tint would wash out into
+  a pale, washed-looking card instead of a "sleek dark" one. Fixed by
+  giving each an explicit opaque `bg-gray-900` base with a colored
+  border/glow on top, matching the same solid-card treatment
+  `LevelCard`/`FocusedTrackCard` (`AcademyHub.jsx`) and `QuizModule.jsx`
+  already used — so every card still reads as genuinely dark regardless
+  of what's behind it.
+- **Category tracks are locked again, plus a new always-unlocked
+  Overview card.** The previous pass made every category-track lesson
+  frictionlessly clickable regardless of level progress; this walks
+  that back — a category track (Forex/Metals/Crypto/Technicals/
+  Personal Finance) now applies the *same* level-unlock gating as the
+  Master Path (locked lessons render grayed-out with a 🔒 and are not
+  links), so advanced, level-specific modules genuinely stay behind
+  normal progression. The one addition: selecting a category tab (with
+  no search query) always shows one extra, always-unlocked "Overview /
+  Basic Introduction" card first, with the exact requested banner
+  ("This is a basic overview. To unlock full deep-dive modules for this
+  topic, complete the core levels starting from Level 1.") and a
+  "Start Level 1" link. This card is new content (`CATEGORY_OVERVIEWS`
+  in `lib/academyData.js`), not a link to a real lesson page — verified
+  against the actual curriculum data that this is necessary, not
+  decorative: with fresh (no) progress, the Forex track's 12 lessons
+  are *all* locked (0 of 12 unlocked), so without this card a new
+  visitor clicking "Forex" would see a wall of locked cards and no way
+  to learn anything about the topic at all.
+- **New sticky Course Sidebar (`components/academy/CourseSidebar.jsx`)**
+  on the lesson page: the current level's header, an in-level progress
+  tracker (lessons completed / total + percent bar), and a clickable
+  vertical list of every lesson in that level, with the current lesson
+  highlighted and completed ones check-marked. Every row is clickable —
+  `hooks/useAcademyProgress.js` locks and unlocks whole *levels*, not
+  individual lessons within an already-unlocked level (there's no
+  "lesson 3 is locked until lesson 2 is done" concept in this
+  curriculum), and `LessonViewer.jsx` already refuses to render this
+  component at all when the current level itself is locked — so by the
+  time the sidebar appears, every lesson it lists is a legitimate,
+  already-unlocked destination. It's `hidden` below the `lg` breakpoint
+  and sticks (`lg:sticky lg:top-28`) alongside the lesson content on
+  larger screens; on mobile the existing sticky Previous/Next bottom bar
+  remains the way to move between lessons.
+- **Verification methodology**: bracket-balance checked via
+  `/tmp/balcheck.py`; and a Node.js script (via the same `@/`-alias ESM
+  loader as above) that re-implements the gating logic exactly and runs
+  it against the real curriculum data — confirming every category has
+  an overview blurb; that with fresh progress every Forex lesson beyond
+  Level 1 is locked (0 of 12 unlocked); that completing every Rookie
+  lesson unlocks Level 2's Forex lessons while Level 3+ stay locked;
+  that the Overview card's "Start Level 1" link resolves to a real
+  lesson; and that `getLevelStats`/`getLevel` still return exactly the
+  lesson counts/lists the sidebar's progress tracker and lesson list
+  depend on. All checks passed with 0 failures.
 
 ## Notes on the Calculators Hub
 

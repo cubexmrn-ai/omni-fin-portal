@@ -40,6 +40,25 @@ export const CATEGORIES = [
   { id: "technicals", label: "Technicals" },
 ];
 
+// A short, always-unlocked intro blurb per category, used by
+// components/academy/AcademyHub.jsx's Focused Track View. None of the
+// curriculum's actual Level 1 (Rookie) lessons are tagged "forex",
+// "metals", "crypto", or "technicals" (Rookie is deliberately
+// personal-finance-only — see ACADEMY_LEVELS below), so there's no real
+// lesson to point to as a free, always-unlocked "basic introduction"
+// for those topics. Rather than lock every single card in a category
+// track behind Level 1 completion, the hub renders this blurb as a
+// standalone "Overview / Basic Introduction" card — informational only
+// (it doesn't link anywhere), always unlocked, with a banner pointing
+// the visitor at Level 1 for the real deep-dive lessons.
+export const CATEGORY_OVERVIEWS = {
+  forex: "Forex (foreign exchange) is the global market for trading one currency against another — EUR/USD, GBP/JPY, USD/PKR, and thousands of other pairs — open across overlapping global sessions nearly 24 hours a day on weekdays.",
+  metals: "Precious metals and commodities — gold (XAU), silver (XAG), platinum, and crude oil — are traded both as physical assets and as price contracts, and are often used as a hedge against inflation or currency weakness.",
+  crypto: "Cryptocurrencies are decentralized digital assets — Bitcoin, Ethereum, and others — that trade 24/7 on their own exchanges, with no central bank, and no market close.",
+  "personal-finance": "Personal finance covers the everyday money concepts that apply whether or not you ever place a single trade — inflation, compounding, saving, and budgeting.",
+  technicals: "Technical analysis studies price charts and indicators — support/resistance, RSI, moving averages, Fibonacci — to read market structure, rather than analyzing a company's or economy's underlying fundamentals.",
+};
+
 // A quiz question is always { id, prompt, options: [{id, text}], correctOptionId, explanation }.
 const PASS_PERCENT = 80; // 4 of 5 correct
 

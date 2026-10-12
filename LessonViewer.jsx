@@ -3,19 +3,28 @@
 // components/academy/LessonViewer.jsx
 //
 // The interactive body of a lesson page (app/learn/[level]/[lesson]/page.jsx):
-// a sticky stepper/progress top bar, the lesson's typed content sections
-// (text / proTip / risk / formula / visual / tool), a sticky prev/next +
-// "Jump to Quiz" bottom nav bar, and the end-of-lesson Checkpoint Quiz
-// (components/academy/QuizModule.jsx) wired to hooks/useAcademyProgress
-// so a passing score marks the lesson Mastered and unlocks the next level.
+// a sticky stepper/progress top bar, a sticky Course Sidebar for
+// jumping between lessons in the current level, the lesson's typed
+// content sections (text / proTip / risk / formula / visual / tool), a
+// sticky prev/next + "Jump to Quiz" bottom nav bar, and the
+// end-of-lesson Checkpoint Quiz (components/academy/QuizModule.jsx)
+// wired to hooks/useAcademyProgress so a passing score marks the
+// lesson Mastered and unlocks the next level.
 //
-// DARK THEME + ACCENT SYSTEM: this page is permanently dark-themed (see
-// the header comment in components/academy/AcademyHub.jsx and
-// tailwind.config.js's "ink" entry), with a fixed 3-color semantic
-// accent system used consistently across every callout on this page:
-//   - Electric Blue (blue-500/#3b82f6)  -> primary CTAs, formula/key-rule cards
-//   - Emerald (emerald-500/#10b981)      -> pro-tips, "mastered"/success states
-//   - Soft Rose (rose-500/#f43f5e)       -> risk warnings, incorrect-answer states
+// THEME: the page body (header, breadcrumb, plain paragraph text) uses
+// the site's normal light theme for proper contrast — ONLY the
+// callout cards (pro-tip/risk/formula), the sidebar, the top progress
+// bar, the embedded tool frames, the diagrams, and the quiz are dark/
+// glassmorphic (solid gray-900/#111827 cards with colored borders —
+// NOT translucent color tints, which would wash out against a light
+// page instead of reading as a dark card), so they pop against the
+// light body around them. See components/academy/AcademyHub.jsx's
+// header comment for the fuller rationale.
+//
+// ACCENT SYSTEM (unchanged): Electric Blue (blue-500/#3b82f6) for
+// primary CTAs/formula cards, Emerald (emerald-500/#10b981) for
+// pro-tips and mastered/correct states, Soft Rose (rose-500/#f43f5e)
+// for risk warnings and incorrect/failing states.
 //
 // Split out as "use client" (same pattern as components/academy/AcademyHub.jsx)
 // so the page.jsx route itself can stay a server component with its own
@@ -30,6 +39,7 @@ import { useAcademyProgress } from "@/hooks/useAcademyProgress";
 import LessonVisualCard from "@/components/academy/LessonVisualCard";
 import EmbeddedTool from "@/components/academy/EmbeddedTool";
 import QuizModule from "@/components/academy/QuizModule";
+import CourseSidebar from "@/components/academy/CourseSidebar";
 
 const LEVEL_TAG_THEME = {
   emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
@@ -41,13 +51,13 @@ const LEVEL_TAG_THEME = {
 
 function ProTip({ body }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+    <div className="flex gap-3 rounded-xl border border-emerald-500/40 bg-gray-900 p-4 shadow-xl shadow-black/20">
       <span className="text-xl" aria-hidden="true">
         💡
       </span>
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-emerald-400">Pro Tip</p>
-        <p className="mt-1 text-sm text-emerald-50/90">{body}</p>
+        <p className="mt-1 text-sm text-gray-200">{body}</p>
       </div>
     </div>
   );
@@ -55,13 +65,13 @@ function ProTip({ body }) {
 
 function RiskWarning({ body }) {
   return (
-    <div className="flex gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4">
+    <div className="flex gap-3 rounded-xl border border-rose-500/40 bg-gray-900 p-4 shadow-xl shadow-black/20">
       <span className="text-xl" aria-hidden="true">
         ⚠️
       </span>
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-rose-400">Risk Warning</p>
-        <p className="mt-1 text-sm text-rose-50/90">{body}</p>
+        <p className="mt-1 text-sm text-gray-200">{body}</p>
       </div>
     </div>
   );
@@ -69,14 +79,14 @@ function RiskWarning({ body }) {
 
 function FormulaBadge({ label, formula, note }) {
   return (
-    <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
+    <div className="rounded-xl border border-blue-500/40 bg-gray-900 p-4 shadow-xl shadow-black/20">
       <p className="text-xs font-bold uppercase tracking-wide text-blue-400">
         Key Formula / Concept — {label}
       </p>
-      <p className="mt-1.5 rounded-lg bg-black/30 px-3 py-2 font-mono text-sm font-semibold text-gray-100">
+      <p className="mt-1.5 rounded-lg bg-black/40 px-3 py-2 font-mono text-sm font-semibold text-gray-100">
         {formula}
       </p>
-      {note && <p className="mt-2 text-xs text-blue-200/80">{note}</p>}
+      {note && <p className="mt-2 text-xs text-gray-400">{note}</p>}
     </div>
   );
 }
@@ -84,13 +94,13 @@ function FormulaBadge({ label, formula, note }) {
 function TextSection({ heading, body, list }) {
   return (
     <div>
-      {heading && <h2 className="text-lg font-bold text-gray-50">{heading}</h2>}
-      <p className={`text-sm leading-relaxed text-gray-400 ${heading ? "mt-2" : ""}`}>{body}</p>
+      {heading && <h2 className="text-lg font-bold text-slate-900">{heading}</h2>}
+      <p className={`text-sm leading-relaxed text-slate-600 ${heading ? "mt-2" : ""}`}>{body}</p>
       {Array.isArray(list) && list.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {list.map((item, i) => (
-            <li key={i} className="flex gap-2 text-sm text-gray-400">
-              <span className="mt-0.5 text-blue-400" aria-hidden="true">
+            <li key={i} className="flex gap-2 text-sm text-slate-600">
+              <span className="mt-0.5 text-blue-600" aria-hidden="true">
                 •
               </span>
               <span>{item}</span>
@@ -123,17 +133,17 @@ function Section({ section }) {
 
 /** Sticky top bar: a stepper-style reading-progress bar (how far down
  * the lesson you've scrolled), the level tag, and the estimated read
- * time. Sits right below the site's own global header (which is
- * `sticky top-0`), so it stays visible on scroll without overlapping it. */
+ * time. A dark, floating widget — deliberately solid (not a page-body
+ * element) so it stays legible and "pops" sitting over the light page
+ * as you scroll. Sits right below the site's own global header (which
+ * is `sticky top-0`), so the two sticky bars never overlap. */
 function LessonTopBar({ level, lesson, scrollPercent }) {
   const tagTheme = LEVEL_TAG_THEME[level.theme] || LEVEL_TAG_THEME.blue;
   return (
     <div className="sticky top-16 z-20 border-b border-gray-800 bg-ink/95 backdrop-blur">
       <div className="mx-auto max-w-3xl px-4 py-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-3 text-xs">
-          <span
-            className={`shrink-0 rounded-full border px-2 py-0.5 font-bold ${tagTheme}`}
-          >
+          <span className={`shrink-0 rounded-full border px-2 py-0.5 font-bold ${tagTheme}`}>
             Level {level.order} · {level.title}
           </span>
           <span className="shrink-0 text-gray-500">~{lesson.estMinutes} min read</span>
@@ -214,15 +224,15 @@ export default function LessonViewer({ levelId, lessonId }) {
 
   if (locked) {
     return (
-      <div className="min-h-screen bg-ink">
+      <div className="min-h-screen bg-slate-50">
         <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
           <p className="text-4xl" aria-hidden="true">
             🔒
           </p>
-          <h1 className="mt-3 text-xl font-bold text-gray-50">This level is still locked</h1>
-          <p className="mt-2 text-sm text-gray-400">
+          <h1 className="mt-3 text-xl font-bold text-slate-900">This level is still locked</h1>
+          <p className="mt-2 text-sm text-slate-500">
             Finish and pass every quiz in the previous level to unlock {level.title} on the
-            Master Path — or browse this topic without the lock from the Academy&apos;s
+            Master Path — or browse this topic&apos;s free overview from the Academy&apos;s
             category tracks.
           </p>
           <Link
@@ -237,23 +247,23 @@ export default function LessonViewer({ levelId, lessonId }) {
   }
 
   return (
-    <div className="min-h-screen bg-ink pb-24 text-gray-100">
-      <section className="border-b border-gray-800 bg-gradient-to-b from-blue-950/30 via-ink to-ink">
+    <div className="min-h-screen bg-slate-50 pb-24">
+      <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">
         <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-          <nav className="text-xs text-gray-500">
-            <Link href="/learn" className="hover:text-blue-400">
+          <nav className="text-xs text-slate-400">
+            <Link href="/learn" className="hover:text-brand-600">
               Academy
             </Link>
             <span className="mx-1.5">/</span>
-            <span className="text-gray-400">{level.title}</span>
+            <span className="text-slate-500">{level.title}</span>
           </nav>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-gray-50 sm:text-3xl">
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
             {lesson.title}
           </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span>~{lesson.estMinutes} min read</span>
             {alreadyMastered && (
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-400">
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
                 ✓ Mastered
               </span>
             )}
@@ -263,27 +273,35 @@ export default function LessonViewer({ levelId, lessonId }) {
 
       <LessonTopBar level={level} lesson={lesson} scrollPercent={scrollPercent} />
 
-      <section className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        {lesson.sections.map((section, i) => (
-          <Section key={i} section={section} />
-        ))}
+      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+          <CourseSidebar levelId={levelId} currentLessonId={lessonId} />
 
-        {lesson.quiz && (
-          <div id="module-quiz" className="pt-4">
-            <h2 className="mb-3 text-lg font-bold text-gray-50">Checkpoint Quiz</h2>
-            <QuizModule
-              questions={lesson.quiz.questions}
-              passPercent={lesson.quiz.passPercent}
-              onFinish={handleQuizFinish}
-              onProceed={handleProceed}
-              canProceed
-            />
+          <div className="min-w-0 flex-1">
+            <div className="mx-auto max-w-3xl space-y-6">
+              {lesson.sections.map((section, i) => (
+                <Section key={i} section={section} />
+              ))}
+
+              {lesson.quiz && (
+                <div id="module-quiz" className="pt-4">
+                  <h2 className="mb-3 text-lg font-bold text-slate-900">Checkpoint Quiz</h2>
+                  <QuizModule
+                    questions={lesson.quiz.questions}
+                    passPercent={lesson.quiz.passPercent}
+                    onFinish={handleQuizFinish}
+                    onProceed={handleProceed}
+                    canProceed
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </section>
 
       {/* Sticky lesson navigation */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-800 bg-gray-950/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-800 bg-ink/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-3 sm:px-6 lg:px-8">
           {prev ? (
             <Link
