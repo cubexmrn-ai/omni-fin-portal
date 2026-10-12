@@ -79,6 +79,7 @@ const CALC_TERMS_BY_LANGUAGE = {
   es: { buy: "Comprar", sell: "Vender", profit: "Ganancia Potencial", loss: "Pérdida Potencial" },
   fr: { buy: "Acheter", sell: "Vendre", profit: "Profit Potentiel", loss: "Perte Potentielle" },
   de: { buy: "Kaufen", sell: "Verkaufen", profit: "Möglicher Gewinn", loss: "Möglicher Verlust" },
+  it: { buy: "Compra", sell: "Vendi", profit: "Profitto Potenziale", loss: "Perdita Potenziale" },
   tr: { buy: "Al", sell: "Sat", profit: "Olası Kâr", loss: "Olası Zarar" },
   zh: { buy: "买入", sell: "卖出", profit: "潜在盈利", loss: "潜在亏损" },
   ja: { buy: "買い", sell: "売り", profit: "潜在利益", loss: "潜在損失" },
