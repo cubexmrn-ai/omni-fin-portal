@@ -171,14 +171,16 @@ function ToolsCalculatorsDropdown() {
   );
 }
 
-/** Sleek Base Currency dropdown for the top nav — a native <select> so
- * it's fully keyboard/touch accessible, grouped into a short
- * "Popular" set plus every other supported currency, styled to sit
- * naturally beside the other header controls. Changing it updates
- * BaseCurrencyProvider immediately, which every synced tool (Metals
- * Calculator, Currency Converter, Trading Calculators) picks up as
- * its new default — without touching any manual override the person
- * already made inside a specific tool. */
+/** Compact Base Currency pill dropdown for the top nav — a native
+ * <select> so it's fully keyboard/touch accessible, grouped into a
+ * short "Popular" set plus every other supported currency. Sized down
+ * to a tight, sleek pill (text-xs, px-2 py-1, a subtle translucent
+ * blue border) so it sits naturally among the other header controls
+ * without adding to the header's height or crowding the nav links.
+ * Changing it updates BaseCurrencyProvider immediately, which every
+ * synced tool (Metals Calculator, Currency Converter, Trading
+ * Calculators) picks up as its new default — without touching any
+ * manual override the person already made inside a specific tool. */
 function BaseCurrencySelect({ className = "" }) {
   const { baseCurrency, setBaseCurrency } = useBaseCurrency();
   const popular = POPULAR_CURRENCY_CODES.map((code) => getCurrency(code)).filter(Boolean);
@@ -186,14 +188,14 @@ function BaseCurrencySelect({ className = "" }) {
   const rest = CURRENCIES.filter((c) => !popularCodes.has(c.code));
 
   return (
-    <label className={`relative ${className}`}>
+    <label className={`relative inline-flex ${className}`}>
       <span className="sr-only">Base currency</span>
       <select
         value={baseCurrency}
         onChange={(e) => setBaseCurrency(e.target.value)}
         aria-label="Base currency"
         title="Base currency — sets the default account/local currency across OmniFin Portal's tools"
-        className="appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 pr-7 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-brand-300 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        className="appearance-none rounded-full border border-blue-500/30 bg-blue-50/60 px-2 py-1 pr-5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-500/60 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
         <optgroup label="Popular">
           {popular.map((c) => (
@@ -211,13 +213,13 @@ function BaseCurrencySelect({ className = "" }) {
         </optgroup>
       </select>
       <svg
-        width="12"
-        height="12"
+        width="10"
+        height="10"
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+        className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400"
       >
         <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
