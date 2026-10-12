@@ -3,37 +3,38 @@
 // components/calculators/CalculatorsHub.jsx
 //
 // The interactive body of the Calculators Hub (app/calculators/page.jsx):
-// category tabs ("Trading Tools" vs. "Wealth & Personal Finance") and a
-// stacked grid of every calculator in that category. Split out as its
-// own "use client" component so app/calculators/page.jsx itself can
-// stay a plain server component with its own metadata export — same
-// split used throughout this project (ConvertersTabs, AcademyHub, etc).
+// category tabs ("Trading Tools" vs. "Wealth & Personal Finance").
+// Split out as its own "use client" component so app/calculators/page.jsx
+// itself can stay a plain server component with its own metadata export
+// — same split used throughout this project (ConvertersTabs, AcademyHub,
+// etc).
 //
-// All seven calculators are real components (not placeholders/cards
-// that link elsewhere), so the hub is itself a complete, usable tool
-// page — this mirrors ConvertersTabs.jsx's pattern of switching between
-// full tool components rather than summary cards.
+// "Trading Tools" now renders the unified Trading Calculator Terminal
+// (components/calculators/TradingTerminal.jsx) — a single tabbed tool
+// (All-in-One Trade Execution Suite, Position & Lot Size, Pip Value &
+// Custom Trade Math, Margin & Leverage, Inflation & Wealth Growth) that
+// replaced the old scattered grid of separate calculator cards.
+// "Wealth & Personal Finance" keeps the household-finance calculators
+// (Inflation, Compound Growth, Profit Margin) as their own standalone
+// cards, since the Terminal's "Inflation & Wealth Growth" tab covers the
+// trading-adjacent use case but a household user browsing this category
+// still wants Profit Margin alongside them.
 
 import { useState } from "react";
 import { CALCULATOR_CATEGORIES, getCalculatorsByCategory } from "@/lib/calculatorsRegistry";
-import LotSizeCalculator from "@/components/calculators/LotSizeCalculator";
-import PipValueCalculator from "@/components/calculators/PipValueCalculator";
-import RiskRewardCalculator from "@/components/calculators/RiskRewardCalculator";
-import MarginCalculator from "@/components/calculators/MarginCalculator";
+import TradingTerminal from "@/components/calculators/TradingTerminal";
 import InflationCalculator from "@/components/calculators/InflationCalculator";
 import CompoundGrowthCalculator from "@/components/calculators/CompoundGrowthCalculator";
 import ProfitMarginCalculator from "@/components/calculators/ProfitMarginCalculator";
 
 // Maps a CALCULATORS registry id (lib/calculatorsRegistry.js) to the
-// actual component to render. Kept local to the hub rather than in the
-// registry file itself, since the registry is plain data shared with
-// components/calculators/MiniCalculatorWidget.jsx, which has its own
-// (smaller) component map for the subset it embeds elsewhere.
-const CALCULATOR_COMPONENTS = {
-  "lot-size": LotSizeCalculator,
-  "pip-value": PipValueCalculator,
-  "risk-reward": RiskRewardCalculator,
-  margin: MarginCalculator,
+// actual component to render for the "Wealth & Personal Finance" grid.
+// The four trading-category ids (lot-size, pip-value, risk-reward,
+// margin) are no longer rendered from here — they now live inside
+// TradingTerminal — but stay in the registry since
+// components/calculators/MiniCalculatorWidget.jsx still embeds them
+// individually elsewhere (Academy lessons, Converter pages).
+const PERSONAL_CALCULATOR_COMPONENTS = {
   inflation: InflationCalculator,
   "compound-growth": CompoundGrowthCalculator,
   "profit-margin": ProfitMarginCalculator,
@@ -41,7 +42,7 @@ const CALCULATOR_COMPONENTS = {
 
 export default function CalculatorsHub() {
   const [activeCategory, setActiveCategory] = useState("trading");
-  const calculators = getCalculatorsByCategory(activeCategory);
+  const personalCalculators = getCalculatorsByCategory("personal");
 
   return (
     <div>
@@ -57,9 +58,9 @@ export default function CalculatorsHub() {
             Trading &amp; Financial Calculators
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Position sizing, pip value, risk/reward, margin, inflation, compound growth, and
-            profit margin — seven free calculators every trader and household needs, all in one
-            place.
+            A unified Trading Calculator Terminal — position sizing, pip value, risk/reward,
+            margin, and wealth growth — plus dedicated household calculators for inflation,
+            compound growth, and profit margin.
           </p>
         </div>
       </section>
@@ -93,20 +94,32 @@ export default function CalculatorsHub() {
         </div>
       </section>
 
-      {/* Calculator Grid */}
-      <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {calculators.map((calc) => {
-            const Component = CALCULATOR_COMPONENTS[calc.id];
-            if (!Component) return null;
-            return (
-              <div key={calc.id} id={calc.id}>
-                <Component />
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      {/* Trading Tools: the unified Terminal. Personal Finance: the
+          existing standalone calculator grid. The Terminal's own body
+          is dark/glassmorphic by design (see its header comment), so
+          this section drops the light bg-slate-50 page background used
+          elsewhere on this page while it's active. */}
+      {activeCategory === "trading" ? (
+        <section className="bg-slate-950/[0.02]">
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+            <TradingTerminal />
+          </div>
+        </section>
+      ) : (
+        <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {personalCalculators.map((calc) => {
+              const Component = PERSONAL_CALCULATOR_COMPONENTS[calc.id];
+              if (!Component) return null;
+              return (
+                <div key={calc.id} id={calc.id}>
+                  <Component />
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

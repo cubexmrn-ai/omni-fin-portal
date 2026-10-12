@@ -312,3 +312,144 @@ function round(value, decimals) {
   const factor = Math.pow(10, decimals);
   return Math.round(value * factor) / factor;
 }
+
+/**
+ * Pip Value for an arbitrary CUSTOM lot size (e.g. 0.18 lots) rather
+ * than the fixed Standard/Mini/Micro presets calculatePipValue() keys
+ * off of. Powers the "Pip Value & Custom Trade Math" tool and the
+ * All-in-One Trade Execution Suite (components/calculators/
+ * TradingTerminal.jsx) — both let a trader type any decimal lot size
+ * directly instead of picking from the three preset tiers.
+ *
+ * `lots` is always expressed in STANDARD lots (contractSizes.standard
+ * units each), matching how brokers quote lot size regardless of
+ * instrument — 0.18 lots of XAU/USD is still 0.18 × 100oz, not 0.18 ×
+ * some other base.
+ *
+ * @param {{pairId:string, lots:number, pipSize?:number, rates:Record<string,number>}} params
+ */
+export function calculatePipValueForLots({ pairId, lots, pipSize, rates }) {
+  const pair = getTradablePair(pairId);
+  const lotsNum = Number(lots);
+  if (!pair || !Number.isFinite(lotsNum) || lotsNum <= 0) return null;
+
+  const contractSizes = CONTRACT_SIZES[pair.instrumentType] || CONTRACT_SIZES.forex;
+  const units = lotsNum * contractSizes.standard;
+  const resolvedPipSize =
+    Number.isFinite(pipSize) && pipSize > 0 ? pipSize : getDefaultPipSize(pair.instrumentType);
+
+  const pipValueQuote = resolvedPipSize * units;
+
+  const safeRates = rates && typeof rates === "object" ? rates : {};
+  const quoteCode = pair.quote.toUpperCase();
+  const quoteRate = quoteCode === "USD" ? 1 : safeRates[quoteCode];
+  const pkrRate = safeRates.PKR;
+
+  const pipValueUsd =
+    Number.isFinite(quoteRate) && quoteRate > 0 ? pipValueQuote / quoteRate : null;
+  const pipValuePkr =
+    Number.isFinite(pipValueUsd) && Number.isFinite(pkrRate) ? pipValueUsd * pkrRate : null;
+
+  return { pair, pipSize: resolvedPipSize, units, lots: lotsNum, pipValueQuote, pipValueUsd, pipValuePkr };
+}
+
+/**
+ * All-in-One Trade Execution Suite — the single combined calculation
+ * behind components/calculators/AllInOneTradeSuite.jsx. Given a pair,
+ * a custom lot size, a Buy/Sell direction, and Entry/Take-Profit/
+ * Stop-Loss prices, returns the full execution picture in one pass:
+ * potential profit & loss (in both $ and pips), the resulting
+ * Risk:Reward ratio, the per-pip value in USD/PKR at this exact
+ * position size, and — when an account balance + leverage are also
+ * supplied — the required margin and the free-margin impact of
+ * opening this exact trade.
+ *
+ * Margin is approximated the same way calculateMargin() does
+ * elsewhere in this file: position notional (units × entry price,
+ * converted to USD via the live/fallback rates table) ÷ leverage.
+ * Real broker margin rules (tiered leverage, swap, etc.) vary, which
+ * is why this stays clearly labeled as an estimate in the UI.
+ *
+ * @param {{
+ *   pairId:string, lots:number, direction:"buy"|"sell",
+ *   entry:number, takeProfit:number, stopLoss:number, pipSize?:number,
+ *   rates:Record<string,number>, accountBalance?:number, leverage?:number
+ * }} params
+ */
+export function calculateTradeExecution({
+  pairId,
+  lots,
+  direction,
+  entry,
+  takeProfit,
+  stopLoss,
+  pipSize,
+  rates,
+  accountBalance,
+  leverage,
+}) {
+  const pipInfo = calculatePipValueForLots({ pairId, lots, pipSize, rates });
+  if (!pipInfo) return null;
+
+  const e = Number(entry);
+  const tp = Number(takeProfit);
+  const sl = Number(stopLoss);
+  if (![e, tp, sl].every(Number.isFinite) || e <= 0 || e === sl) return null;
+
+  const { pair, pipSize: resolvedPipSize, units, pipValueUsd, pipValuePkr, pipValueQuote } = pipInfo;
+
+  const profitPips = Math.abs(tp - e) / resolvedPipSize;
+  const lossPips = Math.abs(e - sl) / resolvedPipSize;
+
+  const profitUsd = Number.isFinite(pipValueUsd) ? profitPips * pipValueUsd : null;
+  const lossUsd = Number.isFinite(pipValueUsd) ? lossPips * pipValueUsd : null;
+  const ratio = Number.isFinite(profitUsd) && Number.isFinite(lossUsd) && lossUsd > 0
+    ? profitUsd / lossUsd
+    : null;
+
+  const isLong = direction !== "sell";
+  const directionConsistent = isLong ? tp > e && sl < e : tp < e && sl > e;
+
+  // Margin / free-margin impact — only computed when both an account
+  // balance and leverage were supplied (the "All-in-One" tab asks for
+  // both; a bare pip/pnl calculation doesn't need them).
+  let requiredMargin = null;
+  let freeMargin = null;
+  let marginLevelPercent = null;
+  const bal = Number(accountBalance);
+  const lev = Number(leverage);
+  if (Number.isFinite(bal) && bal > 0 && Number.isFinite(lev) && lev > 0) {
+    const safeRates = rates && typeof rates === "object" ? rates : {};
+    const quoteCode = pair.quote.toUpperCase();
+    const quoteRate = quoteCode === "USD" ? 1 : safeRates[quoteCode];
+    const positionValueQuote = units * e;
+    const positionValueUsd =
+      Number.isFinite(quoteRate) && quoteRate > 0 ? positionValueQuote / quoteRate : null;
+    if (Number.isFinite(positionValueUsd)) {
+      requiredMargin = positionValueUsd / lev;
+      freeMargin = bal - requiredMargin;
+      marginLevelPercent = requiredMargin > 0 ? (bal / requiredMargin) * 100 : null;
+    }
+  }
+
+  return {
+    pair,
+    units,
+    pipSize: resolvedPipSize,
+    pipValueQuote,
+    pipValueUsd,
+    pipValuePkr,
+    profitPips,
+    lossPips,
+    profitUsd,
+    lossUsd,
+    ratio,
+    ratioLabel: Number.isFinite(ratio) ? `1:${round(ratio, 2)}` : "—",
+    isLong,
+    directionConsistent,
+    requiredMargin,
+    freeMargin,
+    marginLevelPercent,
+    isOverLeveraged: Number.isFinite(freeMargin) && freeMargin < 0,
+  };
+}
