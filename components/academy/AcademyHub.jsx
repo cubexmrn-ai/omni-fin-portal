@@ -289,7 +289,17 @@ export default function AcademyHub() {
       {/* Path / Category Switcher & Search — light controls on the light page */}
       <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Master Path or category track">
+          <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Master Path or category track">
+            {/* Not a category filter like the pills below it — this is a
+                real navigation link out to app/learn/lab/page.jsx's
+                standalone Interactive Demo Trading Lab, so it's styled
+                distinctly (amber, with an icon) to signal that. */}
+            <Link
+              href="/learn/lab"
+              className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3.5 py-1.5 text-sm font-bold text-amber-700 shadow-sm transition-colors hover:border-amber-400 hover:bg-amber-100"
+            >
+              <span aria-hidden="true">📈</span> Trading Lab (Demo Sim)
+            </Link>
             {[{ id: "all", label: t("masterPathLabel") }, ...CATEGORIES].map((cat) => {
               const active = cat.id === activeCategory;
               return (
