@@ -9,13 +9,21 @@
 // project).
 
 import AcademyHub from "@/components/academy/AcademyHub";
+import AcademyStructuredData from "@/components/academy/AcademyStructuredData";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "OmniFin Academy — Learn Trading & Personal Finance | OmniFin Portal",
   description:
     "A free, gamified School of Pipsology-style curriculum: 5 levels from money basics to professional risk management, with bite-sized lessons, visual diagrams, embedded calculators, and end-of-module quizzes.",
-};
+  path: "/learn",
+});
 
 export default function AcademyPage() {
-  return <AcademyHub />;
+  return (
+    <>
+      <AcademyStructuredData />
+      <AcademyHub />
+    </>
+  );
 }

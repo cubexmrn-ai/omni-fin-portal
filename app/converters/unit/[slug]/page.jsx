@@ -3,6 +3,7 @@ import Link from "next/link";
 import UnitConverter from "@/components/UnitConverter";
 import { getCategoryMeta } from "@/lib/conversionMath";
 import { parseUnitSlug, FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
+import { buildMetadata } from "@/lib/pageMetadata";
 
 // Pre-render the curated high-traffic pairs at build time; any other
 // valid "<from>-to-<to>" slug still renders on-demand (ISR-style).
@@ -13,7 +14,12 @@ export function generateStaticParams() {
 export function generateMetadata({ params }) {
   const parsed = parseUnitSlug(params.slug);
   if (!parsed) {
-    return { title: "Unit Converter | OmniFin Portal" };
+    return buildMetadata({
+      title: "Unit Converter | OmniFin Portal",
+      description:
+        "Convert length, area, weight, volume, speed, digital storage and temperature units instantly, worldwide and regional units alike.",
+      path: "/converters/unit",
+    });
   }
 
   const meta = getCategoryMeta(parsed.category);
@@ -22,7 +28,7 @@ export function generateMetadata({ params }) {
   const title = `${fromLabel} to ${toLabel} Converter | OmniFin Portal`;
   const description = `Convert ${fromLabel} to ${toLabel} instantly with OmniFin Portal's free ${meta.label.toLowerCase()} converter. Accurate, fast and updated formulas.`;
 
-  return { title, description };
+  return buildMetadata({ title, description, path: `/converters/unit/${params.slug}` });
 }
 
 export default function UnitConverterSeoPage({ params }) {

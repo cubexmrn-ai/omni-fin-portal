@@ -8,12 +8,14 @@
 // split as app/learn/page.jsx + components/academy/AcademyHub.jsx.
 
 import TradingLab from "@/components/academy/TradingLab";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Interactive Demo Trading Lab — Practice Risk-Free | OmniFin Academy",
   description:
     "Practice buying and selling Gold, Bitcoin, EUR/USD and Crude Oil with a $10,000 virtual balance against real live prices — track equity, margin and PnL in real time, with zero real-money risk.",
-};
+  path: "/learn/lab",
+});
 
 export default function TradingLabPage() {
   return <TradingLab />;

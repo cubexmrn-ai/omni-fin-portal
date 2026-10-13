@@ -11,12 +11,14 @@
 
 import Link from "next/link";
 import LegalNoticeBanner from "@/components/LegalNoticeBanner";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Financial Disclaimer | OmniFin Portal",
   description:
     "OmniFin Portal's tools, calculators, market analysis, news, and community content are provided for educational and informational purposes only and do not constitute financial, investment, trading, legal, or tax advice.",
-};
+  path: "/disclaimer",
+});
 
 function Section({ title, children }) {
   return (

@@ -11,6 +11,7 @@
 import { notFound } from "next/navigation";
 import { ACADEMY_LEVELS, getLesson } from "@/lib/academyData";
 import LessonViewer from "@/components/academy/LessonViewer";
+import { buildMetadata } from "@/lib/pageMetadata";
 
 export function generateStaticParams() {
   const params = [];
@@ -25,12 +26,16 @@ export function generateStaticParams() {
 export function generateMetadata({ params }) {
   const resolved = getLesson(params.level, params.lesson);
   if (!resolved) {
-    return { title: "Lesson Not Found | OmniFin Academy" };
+    return buildMetadata({
+      title: "Lesson Not Found | OmniFin Academy",
+      description: "This Academy lesson couldn't be found.",
+      path: "/learn",
+    });
   }
   const { level, lesson } = resolved;
   const title = `${lesson.title} — Level ${level.order} ${level.title} | OmniFin Academy`;
   const description = `A ${lesson.estMinutes}-minute OmniFin Academy lesson on ${lesson.title.toLowerCase()}, part of Level ${level.order} (${level.title}): ${level.subtitle}. Includes a 5-question end-of-module quiz.`;
-  return { title, description };
+  return buildMetadata({ title, description, path: `/learn/${params.level}/${params.lesson}` });
 }
 
 export default function LessonPage({ params }) {

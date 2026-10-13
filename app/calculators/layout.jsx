@@ -13,10 +13,15 @@
 // exactly the same, just without page-specific metadata (it would fall
 // back to whatever app/layout.jsx's root metadata provides).
 
+import { buildMetadata } from "@/lib/pageMetadata";
+
 export const metadata = {
-  title: "Trading Calculator Suite | OmniFin Portal",
-  description:
-    "A unified Trading Calculator Suite for traders and households: All-in-One Trade Execution (profit/loss, R:R, pip value, margin in one pass), Position & Lot Size, Pip Value & Custom Math, Margin & Leverage, and Wealth & Personal Finance (inflation, compound growth, profit margin).",
+  ...buildMetadata({
+    title: "Trading Calculator Suite | OmniFin Portal",
+    description:
+      "A unified Trading Calculator Suite for traders and households: All-in-One Trade Execution (profit/loss, R:R, pip value, margin in one pass), Position & Lot Size, Pip Value & Custom Math, Margin & Leverage, and Wealth & Personal Finance (inflation, compound growth, profit margin).",
+    path: "/calculators",
+  }),
   keywords: [
     "trading calculator suite",
     "all-in-one trade calculator",

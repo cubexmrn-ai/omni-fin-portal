@@ -9,12 +9,14 @@
 // app/learn/lab/page.jsx + components/academy/TradingLab.jsx.
 
 import DashboardHub from "@/components/dashboard/DashboardHub";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Your Dashboard — Trading Lab, Academy & Community | OmniFin Portal",
   description:
     "A unified view of your Demo Trading Lab account, OmniFin Academy curriculum progress, saved conversion & calculator presets, and your Trader Community & Setup Hub activity, with quick links across the OmniFin ecosystem.",
-};
+  path: "/dashboard",
+});
 
 export default function DashboardPage() {
   return <DashboardHub />;

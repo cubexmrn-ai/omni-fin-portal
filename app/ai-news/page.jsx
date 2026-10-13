@@ -5,12 +5,14 @@ import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
 import { getAggregatedNews } from "@/lib/newsAggregator";
 import { getUnifiedRates } from "@/lib/marketData";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Financial News & Economic Calendar — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
   description:
     "Live market sentiment for Gold, EUR/USD and Bitcoin, a live real-time TradingView economic calendar (USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY), and 60+ live finance headlines across Forex, Crypto, Commodities and Stocks — all on one page.",
-};
+  path: "/ai-news",
+});
 
 export const revalidate = 900; // Align with /api/news-ai's ISR cache.
 

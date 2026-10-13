@@ -34,6 +34,7 @@ import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { formatNumber } from "@/lib/formatNumber";
+import { buildMetadata } from "@/lib/pageMetadata";
 
 export function generateStaticParams() {
   return FEATURED_PAIRS.map((pair) => ({ pair: pair.slug }));
@@ -48,32 +49,23 @@ const ASSET_CLASS_NOUN = {
 export async function generateMetadata({ params }) {
   const parsed = parsePairSlug(params.pair);
   if (!parsed) {
-    return { title: "Currency, Crypto & Metals Converter | OmniFin Portal" };
+    return buildMetadata({
+      title: "Currency, Crypto & Metals Converter | OmniFin Portal",
+      description:
+        "Convert between fiat currencies, crypto and metals & commodities instantly with OmniFin Portal's free, live converter.",
+      path: "/converters",
+    });
   }
 
   const { from, to } = parsed;
   const title = `${from.code} to ${to.code} Converter — ${from.name} to ${to.name} | OmniFin Portal`;
   const description = `Convert ${from.name} (${from.code}) to ${to.name} (${to.code}) instantly with OmniFin Portal's free, live converter — covering fiat currencies, crypto and precious metals.`;
-  const siteUrl = getSiteUrl();
-  const pageUrl = `${siteUrl}/converters/${buildPairSlug(parsed.fromCode, parsed.toCode)}`;
 
-  return {
+  return buildMetadata({
     title,
     description,
-    alternates: { canonical: pageUrl },
-    openGraph: {
-      title,
-      description,
-      url: pageUrl,
-      siteName: "OmniFin Portal",
-      type: "website",
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-    },
-  };
+    path: `/converters/${buildPairSlug(parsed.fromCode, parsed.toCode)}`,
+  });
 }
 
 export default async function CurrencyPairSeoPage({ params }) {

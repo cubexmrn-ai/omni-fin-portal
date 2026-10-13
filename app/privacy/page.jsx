@@ -10,12 +10,14 @@
 
 import Link from "next/link";
 import LegalNoticeBanner from "@/components/LegalNoticeBanner";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Privacy Policy | OmniFin Portal",
   description:
     "How OmniFin Portal collects, uses, and protects information — including local-storage-only features, third-party market-data providers, cookies and advertising, and your rights.",
-};
+  path: "/privacy",
+});
 
 function Section({ title, children }) {
   return (

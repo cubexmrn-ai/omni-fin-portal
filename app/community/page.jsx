@@ -6,12 +6,14 @@
 // (+ AcademyHub.jsx) and app/calculators/page.jsx (+ CalculatorsHub.jsx).
 
 import CommunityHub from "@/components/community/CommunityHub";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Trader Community & Setup Hub | OmniFin Portal",
   description:
     "Vote on live Bullish/Bearish sentiment for Gold, Bitcoin and EUR/USD, share trade setups with entry/SL/TP and Risk/Reward ratios, and swap macro takes and financial-literacy lessons with the OmniFin Portal community.",
-};
+  path: "/community",
+});
 
 export default function CommunityPage() {
   return <CommunityHub />;

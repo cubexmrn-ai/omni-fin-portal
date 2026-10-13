@@ -7,12 +7,14 @@
 
 import Link from "next/link";
 import LegalNoticeBanner from "@/components/LegalNoticeBanner";
+import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
   title: "Terms of Service | OmniFin Portal",
   description:
     "The terms governing your use of OmniFin Portal's converters, calculators, market analysis, news, Academy, and Community Forum.",
-};
+  path: "/terms",
+});
 
 function Section({ title, children }) {
   return (
