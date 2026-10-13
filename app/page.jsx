@@ -1,5 +1,6 @@
 import ConvertersTabs from "@/components/ConvertersTabs";
 import EconomicNewsStrip from "@/components/EconomicNewsStrip";
+import HomeMarketTicker from "@/components/HomeMarketTicker";
 import {
   Hero,
   UnifiedSuiteSection,
@@ -85,6 +86,7 @@ export default function HomePage() {
     <>
       <EconomicNewsStrip />
       <Hero />
+      <HomeMarketTicker />
       {/* id preserved here (rather than inside ConvertersTabs itself) so
           the nav's "/#metals-calculator" link and the hero's CTA above
           both still scroll to this section correctly. */}

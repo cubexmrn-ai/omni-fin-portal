@@ -16,6 +16,7 @@
 
 import { useMemo, useState } from "react";
 import { IMPACT_LEVELS, CALENDAR_CURRENCIES, formatCountdown, formatEventClock } from "@/lib/economicCalendar";
+import TradingViewEconomicCalendar from "@/components/TradingViewEconomicCalendar";
 
 const IMPACT_LABEL = { high: "High", medium: "Medium", low: "Low" };
 const IMPACT_DOT = { high: "bg-rose-500", medium: "bg-amber-500", low: "bg-slate-400" };
@@ -71,10 +72,29 @@ export default function EconomicCalendar({ events }) {
 
   return (
     <div>
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        Illustrative schedule — each event is projected from its typical recurring release pattern
-        (e.g. NFP is always the first Friday of the month), not pulled from a confirmed live
-        economic-calendar feed. Treat times as approximate.
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-slate-900">Live Economic Calendar</h2>
+        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+          Real-time · TradingView
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-slate-400">
+        A live, real-time economic calendar feed (USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY) from
+        TradingView — release times, actual/forecast/previous values, and impact, updated as they
+        happen.
+      </p>
+      <div className="mt-3">
+        <TradingViewEconomicCalendar />
+      </div>
+
+      <div className="mt-10 border-t border-slate-200 pt-6">
+        <h2 className="text-sm font-bold text-slate-900">Filterable Schedule</h2>
+        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Illustrative schedule — each event is projected from its typical recurring release pattern
+          (e.g. NFP is always the first Friday of the month), not pulled from a confirmed live
+          economic-calendar feed. Treat times as approximate. Use the live calendar above for
+          real-time data.
+        </div>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
