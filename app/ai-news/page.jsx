@@ -8,12 +8,25 @@ import { getAggregatedNews } from "@/lib/newsAggregator";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
-export const metadata = buildMetadata({
+const aiNewsMetadata = buildMetadata({
   title: "Financial News & Economic Calendar — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
   description:
     "Live market sentiment for Gold, EUR/USD and Bitcoin, a live real-time TradingView economic calendar (USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY), and 60+ live finance headlines across Forex, Crypto, Commodities and Stocks — all on one page.",
   path: "/ai-news",
 });
+
+// RSS discovery (Week 4, Task 28): lets feed readers and browsers find
+// /feed.xml automatically from this page, in addition to it being
+// directly linkable.
+export const metadata = {
+  ...aiNewsMetadata,
+  alternates: {
+    ...aiNewsMetadata.alternates,
+    types: {
+      "application/rss+xml": "/feed.xml",
+    },
+  },
+};
 
 export const revalidate = 900; // Align with /api/news-ai's ISR cache.
 

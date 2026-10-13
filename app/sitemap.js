@@ -58,6 +58,7 @@ export default function sitemap() {
     // kind of self-contradicting signal Google's own sitemap guidance
     // specifically warns against.
     { path: "/ai-news", changeFrequency: "daily", priority: 0.8 },
+    { path: "/embed", changeFrequency: "monthly", priority: 0.5 },
     { path: "/learn", changeFrequency: "weekly", priority: 0.8 },
     { path: "/learn/lab", changeFrequency: "weekly", priority: 0.7 },
     { path: "/community", changeFrequency: "daily", priority: 0.8 },
