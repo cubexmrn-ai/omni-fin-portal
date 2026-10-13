@@ -27,8 +27,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import CurrencyConverter from "@/components/CurrencyConverter";
 import ConverterStructuredData from "@/components/ConverterStructuredData";
+import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
 import PopularPairs from "@/components/PopularPairs";
 import MiniCalculatorWidget from "@/components/calculators/MiniCalculatorWidget";
+import { getPairEducationalContent } from "@/components/converters/pairEducationalContent";
 import { parsePairSlug, buildPairSlug, FEATURED_PAIRS } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
@@ -107,6 +109,14 @@ export default async function CurrencyPairSeoPage({ params }) {
   const isForexPair = fromClass === "fiat" || toClass === "fiat";
   const relatedCalculatorId = isForexPair ? "pip-value" : "margin";
 
+  const breadcrumbCrumbLabel = fromClass === toClass ? fromNoun : `${fromNoun} / ${toNoun}`;
+  const { intro: pairIntro, formulaNote } = getPairEducationalContent({
+    fromClass,
+    toClass,
+    from,
+    to,
+  });
+
   return (
     <>
       <ConverterStructuredData
@@ -119,6 +129,13 @@ export default async function CurrencyPairSeoPage({ params }) {
         pageUrl={pageUrl}
         siteUrl={siteUrl}
       />
+      <BreadcrumbStructuredData
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Converters", href: "/converters" },
+          { name: `${from.code} to ${to.code}`, href: `/converters/${slug}` },
+        ]}
+      />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -127,9 +144,7 @@ export default async function CurrencyPairSeoPage({ params }) {
               Converters
             </Link>
             <span className="mx-1.5">/</span>
-            <span className="text-slate-500 capitalize">
-              {fromClass === toClass ? fromNoun : `${fromNoun} / ${toNoun}`}
-            </span>
+            <span className="text-slate-500 capitalize">{breadcrumbCrumbLabel}</span>
           </nav>
           <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
             {from.code} to {to.code} — {from.name} to {to.name}
@@ -159,11 +174,9 @@ export default async function CurrencyPairSeoPage({ params }) {
           <h2 className="text-sm font-semibold text-slate-900">
             About this pair
           </h2>
-          <p className="mt-2">
-            {from.code} ({from.name}) and {to.code} ({to.name}) rates are
-            sourced from a cached, live-refreshed rates feed spanning
-            fiat currencies, cryptocurrencies and precious metals. Enter
-            any amount above to convert instantly in either direction.
+          <p className="mt-2">{pairIntro}</p>
+          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+            {formulaNote}
           </p>
         </div>
 

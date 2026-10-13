@@ -11,6 +11,7 @@
 import { notFound } from "next/navigation";
 import { ACADEMY_LEVELS, getLesson } from "@/lib/academyData";
 import LessonViewer from "@/components/academy/LessonViewer";
+import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export function generateStaticParams() {
@@ -42,5 +43,19 @@ export default function LessonPage({ params }) {
   const resolved = getLesson(params.level, params.lesson);
   if (!resolved) notFound();
 
-  return <LessonViewer levelId={params.level} lessonId={params.lesson} />;
+  const { level, lesson } = resolved;
+
+  return (
+    <>
+      <BreadcrumbStructuredData
+        items={[
+          { name: "Home", href: "/" },
+          { name: "OmniFin Academy", href: "/learn" },
+          { name: `Level ${level.order} · ${level.title}`, href: "/learn" },
+          { name: lesson.title, href: `/learn/${params.level}/${params.lesson}` },
+        ]}
+      />
+      <LessonViewer levelId={params.level} lessonId={params.lesson} />
+    </>
+  );
 }
