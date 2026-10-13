@@ -23,6 +23,7 @@ import { useCommunityPosts } from "@/hooks/useCommunityPosts";
 import { CATEGORIES, ASSET_TAGS } from "@/lib/communityData";
 import TradePostCard from "@/components/community/TradePostCard";
 import CreatePostModal from "@/components/community/CreatePostModal";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function StatCard({ label, value, footnote }) {
   return (
@@ -37,6 +38,7 @@ function StatCard({ label, value, footnote }) {
 }
 
 export default function CommunityHub() {
+  const { t } = useLanguage();
   const { hydrated, allPosts, addPost, setVote, toggleBullseye, getDisplayCounts } =
     useCommunityPosts();
 
@@ -87,24 +89,22 @@ export default function CommunityHub() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-          Community Forum & Trade Setups
+          {t("communityHubTitle")}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          A space to share trade setups, discuss macro themes, and swap
-          financial-literacy lessons with other traders.{" "}
+          {t("communityHubDesc")}{" "}
           <span className="font-medium text-slate-500">
-            Demo community — the posts below are seeded, illustrative
-            content for this build, not live user activity.
+            {t("communityDemoNote")}
           </span>
         </p>
 
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <StatCard label="Active Traders" value={stats.activeTraders} />
-          <StatCard label="Shared Setups" value={stats.sharedSetups} />
+          <StatCard label={t("activeTradersLabel")} value={stats.activeTraders} />
+          <StatCard label={t("sharedSetupsLabel")} value={stats.sharedSetups} />
           <StatCard
-            label="Accuracy Rate"
-            value="Not tracked yet"
-            footnote="No backend verifies outcomes"
+            label={t("accuracyRateLabel")}
+            value={t("notTrackedYetLabel")}
+            footnote={t("noBackendVerifiesLabel")}
           />
         </div>
 
@@ -135,7 +135,7 @@ export default function CommunityHub() {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search discussions..."
+          placeholder={t("searchDiscussionsPlaceholder")}
           className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400 sm:max-w-xs"
         />
         <div className="flex flex-wrap gap-1.5">
@@ -162,12 +162,11 @@ export default function CommunityHub() {
       <div className="mt-6 space-y-4">
         {!hydrated ? (
           <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-400 shadow-card">
-            Loading discussions...
+            {t("loadingDiscussions")}
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-card">
-            No posts match your filters yet. Try clearing a filter or be the
-            first to share a setup in this category.
+            {t("noPostsMatch")}
           </div>
         ) : (
           filteredPosts.map((post) => (

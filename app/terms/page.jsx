@@ -6,6 +6,7 @@
 // user-generated content (the Community Forum). Pure server component.
 
 import Link from "next/link";
+import LegalNoticeBanner from "@/components/LegalNoticeBanner";
 
 export const metadata = {
   title: "Terms of Service | OmniFin Portal",
@@ -41,6 +42,7 @@ export default function TermsOfServicePage() {
             Last updated: October 2026. By using OmniFin Portal, you
             agree to the terms below.
           </p>
+          <LegalNoticeBanner />
         </div>
       </section>
 

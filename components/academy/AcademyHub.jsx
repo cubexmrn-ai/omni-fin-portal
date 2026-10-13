@@ -30,6 +30,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ACADEMY_LEVELS, CATEGORIES, getLevelStats } from "@/lib/academyData";
 import { useAcademyProgress } from "@/hooks/useAcademyProgress";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 // Per-level accent used on the Master Path roadmap cards — a trim
 // color/glow for visual hierarchy between the 5 levels, distinct from
@@ -79,6 +80,7 @@ const LEVEL_THEME = {
 };
 
 function LevelCard({ level, unlocked, mastered, progressPercent }) {
+  const { t } = useLanguage();
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
   const stats = getLevelStats(level);
   const firstLesson = level.lessons[0];
@@ -92,21 +94,21 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-            Level {level.order}
+            {t("levelWord")} {level.order}
           </p>
           <h3 className="mt-0.5 text-lg font-extrabold text-white">{level.title}</h3>
           <p className="text-sm font-medium text-slate-400">{level.subtitle}</p>
         </div>
         {mastered ? (
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${theme.badge}`}>
-            ✓ Mastered
+            ✓ {t("masteredWord")}
           </span>
         ) : !unlocked ? (
           <span
             className="shrink-0 rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-1 text-xs font-bold text-slate-400"
             title="Complete the previous level's quizzes to unlock this one"
           >
-            Locked 🔒
+            {t("locked")}
           </span>
         ) : null}
       </div>
@@ -114,11 +116,11 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
       <p className="mt-3 text-sm text-slate-400">{level.description}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-        <span>{stats.lessonCount} lessons</span>
+        <span>{stats.lessonCount} {t("lessonsWord")}</span>
         <span>·</span>
-        <span>{stats.quizCount} quizzes</span>
+        <span>{stats.quizCount} {t("quizzesWord")}</span>
         <span>·</span>
-        <span>~{stats.totalMinutes} min</span>
+        <span>~{stats.totalMinutes} {t("minWord")}</span>
       </div>
 
       {unlocked && (
@@ -126,7 +128,7 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
             <div className={`h-full ${theme.bar}`} style={{ width: `${progressPercent}%` }} />
           </div>
-          <p className="mt-1 text-[11px] font-medium text-slate-500">{progressPercent}% complete</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-500">{progressPercent}% {t("completedWord").toLowerCase()}</p>
         </div>
       )}
 
@@ -136,11 +138,11 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
             href={`/learn/${level.id}/${firstLesson.id}`}
             className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors ${theme.button}`}
           >
-            {progressPercent > 0 && progressPercent < 100 ? "Continue" : "Start"} Level {level.order} →
+            {progressPercent > 0 && progressPercent < 100 ? t("continueWord") : t("startWord")} {t("levelWord")} {level.order} →
           </Link>
         ) : (
           <span className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-500">
-            Complete Level {level.order - 1} first
+            {t("completeLevelFirst", { n: level.order - 1 })}
           </span>
         )}
       </div>
@@ -154,6 +156,7 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
  * as an inert, non-clickable card with a "Locked 🔒" badge instead of
  * a Link — browsing a category never bypasses progression. */
 function FocusedTrackCard({ level, lesson, completed, unlocked }) {
+  const { t } = useLanguage();
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
 
   if (!unlocked) {
@@ -165,16 +168,16 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
       >
         <div className="flex items-center justify-between">
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
-            Level {level.order} · {level.title}
+            {t("levelWord")} {level.order} · {level.title}
           </span>
           <span
             className="shrink-0 rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] font-bold text-slate-400"
           >
-            Locked 🔒
+            {t("locked")}
           </span>
         </div>
         <p className="mt-2 text-sm font-semibold text-slate-400">{lesson.title}</p>
-        <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} min</p>
+        <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} {t("minWord")}</p>
       </div>
     );
   }
@@ -186,7 +189,7 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
     >
       <div className="flex items-center justify-between">
         <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
-          Level {level.order} · {level.title}
+          {t("levelWord")} {level.order} · {level.title}
         </span>
         {completed && (
           <span className="text-emerald-400" aria-hidden="true">
@@ -195,12 +198,13 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
         )}
       </div>
       <p className="mt-2 text-sm font-semibold text-white">{lesson.title}</p>
-      <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} min</p>
+      <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} {t("minWord")}</p>
     </Link>
   );
 }
 
 export default function AcademyHub() {
+  const { t } = useLanguage();
   const progress = useAcademyProgress();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
@@ -235,17 +239,16 @@ export default function AcademyHub() {
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <nav className="text-xs text-slate-400">
             <Link href="/" className="hover:text-brand-600">
-              Dashboard
+              {t("dashboard")}
             </Link>
             <span className="mx-1.5">/</span>
-            <span className="text-slate-500">Academy</span>
+            <span className="text-slate-500">{t("academy")}</span>
           </nav>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            OmniFin Academy
+            {t("academyHubTitle")}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            A free, gamified path from the basics of money to professional risk management —
-            5 levels, bite-sized lessons, and a checkpoint quiz at the end of every module.
+            {t("academyHubDesc")}
           </p>
 
           {/* Progress summary — one of the Academy's dark "info containers" */}
@@ -253,10 +256,10 @@ export default function AcademyHub() {
             <div className="mt-6 max-w-xl rounded-xl border border-slate-800 bg-slate-900 p-4 text-white shadow-[0_8px_30px_-12px_rgba(15,23,42,0.35)]">
               <div className="flex items-center justify-between text-sm">
                 <p className="font-bold text-white">
-                  Level {currentLevel.order} {currentLevel.title} — {currentLevelPercent}% Completed
+                  {t("levelWord")} {currentLevel.order} {currentLevel.title} — {currentLevelPercent}% {t("completedWord")}
                 </p>
                 <p className="text-xs text-slate-400">
-                  {progress.overallCompletedCount} / {progress.overallTotalLessons} lessons overall
+                  {progress.overallCompletedCount} / {progress.overallTotalLessons} {t("overallLessonsWord")}
                 </p>
               </div>
               <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
@@ -274,7 +277,7 @@ export default function AcademyHub() {
       <section className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2" role="tablist" aria-label="Master Path or category track">
-            {[{ id: "all", label: "Master Path" }, ...CATEGORIES].map((cat) => {
+            {[{ id: "all", label: t("masterPathLabel") }, ...CATEGORIES].map((cat) => {
               const active = cat.id === activeCategory;
               return (
                 <button
@@ -300,8 +303,8 @@ export default function AcademyHub() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search lessons…"
-              aria-label="Search lessons"
+              placeholder={t("searchLessonsPlaceholder")}
+              aria-label={t("searchLessonsPlaceholder")}
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
@@ -317,19 +320,18 @@ export default function AcademyHub() {
             <p className="mb-3 text-xs text-slate-500">
               {activeCategoryMeta ? (
                 <span className="font-semibold text-slate-700">
-                  {activeCategoryMeta.label} Track
+                  {activeCategoryMeta.label} {t("trackWord")}
                 </span>
               ) : (
-                <span className="font-semibold text-slate-700">Search results</span>
+                <span className="font-semibold text-slate-700">{t("searchResultsLabel")}</span>
               )}
               {" — "}
-              {filteredLessons.length} lesson{filteredLessons.length === 1 ? "" : "s"}
-              {query.trim() ? ` matching "${query.trim()}"` : ""}. Locked levels still show
-              their lessons here, with a 🔒 badge, so you can see what&apos;s ahead.
+              {filteredLessons.length} {t("lessonsWord")}
+              {query.trim() ? ` matching "${query.trim()}"` : ""}. {t("lockedLevelsNote")}
             </p>
             {filteredLessons.length === 0 ? (
               <p className="py-10 text-center text-sm text-slate-500">
-                No lessons match your filters — try a different topic or search term.
+                {t("noLessonsMatch")}
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -348,9 +350,7 @@ export default function AcademyHub() {
         ) : (
           <div>
             <p className="mb-4 text-xs text-slate-500">
-              <span className="font-semibold text-slate-700">Master Path</span> — the full
-              5-level curriculum, in order. Each level unlocks once every lesson in the
-              previous one is mastered.
+              {t("masterPathDesc")}
             </p>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {ACADEMY_LEVELS.map((level) => {

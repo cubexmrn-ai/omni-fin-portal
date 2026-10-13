@@ -1,8 +1,8 @@
-import Link from "next/link";
 import NewsFeed from "@/components/NewsFeed";
 import SocialBuzzTracker from "@/components/SocialBuzzTracker";
 import EconomicCalendar from "@/components/EconomicCalendar";
 import NewsPageTabs from "@/components/NewsPageTabs";
+import AiNewsHero from "@/components/AiNewsHero";
 import { getAggregatedNews } from "@/lib/newsAggregator";
 import { getUpcomingEvents } from "@/lib/economicCalendar";
 
@@ -130,21 +130,7 @@ export default async function AiNewsPage() {
     <>
       <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-          <nav className="text-xs text-slate-400">
-            <Link href="/market-analysis" className="hover:text-brand-600">
-              Market Analysis
-            </Link>
-            <span className="mx-1.5">/</span>
-            <span className="text-slate-500">Financial News</span>
-          </nav>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Global Financial News
-          </h1>
-          <p className="mt-3 max-w-2xl text-base text-slate-600">
-            Live headlines across Forex, Crypto, Commodities and Stocks,
-            aggregated from multiple public sources and refreshed every
-            15 minutes. Search or filter by category below.
-          </p>
+          <AiNewsHero />
 
           <div className="mt-5 inline-flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             <svg

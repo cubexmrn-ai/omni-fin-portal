@@ -9,6 +9,7 @@
 // language. Pure server component — static legal text.
 
 import Link from "next/link";
+import LegalNoticeBanner from "@/components/LegalNoticeBanner";
 
 export const metadata = {
   title: "Privacy Policy | OmniFin Portal",
@@ -45,6 +46,7 @@ export default function PrivacyPolicyPage() {
             information OmniFin Portal collects, how it&apos;s used, and the
             choices you have.
           </p>
+          <LegalNoticeBanner />
         </div>
       </section>
 

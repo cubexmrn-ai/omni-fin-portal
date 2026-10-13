@@ -10,6 +10,7 @@
 // client-side state.
 
 import Link from "next/link";
+import LegalNoticeBanner from "@/components/LegalNoticeBanner";
 
 export const metadata = {
   title: "Financial Disclaimer | OmniFin Portal",
@@ -50,6 +51,7 @@ export default function DisclaimerPage() {
             Nothing on this site is financial, investment, trading,
             legal, or tax advice.
           </p>
+          <LegalNoticeBanner />
         </div>
       </section>
 
