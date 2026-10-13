@@ -1,14 +1,15 @@
 import NewsFeed from "@/components/NewsFeed";
 import SocialBuzzTracker from "@/components/SocialBuzzTracker";
 import EconomicCalendar from "@/components/EconomicCalendar";
-import NewsPageTabs from "@/components/NewsPageTabs";
+import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
 import { getAggregatedNews } from "@/lib/newsAggregator";
+import { getUnifiedRates } from "@/lib/marketData";
 
 export const metadata = {
   title: "Financial News & Economic Calendar — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
   description:
-    "Live, categorized finance headlines across Forex, Crypto, Commodities and Stocks, plus a live, real-time TradingView economic calendar covering USD, EUR, GBP, JPY, AUD, CAD and more.",
+    "Live market sentiment for Gold, EUR/USD and Bitcoin, a live real-time TradingView economic calendar (USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY), and 60+ live finance headlines across Forex, Crypto, Commodities and Stocks — all on one page.",
 };
 
 export const revalidate = 900; // Align with /api/news-ai's ISR cache.
@@ -30,98 +31,18 @@ export default async function AiNewsPage() {
     loadError = err.message;
   }
 
+  // Same getUnifiedRates() payload the Metals & Commodities Calculator,
+  // Currency Converter, and /market-analysis's AI Technical Analysis
+  // tool all read from — Tier 1's sentiment cards reuse it directly
+  // rather than hitting a second data source.
+  let ratesData = null;
+  try {
+    ratesData = await getUnifiedRates();
+  } catch {
+    ratesData = null; // LiveSentimentIndicator/resolveInstrumentPrice handle a null payload gracefully.
+  }
+
   const items = data?.items || [];
-  const sentimentTally = data?.sentimentTally || { Bullish: 0, Bearish: 0, Neutral: 0 };
-  const sentimentTotal =
-    sentimentTally.Bullish + sentimentTally.Bearish + sentimentTally.Neutral;
-  const assetSentimentBreakdown = data?.assetSentimentBreakdown || {};
-  const assetBreakdownEntries = Object.entries(assetSentimentBreakdown).sort(
-    (a, b) => b[1].Bullish + b[1].Bearish + b[1].Neutral - (a[1].Bullish + a[1].Bearish + a[1].Neutral)
-  );
-  const feedTab = (
-    <>
-      <section className="mb-10 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">Headline Sentiment by Asset</h2>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-              Rule-based
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-slate-400">
-            A keyword scan of the {sentimentTotal} headlines below, broken down by which
-            instrument each one appears to impact — not AI-generated.
-          </p>
-
-          {assetBreakdownEntries.length === 0 ? (
-            <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-400">
-              None of the current headlines were keyword-matched to a specific asset.
-            </p>
-          ) : (
-            <div className="mt-3 space-y-2.5">
-              {assetBreakdownEntries.map(([asset, counts]) => {
-                const total = counts.Bullish + counts.Bearish + counts.Neutral;
-                return (
-                  <div key={asset} className="flex items-center gap-3">
-                    <span className="w-20 shrink-0 truncate text-xs font-semibold text-slate-600">
-                      {asset}
-                    </span>
-                    <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full bg-emerald-400"
-                        style={{ width: `${(counts.Bullish / total) * 100}%` }}
-                        title={`Bullish ${counts.Bullish}`}
-                      />
-                      <div
-                        className="h-full bg-slate-300"
-                        style={{ width: `${(counts.Neutral / total) * 100}%` }}
-                        title={`Neutral ${counts.Neutral}`}
-                      />
-                      <div
-                        className="h-full bg-rose-400"
-                        style={{ width: `${(counts.Bearish / total) * 100}%` }}
-                        title={`Bearish ${counts.Bearish}`}
-                      />
-                    </div>
-                    <span className="w-20 shrink-0 text-right text-[11px] text-slate-400">
-                      {counts.Bullish}B / {counts.Neutral}N / {counts.Bearish}Be
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <SocialBuzzTracker />
-      </section>
-
-      <section>
-        {loadError && (
-          <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            Couldn&apos;t load the news feed right now ({loadError}). Please
-            try again shortly.
-          </div>
-        )}
-
-        {data?.warnings?.length > 0 && (
-          <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-            Some sources were unavailable: {data.warnings.join(" · ")}
-          </div>
-        )}
-
-        {!loadError && items.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No headlines available right now — please check back shortly.
-          </p>
-        ) : (
-          <NewsFeed items={items} />
-        )}
-      </section>
-    </>
-  );
-
-  const calendarTab = <EconomicCalendar />;
 
   return (
     <>
@@ -155,8 +76,54 @@ export default async function AiNewsPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <NewsPageTabs feed={feedTab} calendar={calendarTab} />
+      {/* Three tiers, all stacked and simultaneously visible — no tabs,
+          nothing hidden behind a toggle. */}
+      <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
+        {/* Tier 1: Live Market Sentiment (Gold, EUR/USD, BTC) */}
+        <LiveSentimentIndicator ratesData={ratesData} />
+
+        {/* Tier 2: official live TradingView Economic Calendar */}
+        <EconomicCalendar />
+
+        {/* Tier 3: Social Buzz + the full live news feed grid with
+            category filters (Forex/Crypto/Commodities/Stocks map to
+            the user's Forex/Metals/Crypto/Macro framing — see
+            components/NewsFeed.jsx's CATEGORY_ORDER). */}
+        <div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900">Live News Feed</h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+              {items.length} headlines
+            </span>
+          </div>
+
+          <div className="mt-3">
+            <SocialBuzzTracker />
+          </div>
+
+          <div className="mt-6">
+            {loadError && (
+              <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                Couldn&apos;t load the news feed right now ({loadError}). Please
+                try again shortly.
+              </div>
+            )}
+
+            {data?.warnings?.length > 0 && (
+              <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                Some sources were unavailable: {data.warnings.join(" · ")}
+              </div>
+            )}
+
+            {!loadError && items.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No headlines available right now — please check back shortly.
+              </p>
+            ) : (
+              <NewsFeed items={items} />
+            )}
+          </div>
+        </div>
       </section>
     </>
   );
