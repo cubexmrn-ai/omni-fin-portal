@@ -299,6 +299,19 @@ export default function Header() {
             {t("dashboard")}
           </Link>
 
+          {/* Plain English label, not run through t() — same convention
+              TOOLS_CALCULATORS_LINKS below already uses for a link added
+              without full i18n coverage. Named "My Dashboard" (not just
+              "Dashboard") specifically to avoid colliding with the Home
+              link above, which the existing i18n dictionary already
+              calls "Dashboard" in every language. */}
+          <Link
+            href="/dashboard"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          >
+            My Dashboard
+          </Link>
+
           <ToolsCalculatorsDropdown />
 
           {OTHER_NAV_LINKS.map((link) => (
@@ -388,6 +401,14 @@ export default function Header() {
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             >
               {t("dashboard")}
+            </Link>
+
+            <Link
+              href="/dashboard"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            >
+              My Dashboard
             </Link>
 
             <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
