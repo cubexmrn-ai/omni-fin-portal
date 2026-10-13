@@ -31,6 +31,7 @@ import Link from "next/link";
 import { ACADEMY_LEVELS, CATEGORIES, getLevelStats } from "@/lib/academyData";
 import { useAcademyProgress } from "@/hooks/useAcademyProgress";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { getUrLatnLevel, getUrLatnLesson } from "@/lib/i18n/academyUrLatn";
 
 // Per-level accent used on the Master Path roadmap cards — a trim
 // color/glow for visual hierarchy between the 5 levels, distinct from
@@ -80,10 +81,15 @@ const LEVEL_THEME = {
 };
 
 function LevelCard({ level, unlocked, mastered, progressPercent }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
   const stats = getLevelStats(level);
   const firstLesson = level.lessons[0];
+  // Roman Urdu gets its own curated title/subtitle/description (with
+  // core terms kept in English brackets) rather than the generic t()
+  // dictionary — see lib/i18n/academyUrLatn.js for why only the
+  // level/lesson METADATA is translated, not the lesson body itself.
+  const display = language === "ur-Latn" ? getUrLatnLevel(level.id, level) : level;
 
   return (
     <div
@@ -96,8 +102,8 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
             {t("levelWord")} {level.order}
           </p>
-          <h3 className="mt-0.5 text-lg font-extrabold text-white">{level.title}</h3>
-          <p className="text-sm font-medium text-slate-400">{level.subtitle}</p>
+          <h3 className="mt-0.5 text-lg font-extrabold text-white">{display.title}</h3>
+          <p className="text-sm font-medium text-slate-400">{display.subtitle}</p>
         </div>
         {mastered ? (
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${theme.badge}`}>
@@ -113,7 +119,7 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
         ) : null}
       </div>
 
-      <p className="mt-3 text-sm text-slate-400">{level.description}</p>
+      <p className="mt-3 text-sm text-slate-400">{display.description}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
         <span>{stats.lessonCount} {t("lessonsWord")}</span>
@@ -156,8 +162,11 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
  * as an inert, non-clickable card with a "Locked 🔒" badge instead of
  * a Link — browsing a category never bypasses progression. */
 function FocusedTrackCard({ level, lesson, completed, unlocked }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
+  const isUrLatn = language === "ur-Latn";
+  const levelTitle = isUrLatn ? getUrLatnLevel(level.id, level).title : level.title;
+  const lessonTitle = isUrLatn ? getUrLatnLesson(lesson.id, lesson).title : lesson.title;
 
   if (!unlocked) {
     return (
@@ -168,7 +177,7 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
       >
         <div className="flex items-center justify-between">
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
-            {t("levelWord")} {level.order} · {level.title}
+            {t("levelWord")} {level.order} · {levelTitle}
           </span>
           <span
             className="shrink-0 rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] font-bold text-slate-400"
@@ -176,7 +185,7 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
             {t("locked")}
           </span>
         </div>
-        <p className="mt-2 text-sm font-semibold text-slate-400">{lesson.title}</p>
+        <p className="mt-2 text-sm font-semibold text-slate-400">{lessonTitle}</p>
         <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} {t("minWord")}</p>
       </div>
     );
@@ -189,7 +198,7 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
     >
       <div className="flex items-center justify-between">
         <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
-          {t("levelWord")} {level.order} · {level.title}
+          {t("levelWord")} {level.order} · {levelTitle}
         </span>
         {completed && (
           <span className="text-emerald-400" aria-hidden="true">
@@ -197,20 +206,24 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
           </span>
         )}
       </div>
-      <p className="mt-2 text-sm font-semibold text-white">{lesson.title}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{lessonTitle}</p>
       <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} {t("minWord")}</p>
     </Link>
   );
 }
 
 export default function AcademyHub() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const progress = useAcademyProgress();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
 
   const currentLevel = progress.currentLevel;
   const currentLevelPercent = currentLevel ? progress.getLevelProgressPercent(currentLevel.id) : 0;
+  const currentLevelTitle =
+    currentLevel && language === "ur-Latn"
+      ? getUrLatnLevel(currentLevel.id, currentLevel).title
+      : currentLevel?.title;
 
   const filteredLessons = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -256,7 +269,7 @@ export default function AcademyHub() {
             <div className="mt-6 max-w-xl rounded-xl border border-slate-800 bg-slate-900 p-4 text-white shadow-[0_8px_30px_-12px_rgba(15,23,42,0.35)]">
               <div className="flex items-center justify-between text-sm">
                 <p className="font-bold text-white">
-                  {t("levelWord")} {currentLevel.order} {currentLevel.title} — {currentLevelPercent}% {t("completedWord")}
+                  {t("levelWord")} {currentLevel.order} {currentLevelTitle} — {currentLevelPercent}% {t("completedWord")}
                 </p>
                 <p className="text-xs text-slate-400">
                   {progress.overallCompletedCount} / {progress.overallTotalLessons} {t("overallLessonsWord")}

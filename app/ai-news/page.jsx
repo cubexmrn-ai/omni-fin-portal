@@ -4,12 +4,11 @@ import EconomicCalendar from "@/components/EconomicCalendar";
 import NewsPageTabs from "@/components/NewsPageTabs";
 import AiNewsHero from "@/components/AiNewsHero";
 import { getAggregatedNews } from "@/lib/newsAggregator";
-import { getUpcomingEvents } from "@/lib/economicCalendar";
 
 export const metadata = {
   title: "Financial News & Economic Calendar — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
   description:
-    "Live, categorized finance headlines across Forex, Crypto, Commodities and Stocks, plus a filterable High/Medium/Low-impact economic calendar covering USD, EUR, GBP, JPY, AUD, CAD and more.",
+    "Live, categorized finance headlines across Forex, Crypto, Commodities and Stocks, plus a live, real-time TradingView economic calendar covering USD, EUR, GBP, JPY, AUD, CAD and more.",
 };
 
 export const revalidate = 900; // Align with /api/news-ai's ISR cache.
@@ -39,8 +38,6 @@ export default async function AiNewsPage() {
   const assetBreakdownEntries = Object.entries(assetSentimentBreakdown).sort(
     (a, b) => b[1].Bullish + b[1].Bearish + b[1].Neutral - (a[1].Bullish + a[1].Bearish + a[1].Neutral)
   );
-  const calendarEvents = getUpcomingEvents();
-
   const feedTab = (
     <>
       <section className="mb-10 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -124,7 +121,7 @@ export default async function AiNewsPage() {
     </>
   );
 
-  const calendarTab = <EconomicCalendar events={calendarEvents} />;
+  const calendarTab = <EconomicCalendar />;
 
   return (
     <>

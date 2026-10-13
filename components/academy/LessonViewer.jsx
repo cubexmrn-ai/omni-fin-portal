@@ -50,6 +50,8 @@ import { useAcademyProgress } from "@/hooks/useAcademyProgress";
 import LessonVisualCard from "@/components/academy/LessonVisualCard";
 import EmbeddedTool from "@/components/academy/EmbeddedTool";
 import QuizModule from "@/components/academy/QuizModule";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { getUrLatnLevel, getUrLatnLesson } from "@/lib/i18n/academyUrLatn";
 
 // Light-surface chip variant of each level's accent color, used on the
 // (light) lesson header and top bar — the dark-card chip variant for
@@ -81,13 +83,14 @@ const LEVEL_BAR_COLOR = {
 };
 
 function ProTip({ body }) {
+  const { t } = useLanguage();
   return (
     <div className="flex gap-3 rounded-xl border border-emerald-500/30 bg-slate-900 p-4">
       <span className="text-xl" aria-hidden="true">
         💡
       </span>
       <div>
-        <p className="text-xs font-bold uppercase tracking-wide text-emerald-400">Pro Tip</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-emerald-400">{t("proTipLabel")}</p>
         <p className="mt-1 text-sm text-slate-200">{body}</p>
       </div>
     </div>
@@ -95,13 +98,14 @@ function ProTip({ body }) {
 }
 
 function RiskWarning({ body }) {
+  const { t } = useLanguage();
   return (
     <div className="flex gap-3 rounded-xl border border-rose-500/30 bg-slate-900 p-4">
       <span className="text-xl" aria-hidden="true">
         ⚠️
       </span>
       <div>
-        <p className="text-xs font-bold uppercase tracking-wide text-rose-400">Risk Warning</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-rose-400">{t("riskWarningLabel")}</p>
         <p className="mt-1 text-sm text-slate-200">{body}</p>
       </div>
     </div>
@@ -109,10 +113,11 @@ function RiskWarning({ body }) {
 }
 
 function FormulaBadge({ label, formula, note }) {
+  const { t } = useLanguage();
   return (
     <div className="rounded-xl border border-blue-500/30 bg-slate-900 p-4">
       <p className="text-xs font-bold uppercase tracking-wide text-blue-400">
-        Key Formula / Concept — {label}
+        {t("keyFormulaLabel")} — {label}
       </p>
       <p className="mt-1.5 rounded-lg bg-black/30 px-3 py-2 font-mono text-sm font-semibold text-slate-100">
         {formula}
@@ -167,15 +172,17 @@ function Section({ section }) {
  * time. Sits right below the site's own global header (which is
  * `sticky top-0`), so it stays visible on scroll without overlapping it. */
 function LessonTopBar({ level, lesson, scrollPercent }) {
+  const { t, language } = useLanguage();
   const tagTheme = LEVEL_TAG_THEME[level.theme] || LEVEL_TAG_THEME.blue;
+  const levelTitle = language === "ur-Latn" ? getUrLatnLevel(level.id, level).title : level.title;
   return (
     <div className="sticky top-16 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto max-w-6xl px-4 py-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className={`shrink-0 rounded-full border px-2 py-0.5 font-bold ${tagTheme}`}>
-            Level {level.order} · {level.title}
+            {t("levelWord")} {level.order} · {levelTitle}
           </span>
-          <span className="shrink-0 text-slate-500">~{lesson.estMinutes} min read</span>
+          <span className="shrink-0 text-slate-500">~{lesson.estMinutes} {t("minWord")}</span>
           <span className="shrink-0 font-semibold text-slate-700">{scrollPercent}%</span>
         </div>
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-100">
@@ -195,8 +202,11 @@ function LessonTopBar({ level, lesson, scrollPercent }) {
  * levels' lessons are real links (the active one highlighted); a
  * still-locked level shows a 🔒 indicator and its lessons are inert. */
 function LessonOutlineSidebar({ level, lessonId, progress }) {
+  const { t, language } = useLanguage();
+  const isUrLatn = language === "ur-Latn";
   const levelPercent = progress.hydrated ? progress.getLevelProgressPercent(level.id) : 0;
   const barColor = LEVEL_BAR_COLOR[level.theme] || LEVEL_BAR_COLOR.blue;
+  const levelTitle = isUrLatn ? getUrLatnLevel(level.id, level).title : level.title;
 
   // The roadmap ahead: this level plus every level that comes after it
   // (earlier, already-passed levels aren't repeated here — the Academy
@@ -208,13 +218,13 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
       {/* Current level header + progress */}
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-white">
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-          Level {level.order}
+          {t("levelWord")} {level.order}
         </p>
-        <h2 className="mt-0.5 text-base font-extrabold text-white">{level.title}</h2>
+        <h2 className="mt-0.5 text-base font-extrabold text-white">{levelTitle}</h2>
         <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
           <div className={`h-full ${barColor}`} style={{ width: `${levelPercent}%` }} />
         </div>
-        <p className="mt-1 text-[11px] font-medium text-slate-500">{levelPercent}% of this level complete</p>
+        <p className="mt-1 text-[11px] font-medium text-slate-500">{t("percentOfLevelComplete", { percent: levelPercent })}</p>
       </div>
 
       {/* Outline — current level's lessons, then every level ahead */}
@@ -224,12 +234,15 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
             ? progress.isLevelUnlocked(roadmapLevel.id)
             : roadmapLevel.order === 1;
           const chip = LEVEL_CHIP_DARK[roadmapLevel.theme] || LEVEL_CHIP_DARK.blue;
+          const roadmapLevelTitle = isUrLatn
+            ? getUrLatnLevel(roadmapLevel.id, roadmapLevel).title
+            : roadmapLevel.title;
 
           return (
             <div key={roadmapLevel.id} className="border-b border-slate-800 p-3 last:border-b-0">
               <div className="flex items-center justify-between gap-2 px-1">
                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${chip}`}>
-                  Level {roadmapLevel.order} · {roadmapLevel.title}
+                  {t("levelWord")} {roadmapLevel.order} · {roadmapLevelTitle}
                 </span>
                 {!unlocked && (
                   <span className="shrink-0 text-[11px] font-bold text-slate-500" aria-label="Locked level">
@@ -244,13 +257,17 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
                   const completed =
                     progress.hydrated && progress.isLessonCompleted(roadmapLevel.id, roadmapLesson.id);
 
+                  const roadmapLessonTitle = isUrLatn
+                    ? getUrLatnLesson(roadmapLesson.id, roadmapLesson).title
+                    : roadmapLesson.title;
+
                   if (!unlocked) {
                     return (
                       <li
                         key={roadmapLesson.id}
                         className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-500"
                       >
-                        <span className="truncate">{roadmapLesson.title}</span>
+                        <span className="truncate">{roadmapLessonTitle}</span>
                         <span aria-hidden="true">🔒</span>
                       </li>
                     );
@@ -266,7 +283,7 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
                             : "text-slate-300 hover:bg-slate-800 hover:text-white"
                         }`}
                       >
-                        <span className="truncate">{roadmapLesson.title}</span>
+                        <span className="truncate">{roadmapLessonTitle}</span>
                         {completed && !isActive && (
                           <span className="shrink-0 text-emerald-400" aria-hidden="true">
                             ✓
@@ -287,6 +304,8 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
 
 export default function LessonViewer({ levelId, lessonId }) {
   const router = useRouter();
+  const { t, language } = useLanguage();
+  const isUrLatn = language === "ur-Latn";
   const progress = useAcademyProgress();
   const resolved = getLesson(levelId, lessonId);
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -330,6 +349,8 @@ export default function LessonViewer({ levelId, lessonId }) {
   const { prev, next } = getAdjacentLessons(levelId, lessonId);
   const locked = progress.hydrated && !progress.isLevelUnlocked(levelId);
   const alreadyMastered = progress.isLessonCompleted(levelId, lessonId);
+  const levelTitle = isUrLatn ? getUrLatnLevel(level.id, level).title : level.title;
+  const lessonTitle = isUrLatn ? getUrLatnLesson(lesson.id, lesson).title : lesson.title;
 
   function handleQuizFinish({ score, total }) {
     progress.recordQuizResult(levelId, lessonId, {
@@ -354,17 +375,15 @@ export default function LessonViewer({ levelId, lessonId }) {
           <p className="text-4xl" aria-hidden="true">
             🔒
           </p>
-          <h1 className="mt-3 text-xl font-bold text-slate-900">This level is still locked</h1>
+          <h1 className="mt-3 text-xl font-bold text-slate-900">{t("levelStillLockedTitle")}</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Finish and pass every quiz in the previous level to unlock {level.title} on the
-            Master Path — or browse this topic without the lock from the Academy&apos;s
-            category tracks.
+            {t("levelStillLockedDesc", { level: levelTitle })}
           </p>
           <Link
             href="/learn"
             className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.6)] hover:bg-blue-500"
           >
-            ← Back to Academy
+            ← {t("backToAcademyLink")}
           </Link>
         </div>
       </div>
@@ -377,19 +396,19 @@ export default function LessonViewer({ levelId, lessonId }) {
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           <nav className="text-xs text-slate-400">
             <Link href="/learn" className="hover:text-brand-600">
-              Academy
+              {t("academy")}
             </Link>
             <span className="mx-1.5">/</span>
-            <span className="text-slate-500">{level.title}</span>
+            <span className="text-slate-500">{levelTitle}</span>
           </nav>
           <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            {lesson.title}
+            {lessonTitle}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span>~{lesson.estMinutes} min read</span>
+            <span>~{lesson.estMinutes} {t("minWord")}</span>
             {alreadyMastered && (
               <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
-                ✓ Mastered
+                ✓ {t("masteredWord")}
               </span>
             )}
           </div>
@@ -412,7 +431,7 @@ export default function LessonViewer({ levelId, lessonId }) {
 
             {lesson.quiz && (
               <div id="module-quiz" className="pt-4">
-                <h2 className="mb-3 text-lg font-bold text-slate-900">Checkpoint Quiz</h2>
+                <h2 className="mb-3 text-lg font-bold text-slate-900">{t("checkpointQuizHeading")}</h2>
                 <QuizModule
                   questions={lesson.quiz.questions}
                   passPercent={lesson.quiz.passPercent}
@@ -435,7 +454,7 @@ export default function LessonViewer({ levelId, lessonId }) {
               href={`/learn/${prev.level.id}/${prev.lesson.id}`}
               className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 shadow-sm hover:border-slate-600 hover:text-white"
             >
-              ← Previous
+              ← {t("previousLabel")}
             </Link>
           ) : (
             <span />
@@ -446,7 +465,7 @@ export default function LessonViewer({ levelId, lessonId }) {
               href="#module-quiz"
               className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-[0_0_16px_-2px_rgba(59,130,246,0.6)] hover:bg-blue-500"
             >
-              Jump to Quiz ↓
+              {t("jumpToQuizLabel")} ↓
             </a>
           )}
 
@@ -455,14 +474,14 @@ export default function LessonViewer({ levelId, lessonId }) {
               href={`/learn/${next.level.id}/${next.lesson.id}`}
               className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 shadow-sm hover:border-slate-600 hover:text-white"
             >
-              Next →
+              {t("nextLabel")} →
             </Link>
           ) : (
             <Link
               href="/learn"
               className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 shadow-sm hover:border-slate-600 hover:text-white"
             >
-              Finish →
+              {t("finishLabel")} →
             </Link>
           )}
         </div>

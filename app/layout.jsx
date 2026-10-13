@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import SiteStructuredData from "@/components/SiteStructuredData";
 import { BaseCurrencyProvider } from "@/lib/baseCurrencyContext";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import TranslationDisclaimerModal from "@/components/TranslationDisclaimerModal";
 import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
@@ -119,6 +120,7 @@ export default function RootLayout({ children }) {
       <body className="flex min-h-screen flex-col bg-slate-50">
         <LanguageProvider>
           <BaseCurrencyProvider>
+            <TranslationDisclaimerModal />
             <SiteStructuredData />
             <Header />
             <main id="dashboard" className="flex-1">

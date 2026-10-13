@@ -84,9 +84,15 @@ function EcosystemStructuredData() {
 export default function HomePage() {
   return (
     <>
+      {/* Two stacked top bars, directly under the global header and
+          above the fold: Bar 1 is the high-impact economic news
+          ticker, Bar 2 immediately below it is the live market
+          pricing ticker (Gold, EUR/USD, BTC/USD, Crude Oil). Both are
+          deliberately thin single-row strips so they never push the
+          Hero below the fold. */}
       <EconomicNewsStrip />
-      <Hero />
       <HomeMarketTicker />
+      <Hero />
       {/* id preserved here (rather than inside ConvertersTabs itself) so
           the nav's "/#metals-calculator" link and the hero's CTA above
           both still scroll to this section correctly. */}
