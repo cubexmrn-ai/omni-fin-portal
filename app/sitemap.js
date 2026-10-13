@@ -22,14 +22,22 @@
 // (e.g. some other valid "<from>-to-<to>" combination) still resolves
 // on-demand at runtime but is intentionally left out of the sitemap,
 // the same way it's left out of generateStaticParams().
+//
+// SITEMAP_BASE_URL is hardcoded to the production domain rather than
+// using lib/siteUrl.js's getSiteUrl() — that helper falls back to
+// VERCEL_URL (a per-deployment preview domain) whenever
+// NEXT_PUBLIC_SITE_URL isn't set, which would leak preview URLs into
+// <loc> entries that search engines crawl and index. Every entry in
+// this sitemap must resolve to the real, canonical production URL.
 
 import { FEATURED_PAIRS } from "@/lib/pairSlugs";
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { getAllLessonsFlat } from "@/lib/academyData";
-import { getSiteUrl } from "@/lib/siteUrl";
+
+const SITEMAP_BASE_URL = "https://www.omnifinportal.com";
 
 export default function sitemap() {
-  const siteUrl = getSiteUrl();
+  const siteUrl = SITEMAP_BASE_URL;
   // A single "build time" timestamp shared by every entry below. This
   // sitemap doesn't track true per-page last-edited dates (none of this
   // project's content has one), so a shared build-time stamp is the
