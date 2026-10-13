@@ -1,5 +1,7 @@
 import MarketOverviewBoard from "@/components/MarketOverviewBoard";
 import MarketAnalysisHero from "@/components/MarketAnalysisHero";
+import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysisFAQSection";
+import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = buildMetadata({
@@ -12,8 +14,10 @@ export const metadata = buildMetadata({
 export default function MarketAnalysisPage() {
   return (
     <>
+      <MarketAnalysisFAQStructuredData />
       <MarketAnalysisHero />
       <MarketOverviewBoard />
+      <MarketAnalysisFAQSection />
     </>
   );
 }

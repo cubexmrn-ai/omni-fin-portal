@@ -15,11 +15,13 @@
 // superseded by the full Position & Lot Size Calculator on the
 // Calculators Hub, but left in place here since lessons already
 // reference it and it's functionally identical for a single lesson's
-// purposes). "pip-value-calculator", "risk-reward-calculator" and
-// "margin-calculator" map onto the corresponding Calculators Hub
-// calculators via MiniCalculatorWidget (lib/calculatorsRegistry.js),
-// so a lesson section only needs to reference a toolId — it never
-// needs its own copy of that calculator's component or math.
+// purposes). "pip-value-calculator", "risk-reward-calculator",
+// "margin-calculator", "inflation-calculator" and
+// "compound-growth-calculator" all map onto the corresponding
+// Calculators Hub calculators via MiniCalculatorWidget
+// (lib/calculatorsRegistry.js), so a lesson section only needs to
+// reference a toolId — it never needs its own copy of that
+// calculator's component or math.
 
 import GoldCalculator from "@/components/GoldCalculator";
 import MiniLotSizeCalculator from "@/components/academy/MiniLotSizeCalculator";
@@ -31,6 +33,8 @@ const TOOL_REGISTRY = {
   "pip-value-calculator": () => <MiniCalculatorWidget calculatorId="pip-value" />,
   "risk-reward-calculator": () => <MiniCalculatorWidget calculatorId="risk-reward" />,
   "margin-calculator": () => <MiniCalculatorWidget calculatorId="margin" />,
+  "inflation-calculator": () => <MiniCalculatorWidget calculatorId="inflation" />,
+  "compound-growth-calculator": () => <MiniCalculatorWidget calculatorId="compound-growth" />,
 };
 
 // WHY THE DARK FRAME WRAPS THE TOOL RATHER THAN RESTYLING IT: every tool

@@ -6,7 +6,8 @@
 // a sticky reading-progress top bar, a two-column reader (a sticky left
 // outline sidebar + the main lesson content on the right), the lesson's
 // typed content sections (text / proTip / risk / formula / visual /
-// tool), a sticky prev/next + "Jump to Quiz" bottom nav bar, and the
+// tool / relatedLink), a sticky prev/next + "Jump to Quiz" bottom nav
+// bar, and the
 // end-of-lesson Checkpoint Quiz (components/academy/QuizModule.jsx)
 // wired to hooks/useAcademyProgress so a passing score marks the lesson
 // Mastered and unlocks the next level.
@@ -127,6 +128,35 @@ function FormulaBadge({ label, formula, note }) {
   );
 }
 
+/** A cross-link card pointing from this lesson out to a live OmniFin
+ * tool page (/calculators, /converters, /market-analysis, /ai-news) —
+ * for the case where the right follow-up isn't a tool that can be
+ * embedded inline (see EmbeddedTool's registry), either because it's
+ * a full page rather than a single widget, or because the honest
+ * thing to say about it needs more than a widget caption (e.g. the
+ * RSI and Gann lessons link to /market-analysis' live Technical
+ * Analysis report, which explicitly marks its own RSI/Gann sections
+ * unavailable without historical price data — the `note` field is
+ * where that kind of caveat belongs, rather than overselling what the
+ * live tool shows). Same dark-card visual language as ProTip/
+ * FormulaBadge, in blue since this is a primary CTA. */
+function RelatedLinkCard({ href, label, note }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-xl border border-blue-500/30 bg-slate-900 p-4 transition-colors hover:border-blue-400/60"
+    >
+      <span className="text-xl" aria-hidden="true">
+        🔗
+      </span>
+      <div>
+        <p className="text-sm font-semibold text-blue-300">{label}</p>
+        {note && <p className="mt-1 text-xs text-slate-400">{note}</p>}
+      </div>
+    </Link>
+  );
+}
+
 function TextSection({ heading, body, list }) {
   return (
     <div>
@@ -162,6 +192,8 @@ function Section({ section }) {
       return <LessonVisualCard diagram={section.diagram} caption={section.caption} />;
     case "tool":
       return <EmbeddedTool toolId={section.toolId} caption={section.caption} />;
+    case "relatedLink":
+      return <RelatedLinkCard href={section.href} label={section.label} note={section.note} />;
     default:
       return null;
   }

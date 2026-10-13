@@ -1,5 +1,7 @@
 import ConvertersWorkspace from "@/components/ConvertersWorkspace";
 import ConvertersHero from "@/components/ConvertersHero";
+import ConvertersFAQSection from "@/components/converters/ConvertersFAQSection";
+import ConvertersFAQStructuredData from "@/components/converters/ConvertersFAQStructuredData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = buildMetadata({
@@ -12,12 +14,15 @@ export const metadata = buildMetadata({
 export default function ConvertersPage() {
   return (
     <>
+      <ConvertersFAQStructuredData />
       <ConvertersHero />
 
       {/* Every category card, tool tab, and "Popular" pill below is
           wired to one shared selection — clicking any of them updates
           the converter window in place, with no page reload. */}
       <ConvertersWorkspace />
+
+      <ConvertersFAQSection />
     </>
   );
 }
