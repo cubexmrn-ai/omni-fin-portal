@@ -106,10 +106,23 @@ export default function DashboardHub() {
           />
         </div>
 
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
+          <p className="text-sm text-slate-600">
+            Track your trades, stock holdings, and rental income in the Trading &amp; Asset Journal.
+          </p>
+          <Link
+            href="/journal"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
+          >
+            Open Journal →
+          </Link>
+        </div>
+
         <p className="mt-6 text-[11px] leading-relaxed text-slate-400">
           Everything on this page is read from this browser&apos;s own local storage — the same
-          data the Trading Lab, Academy and Converters pages themselves use — so there&apos;s no
-          separate account or sign-in behind it, and nothing here syncs across devices.
+          data the Trading Lab, Academy, Converters, and Journal pages themselves use — so
+          there&apos;s no separate account or sign-in behind it, and nothing here syncs across
+          devices.
         </p>
       </section>
     </div>

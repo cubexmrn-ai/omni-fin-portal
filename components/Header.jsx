@@ -82,6 +82,7 @@ const OTHER_NAV_LINKS = [
   { label: "Market Analysis", labelKey: "marketAnalysis", href: "/market-analysis" },
   { label: "News", labelKey: "news", href: "/ai-news" },
   { label: "Academy", labelKey: "academy", href: "/learn" },
+  { label: "Journal", labelKey: "journal", href: "/journal" },
   { label: "Community", labelKey: "community", href: "/community" },
   { label: "About", labelKey: "about", href: "/about" },
 ];

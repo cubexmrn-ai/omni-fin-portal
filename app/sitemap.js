@@ -63,6 +63,7 @@ export default function sitemap() {
     { path: "/learn/lab", changeFrequency: "weekly", priority: 0.7 },
     { path: "/community", changeFrequency: "daily", priority: 0.8 },
     { path: "/dashboard", changeFrequency: "weekly", priority: 0.5 },
+    { path: "/journal", changeFrequency: "weekly", priority: 0.5 },
     { path: "/about", changeFrequency: "monthly", priority: 0.4 },
     { path: "/disclaimer", changeFrequency: "yearly", priority: 0.3 },
     { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },

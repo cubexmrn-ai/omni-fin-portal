@@ -31,7 +31,7 @@ import Link from "next/link";
 import { ACADEMY_LEVELS, CATEGORIES, getLevelStats } from "@/lib/academyData";
 import { useAcademyProgress } from "@/hooks/useAcademyProgress";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { getUrLatnLevel, getUrLatnLesson } from "@/lib/i18n/academyUrLatn";
+import { getLocalizedLevel, getLocalizedLesson } from "@/lib/i18n/academyLocalized";
 
 // Per-level accent used on the Master Path roadmap cards — a trim
 // color/glow for visual hierarchy between the 5 levels, distinct from
@@ -85,11 +85,12 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
   const stats = getLevelStats(level);
   const firstLesson = level.lessons[0];
-  // Roman Urdu gets its own curated title/subtitle/description (with
-  // core terms kept in English brackets) rather than the generic t()
-  // dictionary — see lib/i18n/academyUrLatn.js for why only the
-  // level/lesson METADATA is translated, not the lesson body itself.
-  const display = language === "ur-Latn" ? getUrLatnLevel(level.id, level) : level;
+  // Every non-English language gets its own curated subtitle/
+  // description (with core terms kept in English brackets) rather than
+  // the generic t() dictionary — see lib/i18n/academyLocalized.js for
+  // why only the level/lesson METADATA is translated, not the lesson
+  // body itself.
+  const display = language === "en" ? level : getLocalizedLevel(language, level.id, level);
 
   return (
     <div
@@ -164,9 +165,9 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
 function FocusedTrackCard({ level, lesson, completed, unlocked }) {
   const { t, language } = useLanguage();
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
-  const isUrLatn = language === "ur-Latn";
-  const levelTitle = isUrLatn ? getUrLatnLevel(level.id, level).title : level.title;
-  const lessonTitle = isUrLatn ? getUrLatnLesson(lesson.id, lesson).title : lesson.title;
+  const isLocalized = language !== "en";
+  const levelTitle = isLocalized ? getLocalizedLevel(language, level.id, level).title : level.title;
+  const lessonTitle = isLocalized ? getLocalizedLesson(language, lesson.id, lesson).title : lesson.title;
 
   if (!unlocked) {
     return (
@@ -221,8 +222,8 @@ export default function AcademyHub() {
   const currentLevel = progress.currentLevel;
   const currentLevelPercent = currentLevel ? progress.getLevelProgressPercent(currentLevel.id) : 0;
   const currentLevelTitle =
-    currentLevel && language === "ur-Latn"
-      ? getUrLatnLevel(currentLevel.id, currentLevel).title
+    currentLevel && language !== "en"
+      ? getLocalizedLevel(language, currentLevel.id, currentLevel).title
       : currentLevel?.title;
 
   const filteredLessons = useMemo(() => {

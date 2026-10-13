@@ -52,7 +52,7 @@ import LessonVisualCard from "@/components/academy/LessonVisualCard";
 import EmbeddedTool from "@/components/academy/EmbeddedTool";
 import QuizModule from "@/components/academy/QuizModule";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { getUrLatnLevel, getUrLatnLesson } from "@/lib/i18n/academyUrLatn";
+import { getLocalizedLevel, getLocalizedLesson } from "@/lib/i18n/academyLocalized";
 
 // Light-surface chip variant of each level's accent color, used on the
 // (light) lesson header and top bar — the dark-card chip variant for
@@ -206,7 +206,7 @@ function Section({ section }) {
 function LessonTopBar({ level, lesson, scrollPercent }) {
   const { t, language } = useLanguage();
   const tagTheme = LEVEL_TAG_THEME[level.theme] || LEVEL_TAG_THEME.blue;
-  const levelTitle = language === "ur-Latn" ? getUrLatnLevel(level.id, level).title : level.title;
+  const levelTitle = language !== "en" ? getLocalizedLevel(language, level.id, level).title : level.title;
   return (
     <div className="sticky top-16 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto max-w-6xl px-4 py-2.5 sm:px-6 lg:px-8">
@@ -235,10 +235,10 @@ function LessonTopBar({ level, lesson, scrollPercent }) {
  * still-locked level shows a 🔒 indicator and its lessons are inert. */
 function LessonOutlineSidebar({ level, lessonId, progress }) {
   const { t, language } = useLanguage();
-  const isUrLatn = language === "ur-Latn";
+  const isLocalized = language !== "en";
   const levelPercent = progress.hydrated ? progress.getLevelProgressPercent(level.id) : 0;
   const barColor = LEVEL_BAR_COLOR[level.theme] || LEVEL_BAR_COLOR.blue;
-  const levelTitle = isUrLatn ? getUrLatnLevel(level.id, level).title : level.title;
+  const levelTitle = isLocalized ? getLocalizedLevel(language, level.id, level).title : level.title;
 
   // The roadmap ahead: this level plus every level that comes after it
   // (earlier, already-passed levels aren't repeated here — the Academy
@@ -266,8 +266,8 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
             ? progress.isLevelUnlocked(roadmapLevel.id)
             : roadmapLevel.order === 1;
           const chip = LEVEL_CHIP_DARK[roadmapLevel.theme] || LEVEL_CHIP_DARK.blue;
-          const roadmapLevelTitle = isUrLatn
-            ? getUrLatnLevel(roadmapLevel.id, roadmapLevel).title
+          const roadmapLevelTitle = isLocalized
+            ? getLocalizedLevel(language, roadmapLevel.id, roadmapLevel).title
             : roadmapLevel.title;
 
           return (
@@ -289,8 +289,8 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
                   const completed =
                     progress.hydrated && progress.isLessonCompleted(roadmapLevel.id, roadmapLesson.id);
 
-                  const roadmapLessonTitle = isUrLatn
-                    ? getUrLatnLesson(roadmapLesson.id, roadmapLesson).title
+                  const roadmapLessonTitle = isLocalized
+                    ? getLocalizedLesson(language, roadmapLesson.id, roadmapLesson).title
                     : roadmapLesson.title;
 
                   if (!unlocked) {
@@ -337,7 +337,7 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
 export default function LessonViewer({ levelId, lessonId }) {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const isUrLatn = language === "ur-Latn";
+  const isLocalized = language !== "en";
   const progress = useAcademyProgress();
   const resolved = getLesson(levelId, lessonId);
   const [scrollPercent, setScrollPercent] = useState(0);
@@ -381,8 +381,8 @@ export default function LessonViewer({ levelId, lessonId }) {
   const { prev, next } = getAdjacentLessons(levelId, lessonId);
   const locked = progress.hydrated && !progress.isLevelUnlocked(levelId);
   const alreadyMastered = progress.isLessonCompleted(levelId, lessonId);
-  const levelTitle = isUrLatn ? getUrLatnLevel(level.id, level).title : level.title;
-  const lessonTitle = isUrLatn ? getUrLatnLesson(lesson.id, lesson).title : lesson.title;
+  const levelTitle = isLocalized ? getLocalizedLevel(language, level.id, level).title : level.title;
+  const lessonTitle = isLocalized ? getLocalizedLesson(language, lesson.id, lesson).title : lesson.title;
 
   function handleQuizFinish({ score, total }) {
     progress.recordQuizResult(levelId, lessonId, {

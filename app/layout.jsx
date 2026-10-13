@@ -4,6 +4,8 @@ import SiteStructuredData from "@/components/SiteStructuredData";
 import { BaseCurrencyProvider } from "@/lib/baseCurrencyContext";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import TranslationDisclaimerModal from "@/components/TranslationDisclaimerModal";
+import ComplianceDisclaimerModal from "@/components/ComplianceDisclaimerModal";
+import StickyBottomTicker from "@/components/StickyBottomTicker";
 import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
@@ -162,12 +164,14 @@ export default function RootLayout({ children }) {
         <LanguageProvider>
           <BaseCurrencyProvider>
             <TranslationDisclaimerModal />
+            <ComplianceDisclaimerModal />
             <SiteStructuredData />
             <Header />
             <main id="dashboard" className="flex-1">
               {children}
             </main>
             <SiteFooter />
+            <StickyBottomTicker />
           </BaseCurrencyProvider>
         </LanguageProvider>
       </body>
