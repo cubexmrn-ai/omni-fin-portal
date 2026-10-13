@@ -51,7 +51,7 @@ export default function TermsOfServicePage() {
       <section className="mx-auto max-w-3xl space-y-8 px-4 py-10 text-sm leading-relaxed text-slate-600 sm:px-6 lg:px-8">
         <Section title="1. Acceptance of terms">
           <p>
-            By accessing or using OmniFin Portal (the "Site"), you agree
+            By accessing or using OmniFin Portal (the &quot;Site&quot;), you agree
             to be bound by these Terms of Service, our{" "}
             <Link
               href="/privacy"
@@ -149,8 +149,8 @@ export default function TermsOfServicePage() {
 
         <Section title="8. No warranty">
           <p>
-            The Site and all content on it are provided "as is" and "as
-            available," without warranties of any kind, express or
+            The Site and all content on it are provided &quot;as is&quot; and &quot;as
+            available,&quot; without warranties of any kind, express or
             implied, including but not limited to warranties of
             accuracy, merchantability, fitness for a particular purpose,
             or non-infringement. We do not warrant that the Site will be
@@ -174,7 +174,7 @@ export default function TermsOfServicePage() {
           <p>
             We may modify, suspend, or discontinue any part of the Site
             at any time, and may update these Terms from time to time.
-            We&apos;ll update the "Last updated" date above when we do.
+            We&apos;ll update the &quot;Last updated&quot; date above when we do.
             Continued use of the Site after a change constitutes
             acceptance of the updated Terms.
           </p>

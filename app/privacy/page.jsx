@@ -61,7 +61,7 @@ export default function PrivacyPolicyPage() {
                 Local-storage-only data (never sent to our servers).
               </span>{" "}
               Features like OmniFin Academy progress tracking, Community
-              Forum vote and "Bullseye Setup" tag state, and
+              Forum vote and &quot;Bullseye Setup&quot; tag state, and
               user-submitted Community Forum posts are stored entirely
               in your browser&apos;s local storage. This data stays on your
               device, is never transmitted to OmniFin Portal or any
@@ -166,7 +166,7 @@ export default function PrivacyPolicyPage() {
           <p>
             We may update this Privacy Policy from time to time to
             reflect changes to our practices or for legal, operational,
-            or regulatory reasons. We&apos;ll update the "Last updated" date
+            or regulatory reasons. We&apos;ll update the &quot;Last updated&quot; date
             above when we do. See also our{" "}
             <Link
               href="/terms"

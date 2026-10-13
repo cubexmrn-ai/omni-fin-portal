@@ -86,7 +86,7 @@ export default function LiveSentimentIndicator({ ratesData }) {
         </span>
       </div>
       <p className="mt-1 text-xs text-slate-400">
-        A live Bullish/Bearish read for Gold, EUR/USD and Bitcoin, computed from today's actual
+        A live Bullish/Bearish read for Gold, EUR/USD and Bitcoin, computed from today&apos;s actual
         prices — see{" "}
         <a href="/market-analysis" className="underline hover:text-slate-600">
           Market Analysis
