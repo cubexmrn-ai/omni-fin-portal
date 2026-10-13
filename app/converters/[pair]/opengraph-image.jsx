@@ -114,14 +114,22 @@ export default async function OgImage({ params }) {
         {rateDisplay && (
           <div
             style={{
+              // Satori (the @vercel/og renderer this route uses under the
+              // hood) rejects "fit-content" as a width value — it only
+              // supports a fixed length, a percentage, or "auto". The
+              // shrink-to-content look this badge wants comes from
+              // `alignSelf: "flex-start"` instead: the parent is a
+              // `flexDirection: column` container, so without an explicit
+              // alignSelf this child would otherwise stretch to its full
+              // cross-axis width.
               display: "flex",
+              alignSelf: "flex-start",
               marginTop: 40,
               fontSize: 34,
               fontWeight: 700,
               padding: "14px 28px",
               borderRadius: 16,
               background: "rgba(255,255,255,0.14)",
-              width: "fit-content",
             }}
           >
             <span>
