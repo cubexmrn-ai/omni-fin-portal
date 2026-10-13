@@ -82,5 +82,12 @@ export function useSentimentVotes() {
     [voteState]
   );
 
-  return { hydrated, castVote, getCounts };
+  // How many of the tracked assets THIS browser has cast a vote on —
+  // a real count of voteState's own keys, read by
+  // components/dashboard/CommunityActivityCard.jsx's "Sentiment Votes
+  // Cast" tile. Not memoized with useMemo since voteState is a small
+  // object and this hook already re-renders on every vote.
+  const castVotesCount = Object.keys(voteState).length;
+
+  return { hydrated, castVote, getCounts, castVotesCount };
 }

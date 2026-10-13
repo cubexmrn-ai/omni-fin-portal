@@ -292,19 +292,22 @@ export default function Header() {
         <HeaderLogo />
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+          {/* Plain English "Home", not t("dashboard") — that i18n key
+              still literally translates to "Dashboard" in every
+              language (see translate() in lib/i18n/translations.js),
+              which now collides with the real /dashboard link right
+              after it. Renaming the KEY would also change the
+              breadcrumb text other pages derive from the same t()
+              call (e.g. components/academy/AcademyHub.jsx), so this
+              stays a local override here rather than a dictionary
+              edit with wider, untested blast radius. */}
           <Link
             href="/"
             className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
           >
-            {t("dashboard")}
+            Home
           </Link>
 
-          {/* Plain English label, not run through t() — same convention
-              TOOLS_CALCULATORS_LINKS below already uses for a link added
-              without full i18n coverage. Named "My Dashboard" (not just
-              "Dashboard") specifically to avoid colliding with the Home
-              link above, which the existing i18n dictionary already
-              calls "Dashboard" in every language. */}
           <Link
             href="/dashboard"
             className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
@@ -400,7 +403,7 @@ export default function Header() {
               onClick={() => setMobileOpen(false)}
               className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             >
-              {t("dashboard")}
+              Home
             </Link>
 
             <Link

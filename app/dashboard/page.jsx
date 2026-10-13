@@ -11,9 +11,9 @@
 import DashboardHub from "@/components/dashboard/DashboardHub";
 
 export const metadata = {
-  title: "Your Dashboard — Trading Lab, Academy & Presets | OmniFin Portal",
+  title: "Your Dashboard — Trading Lab, Academy & Community | OmniFin Portal",
   description:
-    "A unified view of your Demo Trading Lab account, OmniFin Academy curriculum progress, and saved conversion & calculator presets, with quick links across the OmniFin ecosystem.",
+    "A unified view of your Demo Trading Lab account, OmniFin Academy curriculum progress, saved conversion & calculator presets, and your Trader Community & Setup Hub activity, with quick links across the OmniFin ecosystem.",
 };
 
 export default function DashboardPage() {

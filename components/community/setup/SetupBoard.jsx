@@ -7,7 +7,8 @@
 // High R:R Setups), the "Post a Setup" trigger, and the card feed
 // itself. Backed by hooks/useTradeSetups.js.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useTradeSetups } from "@/hooks/useTradeSetups";
 import {
   SETUP_FILTER_TABS,
@@ -21,6 +22,19 @@ import PostSetupModal from "@/components/community/setup/PostSetupModal";
 export default function SetupBoard() {
   const { hydrated, allSetups, addSetup } = useTradeSetups();
   const [activeTab, setActiveTab] = useState("all");
+  // Supports a "?view=mine" link (e.g. the Dashboard's "Setups Shared"
+  // tile) that jumps straight to this board filtered to only the
+  // setups this browser has posted — read from window.location
+  // directly in an effect rather than next/navigation's
+  // useSearchParams, so this component never forces the page out of
+  // static rendering / needs a Suspense boundary just for this link.
+  const [viewMineOnly, setViewMineOnly] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setViewMineOnly(params.get("view") === "mine");
+  }, []);
 
   const setupsWithRR = useMemo(
     () =>
@@ -33,19 +47,29 @@ export default function SetupBoard() {
   );
 
   const filteredSetups = useMemo(() => {
-    if (activeTab === "all") return setupsWithRR;
+    const base = viewMineOnly ? setupsWithRR.filter((s) => s.isUserSubmitted) : setupsWithRR;
+    if (activeTab === "all") return base;
     if (activeTab === "highRR") {
-      return setupsWithRR.filter((s) => Number.isFinite(s.rr) && s.rr >= HIGH_RR_THRESHOLD);
+      return base.filter((s) => Number.isFinite(s.rr) && s.rr >= HIGH_RR_THRESHOLD);
     }
-    return setupsWithRR.filter((s) => s.assetClass === activeTab);
-  }, [setupsWithRR, activeTab]);
+    return base.filter((s) => s.assetClass === activeTab);
+  }, [setupsWithRR, activeTab, viewMineOnly]);
 
   return (
-    <section>
+    <section id="setup-board">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-extrabold text-slate-900">Trade Setup Sharing Board</h2>
         <PostSetupModal onSubmit={addSetup} />
       </div>
+
+      {viewMineOnly && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+          <span>Showing only the setups you&apos;ve posted from this browser.</span>
+          <Link href="/community#setup-board" className="font-semibold underline hover:text-blue-900">
+            View all setups
+          </Link>
+        </div>
+      )}
 
       <div className="mt-3 flex flex-wrap gap-2" role="tablist" aria-label="Setup filters">
         {SETUP_FILTER_TABS.map((tab) => (

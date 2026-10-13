@@ -29,11 +29,25 @@ export default function AcademyProgressCard({ progress }) {
           const unlocked = progress.hydrated ? progress.isLevelUnlocked(level.id) : level.order === 1;
           const mastered = progress.hydrated ? progress.isLevelMastered(level.id) : false;
           const percent = progress.hydrated ? progress.getLevelProgressPercent(level.id) : 0;
+          // The hook's own "first level that isn't fully mastered yet"
+          // read of where the person currently is (hooks/
+          // useAcademyProgress.js's `currentLevel`) — defaults to
+          // Level 1/Rookie before anything's been completed, and
+          // dynamically moves to Apprentice/Analyst/Strategist/Pro
+          // Trader as quizzes get passed on /learn.
+          const isActive = progress.hydrated
+            ? progress.currentLevel?.id === level.id
+            : level.order === 1;
           return (
             <div key={level.id}>
               <div className="flex items-center justify-between text-xs">
                 <span className={`font-semibold ${unlocked ? "text-slate-200" : "text-slate-500"}`}>
                   Level {level.order} — {level.title}
+                  {isActive && !mastered && (
+                    <span className="ml-1.5 rounded-full bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-bold text-blue-300">
+                      Active
+                    </span>
+                  )}
                 </span>
                 <span className="text-slate-500">
                   {mastered ? "✓ Mastered" : !unlocked ? "Locked 🔒" : `${percent}%`}

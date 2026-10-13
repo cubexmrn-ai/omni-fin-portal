@@ -15,7 +15,7 @@ export default function SentimentGaugeSection() {
   const { castVote, getCounts } = useSentimentVotes();
 
   return (
-    <section>
+    <section id="sentiment-gauge">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-extrabold text-slate-900">Live Community Sentiment Gauge</h2>
       </div>
