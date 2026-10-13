@@ -452,7 +452,18 @@ function AccordionItem({ title, children, defaultOpen }) {
           ▾
         </span>
       </button>
-      {open && <div className="px-4 pb-4 text-sm leading-relaxed text-slate-600">{children}</div>}
+      {/* Always rendered into the DOM (never unmounted) and toggled
+          with the `hidden` attribute rather than `{open && ...}` —
+          this is still visually collapsed by default, but it means
+          all 5 answers in the Calculator Guide below are actually
+          present in the page's HTML for crawlers to read, matching
+          the FAQPage JSON-LD in components/calculators/
+          CalculatorsStructuredData.jsx, which quotes this same text.
+          An unmount-based accordion would leave 4 of 5 answers absent
+          from the rendered DOM entirely, contradicting that schema. */}
+      <div hidden={!open} className="px-4 pb-4 text-sm leading-relaxed text-slate-600">
+        {children}
+      </div>
     </div>
   );
 }

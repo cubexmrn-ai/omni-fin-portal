@@ -1,4 +1,5 @@
 import NewsFeed from "@/components/NewsFeed";
+import NewsStructuredData from "@/components/NewsStructuredData";
 import SocialBuzzTracker from "@/components/SocialBuzzTracker";
 import EconomicCalendar from "@/components/EconomicCalendar";
 import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
@@ -48,6 +49,7 @@ export default async function AiNewsPage() {
 
   return (
     <>
+      <NewsStructuredData items={items} />
       <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <AiNewsHero />

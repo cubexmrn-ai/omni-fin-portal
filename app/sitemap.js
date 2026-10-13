@@ -23,21 +23,22 @@
 // on-demand at runtime but is intentionally left out of the sitemap,
 // the same way it's left out of generateStaticParams().
 //
-// SITEMAP_BASE_URL is hardcoded to the production domain rather than
-// using lib/siteUrl.js's getSiteUrl() — that helper falls back to
-// VERCEL_URL (a per-deployment preview domain) whenever
-// NEXT_PUBLIC_SITE_URL isn't set, which would leak preview URLs into
-// <loc> entries that search engines crawl and index. Every entry in
-// this sitemap must resolve to the real, canonical production URL.
+// Every entry below must resolve to the real, canonical production
+// URL — lib/siteUrl.js's getSiteUrl() now hardcodes
+// https://www.omnifinportal.com whenever Vercel reports this as the
+// production deployment (VERCEL_ENV === "production"), so this
+// sitemap, app/robots.js, and every page's metadata/JSON-LD all share
+// one single source of truth for the domain and can no longer drift
+// apart — see that file's header comment for why a previous version
+// of getSiteUrl() could leak a preview deployment's hostname here.
 
 import { FEATURED_PAIRS } from "@/lib/pairSlugs";
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { getAllLessonsFlat } from "@/lib/academyData";
-
-const SITEMAP_BASE_URL = "https://www.omnifinportal.com";
+import { getSiteUrl } from "@/lib/siteUrl";
 
 export default function sitemap() {
-  const siteUrl = SITEMAP_BASE_URL;
+  const siteUrl = getSiteUrl();
   // A single "build time" timestamp shared by every entry below. This
   // sitemap doesn't track true per-page last-edited dates (none of this
   // project's content has one), so a shared build-time stamp is the
@@ -50,7 +51,12 @@ export default function sitemap() {
     { path: "/converters", changeFrequency: "daily", priority: 0.9 },
     { path: "/calculators", changeFrequency: "weekly", priority: 0.9 },
     { path: "/market-analysis", changeFrequency: "daily", priority: 0.9 },
-    { path: "/market-analysis/ai-news", changeFrequency: "daily", priority: 0.8 },
+    // NOT /market-analysis/ai-news — that route is a 308 permanent
+    // redirect to /ai-news now (see app/market-analysis/ai-news/
+    // page.jsx), and a sitemap should only ever list final destination
+    // URLs. Listing a redirecting URL alongside its own target is the
+    // kind of self-contradicting signal Google's own sitemap guidance
+    // specifically warns against.
     { path: "/ai-news", changeFrequency: "daily", priority: 0.8 },
     { path: "/learn", changeFrequency: "weekly", priority: 0.8 },
     { path: "/learn/lab", changeFrequency: "weekly", priority: 0.7 },
