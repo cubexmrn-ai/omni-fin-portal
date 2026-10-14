@@ -99,25 +99,53 @@ function NewsCard({ item }) {
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M12 8V12L15 15M21 12A9 9 0 113 12A9 9 0 0121 12Z"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        AI summary coming soon
-      </div>
+      {item.summaryStatus === "ready" && item.summary ? (
+        <div className="mt-3 flex items-start gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+          <svg
+            width="12"
+            height="12"
+            className="mt-0.5 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 8V12L15 15M21 12A9 9 0 113 12A9 9 0 0121 12Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>
+            <span className="font-semibold">
+              {item.summaryProvider === "gemini" ? "Gemini AI summary: " : "AI summary: "}
+            </span>
+            {item.summary}
+          </span>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 8V12L15 15M21 12A9 9 0 113 12A9 9 0 0121 12Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Rule-based sentiment only — see the excerpt above
+        </div>
+      )}
     </article>
   );
 }

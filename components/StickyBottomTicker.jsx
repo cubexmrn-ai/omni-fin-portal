@@ -117,6 +117,7 @@ function useLivePrices(enabled) {
 // request just leaves this null, same as a failed price fetch above.
 function useMacroSentimentSignal(enabled) {
   const [signal, setSignal] = useState(null);
+  const [blogSnippet, setBlogSnippet] = useState(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -128,16 +129,32 @@ function useMacroSentimentSignal(enabled) {
         if (!res.ok) throw new Error(`sentiment-engine responded with ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
+
         const asset = Array.isArray(data?.assets) ? data.assets[0] : null;
-        if (!asset) return;
-        const divergenceLabel =
-          asset.divergence && asset.divergence !== "aligned" ? "diverging" : "aligned";
-        setSignal(
-          `${asset.label}: Retail ${asset.retailSentiment} / Institutional ${asset.institutionalBias} (${divergenceLabel})`
-        );
+        if (asset) {
+          const divergenceLabel =
+            asset.divergence && asset.divergence !== "aligned" ? "diverging" : "aligned";
+          setSignal(
+            `${asset.label}: Retail ${asset.retailSentiment} / Institutional ${asset.institutionalBias} (${divergenceLabel})`
+          );
+        }
+
+        // A short rotating snippet from the Macro Sentiment Engine's
+        // market-blog posts (see lib/sentimentEngine.js) — the first
+        // ~90 characters of the first available blog, so the ticker
+        // hints at the live commentary without needing its own space
+        // for a full paragraph.
+        const firstBlog = Array.isArray(data?.marketBlogs)
+          ? data.marketBlogs.find((b) => b?.body)
+          : null;
+        if (firstBlog) {
+          const snippet =
+            firstBlog.body.length > 90 ? `${firstBlog.body.slice(0, 90)}…` : firstBlog.body;
+          setBlogSnippet(`${firstBlog.title}: ${snippet}`);
+        }
       } catch {
-        // Leave signal null — the ticker just omits this span rather
-        // than showing a stale or fabricated value.
+        // Leave signal/blogSnippet null — the ticker just omits these
+        // spans rather than showing a stale or fabricated value.
       }
     }
 
@@ -147,7 +164,7 @@ function useMacroSentimentSignal(enabled) {
     };
   }, [enabled]);
 
-  return signal;
+  return { signal, blogSnippet };
 }
 
 export default function StickyBottomTicker() {
@@ -173,7 +190,9 @@ export default function StickyBottomTicker() {
   }, []);
 
   const prices = useLivePrices(active && isMarketPage && hydrated);
-  const sentimentSignal = useMacroSentimentSignal(active && isMarketPage && hydrated);
+  const { signal: sentimentSignal, blogSnippet } = useMacroSentimentSignal(
+    active && isMarketPage && hydrated
+  );
 
   if (!active || !hydrated || mode === "closed") return null;
 
@@ -227,6 +246,14 @@ export default function StickyBottomTicker() {
                 {sentimentSignal && (
                   <span className="flex shrink-0 items-center gap-1.5">
                     <span className="text-slate-400">{sentimentSignal}</span>
+                  </span>
+                )}
+                {blogSnippet && (
+                  <span
+                    className="flex shrink-0 items-center gap-1.5 truncate text-slate-400"
+                    title={blogSnippet}
+                  >
+                    {blogSnippet}
                   </span>
                 )}
               </div>

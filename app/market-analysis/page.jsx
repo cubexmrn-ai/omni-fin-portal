@@ -46,7 +46,22 @@ export default async function MarketAnalysisPage() {
     <>
       <MarketAnalysisFAQStructuredData />
       <MarketAnalysisHero />
-      <MarketOverviewBoard />
+
+      {/* Order: AI Video Insights at the top, then the Macro Sentiment
+          Engine (this page's "Live Market Sentiment" equivalent), then
+          the live charts/overview board, then the FAQ. */}
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <h2 className="text-sm font-bold text-slate-900">
+          AI Video Insights
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Structured summaries generated from recent uploads by tracked
+          trading &amp; market-analysis YouTube channels.
+        </p>
+        <div className="mt-5">
+          <AutomatedVideoInsights posts={videoPosts} />
+        </div>
+      </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <h2 className="text-sm font-bold text-slate-900">
@@ -62,18 +77,7 @@ export default async function MarketAnalysisPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <h2 className="text-sm font-bold text-slate-900">
-          Automated Video Insights
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Structured summaries generated from recent uploads by tracked
-          trading &amp; market-analysis YouTube channels.
-        </p>
-        <div className="mt-5">
-          <AutomatedVideoInsights posts={videoPosts} />
-        </div>
-      </section>
+      <MarketOverviewBoard />
 
       <MarketAnalysisFAQSection />
     </>

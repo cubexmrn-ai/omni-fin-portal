@@ -46,7 +46,7 @@ function VideoInsightCard({ post }) {
           }
         >
           {post.aiProvider === "gemini"
-            ? "AI-generated (Gemini)"
+            ? "Gemini AI Extracted"
             : post.aiProvider === "claude"
             ? "AI-generated (Claude)"
             : "Template-generated"}

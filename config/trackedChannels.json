@@ -1,30 +1,58 @@
 [
   {
-    "id": "trading-212-macro",
+    "id": "bloomberg-markets",
     "type": "channel",
-    "url": "https://www.youtube.com/@TradingView",
-    "label": "TradingView",
+    "url": "https://www.youtube.com/@BloombergMarkets",
+    "label": "Bloomberg Markets and Finance",
     "category": "market-analysis"
   },
   {
-    "id": "macro-voices",
+    "id": "kitco-news",
     "type": "channel",
-    "url": "https://www.youtube.com/@MacroVoices",
-    "label": "Macro Voices",
+    "url": "https://www.youtube.com/@KitcoNewsMARKETS",
+    "label": "Kitco News",
     "category": "market-analysis"
   },
   {
-    "id": "the-plain-bagel",
+    "id": "fxstreet",
     "type": "channel",
-    "url": "https://www.youtube.com/@ThePlainBagel",
-    "label": "The Plain Bagel",
+    "url": "https://www.youtube.com/@FXStreet",
+    "label": "FXStreet",
+    "category": "market-analysis"
+  },
+  {
+    "id": "trader-nick",
+    "type": "channel",
+    "url": "https://www.youtube.com/@TraderNick",
+    "label": "Trader Nick",
+    "category": "market-analysis"
+  },
+  {
+    "id": "coin-bureau",
+    "type": "channel",
+    "url": "https://www.youtube.com/@CoinBureau",
+    "label": "Coin Bureau",
     "category": "ai-news"
   },
   {
-    "id": "bloomberg-markets",
+    "id": "nick-bencino-finance",
     "type": "channel",
-    "url": "https://www.youtube.com/@markets",
-    "label": "Bloomberg Markets and Finance",
+    "url": "https://www.youtube.com/@NickBencinoFinance",
+    "label": "Nick Bencino Finance",
+    "category": "ai-news"
+  },
+  {
+    "id": "andrei-jikh",
+    "type": "channel",
+    "url": "https://www.youtube.com/@AndreiJikh",
+    "label": "Andrei Jikh",
+    "category": "ai-news"
+  },
+  {
+    "id": "financial-times",
+    "type": "channel",
+    "url": "https://www.youtube.com/@FinancialTimes",
+    "label": "Financial Times",
     "category": "ai-news"
   }
 ]

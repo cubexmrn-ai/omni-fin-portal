@@ -116,8 +116,43 @@ function AssetSentimentCard({ asset }) {
   );
 }
 
+function MarketBlogCard({ blog }) {
+  return (
+    <article className="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-card-hover">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-slate-900">{blog.title}</h3>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+            blog.aiProvider === "gemini"
+              ? "bg-emerald-50 text-emerald-700"
+              : blog.aiProvider === "claude"
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-slate-100 text-slate-500"
+          }`}
+          title={
+            blog.aiProvider === "gemini"
+              ? "Written live by the Gemini API from this group's computed sentiment data"
+              : blog.aiProvider === "claude"
+              ? "Written live by the Claude API from this group's computed sentiment data"
+              : "Assembled from the same computed sentiment data using fixed sentence templates, not AI-written"
+          }
+        >
+          {blog.aiProvider === "gemini"
+            ? "Gemini AI Extracted"
+            : blog.aiProvider === "claude"
+            ? "AI · Claude"
+            : "Template-generated"}
+        </span>
+      </div>
+      <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">{blog.body}</p>
+      <p className="mt-3 text-[11px] text-slate-400">{blog.wordCount} words</p>
+    </article>
+  );
+}
+
 export default function MacroSentimentEnginePanel({ snapshot }) {
   const assets = Array.isArray(snapshot?.assets) ? snapshot.assets : [];
+  const marketBlogs = Array.isArray(snapshot?.marketBlogs) ? snapshot.marketBlogs : [];
 
   if (assets.length === 0) {
     return (
@@ -132,6 +167,20 @@ export default function MacroSentimentEnginePanel({ snapshot }) {
       {snapshot?.note && (
         <p className="mb-5 text-xs text-slate-400">{snapshot.note}</p>
       )}
+
+      {marketBlogs.length > 0 && (
+        <div className="mb-8">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+            Market Blog
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {marketBlogs.map((blog) => (
+              <MarketBlogCard key={blog.id} blog={blog} />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {assets.map((asset) => (
           <AssetSentimentCard key={asset.code} asset={asset} />

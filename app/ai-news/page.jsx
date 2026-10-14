@@ -80,7 +80,13 @@ export default async function AiNewsPage() {
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <AiNewsHero />
 
-          <div className="mt-5 inline-flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div
+            className={`mt-5 inline-flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
+              data?.aiSummarization?.enabled
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-amber-200 bg-amber-50 text-amber-800"
+            }`}
+          >
             <svg
               width="16"
               height="16"
@@ -100,22 +106,39 @@ export default async function AiNewsPage() {
             </svg>
             <span>
               {data?.aiSummarization?.note ||
-                "AI-generated summaries are coming soon — this feed currently shows raw headlines only."}
+                "Headlines are live from RSS, with rule-based sentiment badges."}
             </span>
           </div>
         </div>
       </section>
 
-      {/* Three tiers, all stacked and simultaneously visible — no tabs,
-          nothing hidden behind a toggle. */}
+      {/* Four tiers, all stacked and simultaneously visible — no tabs,
+          nothing hidden behind a toggle. Order: AI Video Insights, then
+          Live Market Sentiment, then the Economic Calendar, then the
+          News RSS feed at the bottom. */}
       <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
-        {/* Tier 1: Live Market Sentiment (Gold, EUR/USD, BTC) */}
+        {/* Tier 1: AI Video Insights — structured posts generated from
+            tracked finance/trading YouTube channels. */}
+        <div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900">AI Video Insights</h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+              {videoPosts.length} videos
+            </span>
+          </div>
+
+          <div className="mt-6">
+            <AutomatedVideoInsights posts={videoPosts} />
+          </div>
+        </div>
+
+        {/* Tier 2: Live Market Sentiment (Gold, EUR/USD, BTC) */}
         <LiveSentimentIndicator ratesData={ratesData} />
 
-        {/* Tier 2: official live TradingView Economic Calendar */}
+        {/* Tier 3: official live TradingView Economic Calendar */}
         <EconomicCalendar />
 
-        {/* Tier 3: Social Buzz + the full live news feed grid with
+        {/* Tier 4: Social Buzz + the full live news feed grid with
             category filters (Forex/Crypto/Commodities/Stocks map to
             the user's Forex/Metals/Crypto/Macro framing — see
             components/NewsFeed.jsx's CATEGORY_ORDER). */}
@@ -152,21 +175,6 @@ export default async function AiNewsPage() {
             ) : (
               <NewsFeed items={items} />
             )}
-          </div>
-        </div>
-
-        {/* Tier 4: AI Video Insights — structured posts generated from
-            tracked finance/trading YouTube channels. */}
-        <div>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">AI Video Insights</h2>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-              {videoPosts.length} videos
-            </span>
-          </div>
-
-          <div className="mt-6">
-            <AutomatedVideoInsights posts={videoPosts} />
           </div>
         </div>
       </section>
