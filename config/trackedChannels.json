@@ -1,0 +1,30 @@
+[
+  {
+    "id": "trading-212-macro",
+    "type": "channel",
+    "url": "https://www.youtube.com/@TradingView",
+    "label": "TradingView",
+    "category": "market-analysis"
+  },
+  {
+    "id": "macro-voices",
+    "type": "channel",
+    "url": "https://www.youtube.com/@MacroVoices",
+    "label": "Macro Voices",
+    "category": "market-analysis"
+  },
+  {
+    "id": "the-plain-bagel",
+    "type": "channel",
+    "url": "https://www.youtube.com/@ThePlainBagel",
+    "label": "The Plain Bagel",
+    "category": "ai-news"
+  },
+  {
+    "id": "bloomberg-markets",
+    "type": "channel",
+    "url": "https://www.youtube.com/@markets",
+    "label": "Bloomberg Markets and Finance",
+    "category": "ai-news"
+  }
+]

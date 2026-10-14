@@ -86,12 +86,18 @@ function AssetSentimentCard({ asset }) {
                   : "bg-slate-100 text-slate-500"
               }`}
               title={
-                asset.usingAiThemes
+                asset.themeProvider === "gemini"
+                  ? "Generated live by the Gemini API for this asset"
+                  : asset.themeProvider === "claude"
                   ? "Generated live by the Claude API for this asset"
                   : "Rotated from a per-asset-class contextual theme pool, not literally AI-generated"
               }
             >
-              {asset.usingAiThemes ? "AI" : "Pool"}
+              {asset.themeProvider === "gemini"
+                ? "AI · Gemini"
+                : asset.themeProvider === "claude"
+                ? "AI · Claude"
+                : "Pool"}
             </span>
           </div>
           <div className="flex flex-wrap gap-1.5">
