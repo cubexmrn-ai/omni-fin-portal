@@ -53,6 +53,7 @@ import EmbeddedTool from "@/components/academy/EmbeddedTool";
 import QuizModule from "@/components/academy/QuizModule";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { getLocalizedLevel, getLocalizedLesson } from "@/lib/i18n/academyLocalized";
+import { getLocalizedLessonContent } from "@/lib/i18n/academyBodyContent";
 
 // Light-surface chip variant of each level's accent color, used on the
 // (light) lesson header and top bar — the dark-card chip variant for
@@ -383,12 +384,18 @@ export default function LessonViewer({ levelId, lessonId }) {
   const alreadyMastered = progress.isLessonCompleted(levelId, lessonId);
   const levelTitle = isLocalized ? getLocalizedLevel(language, level.id, level).title : level.title;
   const lessonTitle = isLocalized ? getLocalizedLesson(language, lesson.id, lesson).title : lesson.title;
+  // Full lesson BODY (sections + quiz text) in the active language, with
+  // a graceful per-section/per-question fallback to English wherever a
+  // translation doesn't exist yet — see lib/i18n/academyBodyContent.js.
+  // `toolId`/`diagram`/`href`/`correctOptionId` are never touched by this
+  // overlay, so embeds, calculators, and quiz scoring are unaffected.
+  const localizedLesson = isLocalized ? getLocalizedLessonContent(language, lesson) : lesson;
 
   function handleQuizFinish({ score, total }) {
     progress.recordQuizResult(levelId, lessonId, {
       score,
       total,
-      passPercent: lesson.quiz?.passPercent ?? 80,
+      passPercent: localizedLesson.quiz?.passPercent ?? 80,
     });
   }
 
@@ -457,16 +464,16 @@ export default function LessonViewer({ levelId, lessonId }) {
           </aside>
 
           <main className="space-y-6 lg:col-span-3">
-            {lesson.sections.map((section, i) => (
+            {localizedLesson.sections.map((section, i) => (
               <Section key={i} section={section} />
             ))}
 
-            {lesson.quiz && (
+            {localizedLesson.quiz && (
               <div id="module-quiz" className="pt-4">
                 <h2 className="mb-3 text-lg font-bold text-slate-900">{t("checkpointQuizHeading")}</h2>
                 <QuizModule
-                  questions={lesson.quiz.questions}
-                  passPercent={lesson.quiz.passPercent}
+                  questions={localizedLesson.quiz.questions}
+                  passPercent={localizedLesson.quiz.passPercent}
                   onFinish={handleQuizFinish}
                   onProceed={handleProceed}
                   canProceed
@@ -492,7 +499,7 @@ export default function LessonViewer({ levelId, lessonId }) {
             <span />
           )}
 
-          {lesson.quiz && (
+          {localizedLesson.quiz && (
             <a
               href="#module-quiz"
               className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-[0_0_16px_-2px_rgba(59,130,246,0.6)] hover:bg-blue-500"

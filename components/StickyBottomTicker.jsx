@@ -107,6 +107,49 @@ function useLivePrices(enabled) {
   return prices;
 }
 
+// Mirrors useLivePrices() above in shape: a single best-effort,
+// client-side fetch (no polling loop needed — the underlying snapshot
+// is itself only hourly-granular) of the standalone sentiment engine's
+// API route, picking one representative asset (whichever the response
+// lists first — Gold, per SENTIMENT_ASSET_UNIVERSE's ordering in
+// lib/sentimentEngine.js) to show as a compact label. Never throws and
+// never blocks/breaks the rest of the ticker — a slow or failing
+// request just leaves this null, same as a failed price fetch above.
+function useMacroSentimentSignal(enabled) {
+  const [signal, setSignal] = useState(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/sentiment-engine");
+        if (!res.ok) throw new Error(`sentiment-engine responded with ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        const asset = Array.isArray(data?.assets) ? data.assets[0] : null;
+        if (!asset) return;
+        const divergenceLabel =
+          asset.divergence && asset.divergence !== "aligned" ? "diverging" : "aligned";
+        setSignal(
+          `${asset.label}: Retail ${asset.retailSentiment} / Institutional ${asset.institutionalBias} (${divergenceLabel})`
+        );
+      } catch {
+        // Leave signal null — the ticker just omits this span rather
+        // than showing a stale or fabricated value.
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return signal;
+}
+
 export default function StickyBottomTicker() {
   const pathname = usePathname() || "";
   const { t } = useLanguage();
@@ -130,6 +173,7 @@ export default function StickyBottomTicker() {
   }, []);
 
   const prices = useLivePrices(active && isMarketPage && hydrated);
+  const sentimentSignal = useMacroSentimentSignal(active && isMarketPage && hydrated);
 
   if (!active || !hydrated || mode === "closed") return null;
 
@@ -180,6 +224,11 @@ export default function StickyBottomTicker() {
                     </span>
                   </span>
                 ))}
+                {sentimentSignal && (
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-slate-400">{sentimentSignal}</span>
+                  </span>
+                )}
               </div>
             )}
           </div>

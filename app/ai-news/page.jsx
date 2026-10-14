@@ -4,7 +4,9 @@ import SocialBuzzTracker from "@/components/SocialBuzzTracker";
 import EconomicCalendar from "@/components/EconomicCalendar";
 import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
+import AutomatedVideoInsights from "@/components/market-analysis/AutomatedVideoInsights";
 import { getAggregatedNews } from "@/lib/newsAggregator";
+import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
@@ -59,6 +61,17 @@ export default async function AiNewsPage() {
   }
 
   const items = data?.items || [];
+
+  // Same direct-call pattern as getAggregatedNews()/getUnifiedRates()
+  // above — no self-fetch to /api/youtube-automation. Never throws, but
+  // guarded anyway so a truly unexpected error can't take the page down.
+  let videoPosts = [];
+  try {
+    const videoData = await getYoutubeAutomationFeed();
+    videoPosts = (videoData.posts || []).filter((p) => p.category === "ai-news");
+  } catch {
+    videoPosts = [];
+  }
 
   return (
     <>
@@ -139,6 +152,21 @@ export default async function AiNewsPage() {
             ) : (
               <NewsFeed items={items} />
             )}
+          </div>
+        </div>
+
+        {/* Tier 4: AI Video Insights — structured posts generated from
+            tracked finance/trading YouTube channels. */}
+        <div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900">AI Video Insights</h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+              {videoPosts.length} videos
+            </span>
+          </div>
+
+          <div className="mt-6">
+            <AutomatedVideoInsights posts={videoPosts} />
           </div>
         </div>
       </section>
