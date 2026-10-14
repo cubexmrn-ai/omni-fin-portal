@@ -15,6 +15,16 @@ export const metadata = buildMetadata({
   path: "/market-analysis",
 });
 
+// Without this, this page (unlike app/ai-news/page.jsx, which already
+// sets this) has no revalidate/dynamic export, so Next.js statically
+// renders it once at build time and the YouTube video insights below
+// would stay frozen at whatever they were at the last deploy — the
+// scheduled cron at app/api/cron/youtube/route.js calls
+// revalidatePath("/market-analysis") to force an early refresh, but
+// this 900s (15 min) ISR window is what keeps the page updating even
+// between cron runs. Matches /ai-news's own value.
+export const revalidate = 900;
+
 export default async function MarketAnalysisPage() {
   // Calling the automation lib directly (no self-fetch to
   // /api/youtube-automation) — same architectural pattern as
