@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import TranslationDisclaimerModal from "@/components/TranslationDisclaimerModal";
 import ComplianceDisclaimerModal from "@/components/ComplianceDisclaimerModal";
 import StickyBottomTicker from "@/components/StickyBottomTicker";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
 
@@ -161,6 +162,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-slate-50">
+        {/* Mounted once, globally, outside every provider below — GA4
+            tracking has no dependency on language/currency context and
+            should load the same way regardless of what's inside this
+            body. See components/GoogleAnalytics.jsx for what it does
+            and why (it's a safe no-op if NEXT_PUBLIC_GA_MEASUREMENT_ID
+            isn't configured in this environment). */}
+        <GoogleAnalytics />
         <LanguageProvider>
           <BaseCurrencyProvider>
             <TranslationDisclaimerModal />
