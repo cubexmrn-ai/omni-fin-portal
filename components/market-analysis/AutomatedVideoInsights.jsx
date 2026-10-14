@@ -8,8 +8,12 @@
 //
 // Each card is honest about its provenance: a small badge reads
 // "AI-generated" only when `usingAi` is true, "Template-generated"
-// otherwise, and a separate "Mock video" badge appears whenever
-// `isMock` is true — never presenting placeholder content as real.
+// otherwise, a separate "Mock video" badge appears whenever `isMock`
+// is true, and a "Real transcript" / "Metadata only" badge reflects
+// `extractionSource` — whether the content behind this post came from
+// the video's actual caption track or just its title/description —
+// never presenting placeholder or metadata-only content as a real
+// transcript read.
 
 function timeAgo(isoDate) {
   if (!isoDate) return "";
@@ -57,6 +61,22 @@ function VideoInsightCard({ post }) {
             title="No live YouTube Data API key is configured — this is a deterministic sample video, not a real upload"
           >
             Mock video
+          </span>
+        )}
+        {!post.isMock && post.extractionSource && (
+          <span
+            className={`rounded-full px-2 py-0.5 font-semibold ${
+              post.extractionSource === "transcript"
+                ? "bg-sky-50 text-sky-700"
+                : "bg-slate-100 text-slate-500"
+            }`}
+            title={
+              post.extractionSource === "transcript"
+                ? "This post was built from the video's real caption track (fetched via YouTube's public captions endpoint), not just its title/description"
+                : "No caption track was available for this video — this post was inferred from its title/description only"
+            }
+          >
+            {post.extractionSource === "transcript" ? "Real transcript" : "Metadata only"}
           </span>
         )}
       </div>
