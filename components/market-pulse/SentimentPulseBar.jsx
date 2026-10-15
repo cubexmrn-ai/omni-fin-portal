@@ -31,7 +31,7 @@
 // differs, so nothing about the underlying numbers or the filter
 // behavior forks between the two pages.
 
-import { bandFor, bullishPctFor, directionWordFor, greedFearWordFor } from "@/lib/marketPulse";
+import { bandFor, bullishPctFor, directionWordFor, greedFearWordFor, formatFetchedAt } from "@/lib/marketPulse";
 import SentimentMeter from "@/components/SentimentMeter";
 import SentimentGaugeDial from "@/components/market-pulse/SentimentGaugeDial";
 
@@ -62,6 +62,11 @@ function InstrumentPills({ pulses, activeInstrument, onSelectInstrument }) {
             type="button"
             onClick={() => onSelectInstrument?.(active ? null : pulse.code)}
             aria-pressed={active}
+            title={
+              pulse.live
+                ? undefined
+                : `${SHORT_LABEL[pulse.code] || pulse.label} has no live price provider in this deployment yet — this score is computed from a static reference price, not a live feed.`
+            }
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
               active
                 ? "bg-white text-slate-900 ring-2 ring-brand-400 ring-offset-2 ring-offset-ink"
@@ -72,9 +77,39 @@ function InstrumentPills({ pulses, activeInstrument, onSelectInstrument }) {
             <span className={active ? "font-mono text-slate-700" : `font-mono ${toneClass(pulse.score)}`}>
               {bandFor(pulse.score).label}
             </span>
+            {/* AUDIT FIX: a quiet marker (no layout-shifting badge) on any
+                pill whose price isn't actually live right now — today
+                that's only Crude Oil/WTI, which has no live provider in
+                this deployment (see lib/marketData.js). Hover/tap for why. */}
+            {!pulse.live && (
+              <span
+                aria-hidden="true"
+                className={`h-1.5 w-1.5 rounded-full ${active ? "bg-amber-500" : "bg-amber-400/80"}`}
+              />
+            )}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** AUDIT FIX: shown instead of returning null when the rates payload
+ * couldn't resolve a price for ANY of the pulse instruments (every
+ * other section of these pages already has a stated empty state —
+ * this banner previously just vanished with no explanation). In
+ * practice getUnifiedRates() almost always resolves at least a
+ * fallback price for everything, so this is a rare, defensive state,
+ * not something visitors will normally see. */
+function SentimentPulseBarFallback({ sticky }) {
+  return (
+    <div className={sticky ? "sticky top-16 z-30" : undefined}>
+      <div className="rounded-2xl border border-white/10 bg-ink px-5 py-6 text-center text-white shadow-card sm:px-8">
+        <p className="text-sm font-semibold text-slate-200">Sentiment data initializing…</p>
+        <p className="mt-1 text-xs text-slate-400">
+          Live prices are temporarily unavailable — this refreshes automatically once they&apos;re back.
+        </p>
+      </div>
     </div>
   );
 }
@@ -86,9 +121,18 @@ export default function SentimentPulseBar({
   sticky = true,
   gaugeStyle = false,
 }) {
-  if (!composite) return null;
+  if (!composite) return <SentimentPulseBarFallback sticky={sticky} />;
 
-  const { compositeScore, bullishPct, directionWord, greedFearWord, pulses } = composite;
+  const { compositeScore, bullishPct, directionWord, greedFearWord, pulses, liveCount, totalCount, fetchedAt } =
+    composite;
+  // Only worth a visible note when it's NOT all-live — stays silent in
+  // the common case so it never becomes noise on a page where
+  // everything really is live right now.
+  const liveCoverageNote =
+    Number.isFinite(liveCount) && Number.isFinite(totalCount) && liveCount < totalCount
+      ? `${liveCount} of ${totalCount} live feeds active`
+      : null;
+  const freshnessLabel = formatFetchedAt(fetchedAt);
 
   if (gaugeStyle) {
     // When a pill is selected, the dial switches from the composite
@@ -135,6 +179,13 @@ export default function SentimentPulseBar({
                   onSelectInstrument={onSelectInstrument}
                 />
               </div>
+              {(freshnessLabel || liveCoverageNote) && (
+                <p className="mt-3 text-[11px] text-slate-500">
+                  {freshnessLabel && <span>As of {freshnessLabel}</span>}
+                  {freshnessLabel && liveCoverageNote && <span className="mx-1.5">·</span>}
+                  {liveCoverageNote}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -191,6 +242,14 @@ export default function SentimentPulseBar({
         <div className="mt-4 dark">
           <SentimentMeter score={displayScore} showLabels={false} />
         </div>
+
+        {(freshnessLabel || liveCoverageNote) && (
+          <p className="mt-2.5 text-[11px] text-slate-500">
+            {freshnessLabel && <span>As of {freshnessLabel}</span>}
+            {freshnessLabel && liveCoverageNote && <span className="mx-1.5">·</span>}
+            {liveCoverageNote}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -49,7 +49,7 @@
 // pulse bar).
 
 import { getEconomicHeatmapSnapshot } from "@/lib/economicHeatmap";
-import { getInstrumentPulses } from "@/lib/marketPulse";
+import { getInstrumentPulses, formatFetchedAt } from "@/lib/marketPulse";
 import { computeUsdStrengthScore } from "@/lib/technicalAnalysis";
 import SentimentGaugeDial from "@/components/market-pulse/SentimentGaugeDial";
 
@@ -225,6 +225,13 @@ export default function EconomicHeatmapDashboard({ ratesData }) {
   });
   fxRows.push({ code: "USDCHF", displayLabel: "USDCHF", score: null });
 
+  // AUDIT FIX: the heatmap table above already carries its own daily
+  // "Illustrative" asOf tag — a different concept (a once-a-day
+  // simulated bucket). This is the real rates payload's own fetch
+  // timestamp, covering everything below that's actually live
+  // (both dials, both ranking tables).
+  const freshnessLabel = formatFetchedAt(ratesData?.fetchedAt);
+
   return (
     <div className="space-y-5">
       <EconomicHeatmapTable rows={heatmap.rows} asOf={heatmap.asOf} />
@@ -240,6 +247,12 @@ export default function EconomicHeatmapDashboard({ ratesData }) {
           <ImpactDial label="Commodities & Gold Impact" score={commoditiesImpactScore} />
         </div>
       </div>
+
+      {freshnessLabel && (
+        <p className="text-right text-[11px] text-slate-500">
+          Live data (dials & rankings) as of {freshnessLabel}
+        </p>
+      )}
     </div>
   );
 }

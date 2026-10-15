@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { INSTRUMENT_OPTIONS, ANALYSIS_TYPES } from "@/lib/technicalAnalysis";
 import SentimentMeter from "@/components/SentimentMeter";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
@@ -83,8 +83,24 @@ export default function AiTechnicalAnalysis() {
   const [symbol, setSymbol] = useState(INSTRUMENT_OPTIONS[0].code);
   const [analysisType, setAnalysisType] = useState(ANALYSIS_TYPES[0].key);
   const [result, setResult] = useState(null);
-  const [status, setStatus] = useState("idle"); // idle | loading | ready | error
+  // AUDIT FIX: this used to start "idle" (an empty dashed placeholder
+  // box) until a visitor manually hit "Run Analysis" — the single
+  // richest tool on /market-analysis showed nothing on first paint.
+  // Starting at "loading" (rather than "idle") plus the mount effect
+  // below means the very first paint already shows the "Analyzing…"
+  // state instead of a flash of the empty box, and a real, live report
+  // (Gold, Full Report) lands moments later with no click needed.
+  // Picking a different instrument/type afterward still requires the
+  // explicit "Run Analysis" click, same as before.
+  const [status, setStatus] = useState("loading"); // idle | loading | ready | error
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Empty deps: a one-time mount effect, not meant to re-run on every
+  // symbol/analysisType change (that's what the button is for).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    runAnalysis();
+  }, []);
 
   async function runAnalysis() {
     setStatus("loading");

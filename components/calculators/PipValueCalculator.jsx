@@ -101,6 +101,12 @@ export default function PipValueCalculator() {
   const [pipSize, setPipSize] = useState(getDefaultPipSize("forex"));
   const [rates, setRates] = useState(FALLBACK_RATES);
   const [rateStatus, setRateStatus] = useState("loading"); // loading | live | fallback | error
+  // AUDIT FIX: GoldCalculator.jsx and CurrencyConverter.jsx both already
+  // show a "fetched at HH:MM" timestamp next to their live-rate status
+  // dot; this calculator had the same status dot but no timestamp, so
+  // its first frame (FALLBACK_RATES) and a genuinely live frame looked
+  // identical except for the dot's color. Matches the same pattern now.
+  const [fetchedAt, setFetchedAt] = useState(null);
 
   const pair = getTradablePair(pairId) || TRADABLE_PAIRS[0];
   const contractSizes = CONTRACT_SIZES[pair.instrumentType] || CONTRACT_SIZES.forex;
@@ -112,9 +118,11 @@ export default function PipValueCalculator() {
       const data = await fetchRates({ noStore: true });
       if (!data || !data.fiat) throw new Error("Malformed rates payload");
       setRates({ ...FALLBACK_RATES, ...data.fiat });
+      setFetchedAt(data.fetchedAt || new Date().toISOString());
       setRateStatus(data.warnings?.length ? "fallback" : "live");
     } catch {
       setRates(FALLBACK_RATES);
+      setFetchedAt(new Date().toISOString());
       setRateStatus("error");
     }
   }, []);
@@ -153,10 +161,17 @@ export default function PipValueCalculator() {
           <h3 className="text-sm font-bold text-slate-900">Pip Value Calculator</h3>
           <p className="mt-0.5 text-xs text-slate-500">Pip Size × Contract Size, converted live to USD/PKR</p>
         </div>
-        <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-500">
-          <span className={`h-1.5 w-1.5 rounded-full ${statusCopy.dot}`} />
-          {statusCopy.text}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-500">
+            <span className={`h-1.5 w-1.5 rounded-full ${statusCopy.dot}`} />
+            {statusCopy.text}
+          </span>
+          {fetchedAt && (
+            <span className="text-[10px] text-slate-400" title={fetchedAt}>
+              {new Date(fetchedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
