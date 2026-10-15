@@ -32,11 +32,23 @@
 // parseRssItems()/getAggregatedNews() — the TODO comment there marks
 // the spot; the RSS fetch/parse/caching plumbing does not need to change.
 
-import { getAggregatedNews, NEWS_REVALIDATE_SECONDS } from "@/lib/newsAggregator";
+import { NEWS_REVALIDATE_SECONDS } from "@/lib/newsAggregator";
+import { getCachedAggregatedNews } from "@/lib/cachedData";
+
+// `force-dynamic` stops Next.js from attempting to statically
+// prerender this route at build time — same build-time static
+// generation that started timing out elsewhere once a real paid
+// GEMINI_API_KEY made per-headline AI summarization actually run (see
+// app/api/sentiment-engine/route.js's comment for the fuller
+// explanation). Calling the cached wrapper (lib/cachedData.js) means a
+// direct hit on this route shares the same cached result the pages
+// use, instead of re-summarizing every headline on every request.
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET() {
   try {
-    const responseBody = await getAggregatedNews();
+    const responseBody = await getCachedAggregatedNews();
 
     return Response.json(responseBody, {
       status: 200,

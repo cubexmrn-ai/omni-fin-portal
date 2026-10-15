@@ -4,8 +4,7 @@ import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysi
 import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
 import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
 import MacroSentimentEnginePanel from "@/components/market-analysis/MacroSentimentEnginePanel";
-import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
-import { getSentimentEngineSnapshot } from "@/lib/sentimentEngine";
+import { getCachedYoutubeAutomationFeed, getCachedSentimentEngineSnapshot } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
@@ -16,24 +15,38 @@ export const metadata = buildMetadata({
   path: "/market-analysis",
 });
 
-// Without this, this page (unlike app/ai-news/page.jsx, which already
-// sets this) has no revalidate/dynamic export, so Next.js statically
-// renders it once at build time and the YouTube video insights below
-// would stay frozen at whatever they were at the last deploy — the
-// scheduled cron at app/api/cron/youtube/route.js calls
-// revalidatePath("/market-analysis") to force an early refresh, but
-// this 900s (15 min) ISR window is what keeps the page updating even
-// between cron runs. Matches /ai-news's own value.
-export const revalidate = 900;
+// This page used to be `export const revalidate = 900` (ISR): Next.js
+// tried to statically render it once at build time, then refresh in
+// the background every 15 minutes. That build-time prerender is
+// exactly what started timing out ("Static page generation for
+// /market-analysis ... took more than 60 seconds") once a real paid
+// GEMINI_API_KEY made getYoutubeAutomationFeed()/
+// getSentimentEngineSnapshot() actually perform their full sequential
+// AI calls instead of short-circuiting to instant templated fallbacks.
+//
+// `force-dynamic` makes Next render this page fresh on every request
+// instead of attempting that build-time prerender at all — no more
+// build timeout. The 15-minute "refreshes periodically, not on every
+// single visitor" behavior ISR gave this page is preserved a layer
+// deeper instead: both AI functions are called through
+// lib/cachedData.js's unstable_cache()-wrapped versions, which cache
+// their real result in Next's Data Cache for the same 900s window,
+// populated lazily on first request rather than blocking `next build`.
+// `maxDuration` gives a cold (cache-miss) request more time than the
+// platform default to finish that first real AI pipeline run — raise
+// this further if a cold request still times out on your Vercel plan.
+export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export default async function MarketAnalysisPage() {
-  // Calling the automation lib directly (no self-fetch to
-  // /api/youtube-automation) — same architectural pattern as
-  // lib/newsAggregator.js / app/ai-news/page.jsx. Never throws, but
-  // guarded anyway so a truly unexpected error can't take the page down.
+  // Calling the automation lib through lib/cachedData.js's cached
+  // wrapper (not lib/youtubeAutomation.js directly, and no self-fetch
+  // to /api/youtube-automation either) — see that file's header for
+  // why. Never throws, but guarded anyway so a truly unexpected error
+  // can't take the page down.
   let videoPosts = [];
   try {
-    const videoData = await getYoutubeAutomationFeed();
+    const videoData = await getCachedYoutubeAutomationFeed();
     videoPosts = (videoData.posts || []).filter(
       (p) => p.category === "market-analysis"
     );
@@ -41,14 +54,13 @@ export default async function MarketAnalysisPage() {
     videoPosts = [];
   }
 
-  // Calling the sentiment engine lib directly (no self-fetch to
-  // /api/sentiment-engine) — same architectural pattern as
-  // getYoutubeAutomationFeed() above and lib/newsAggregator.js. Never
-  // throws, but guarded anyway so a truly unexpected error can't take
-  // the page down.
+  // Calling the sentiment engine through lib/cachedData.js's cached
+  // wrapper — same reasoning as getCachedYoutubeAutomationFeed() above.
+  // Never throws, but guarded anyway so a truly unexpected error can't
+  // take the page down.
   let sentimentSnapshot = { assets: [], note: "" };
   try {
-    sentimentSnapshot = await getSentimentEngineSnapshot();
+    sentimentSnapshot = await getCachedSentimentEngineSnapshot();
   } catch {
     sentimentSnapshot = { assets: [], note: "" };
   }

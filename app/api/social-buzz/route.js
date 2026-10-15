@@ -13,6 +13,13 @@
 
 import { getSocialBuzz } from "@/lib/socialBuzz";
 
+// Explicit for consistency with every other route in app/api after
+// /api/sentiment-engine's build-time timeout — getSocialBuzz() itself
+// is pure, synchronous, no-I/O math (see the header comment above), so
+// this route was never actually at risk, but declaring it removes any
+// doubt rather than relying on that.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const body = getSocialBuzz();

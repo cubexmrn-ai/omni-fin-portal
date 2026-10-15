@@ -28,10 +28,22 @@
 //      pages call during SSR) — this both exercises/validates the
 //      YOUTUBE_API_KEY + GEMINI_API_KEY-driven pipeline end-to-end and
 //      warms Next.js's fetch cache for those same requests.
-//   3. Calls revalidatePath() for /market-analysis and /ai-news so
-//      Next.js throws away their current cached render and rebuilds
-//      them (picking up new videos/articles) the next time anyone
-//      visits — without needing a full redeploy.
+//   3. Calls revalidateTag("youtube-automation") so the cached result
+//      behind lib/cachedData.js's getCachedYoutubeAutomationFeed() —
+//      what /market-analysis, /ai-news and app/api/youtube-automation/
+//      route.js all actually read from, since those became
+//      `force-dynamic` pages/routes rather than page-level ISR (see
+//      app/market-analysis/page.jsx's comment for why) — is thrown
+//      away, so the next visitor gets this run's fresh videos/articles
+//      instead of waiting out the cache's own ~15-minute window.
+//      revalidatePath() for /market-analysis and /ai-news is also kept
+//      below as a harmless no-op safety net in case either page is
+//      ever reverted to page-level ISR.
+//
+// DELIBERATELY NOT using lib/cachedData.js's cached wrapper for its own
+// getYoutubeAutomationFeed() call below — this route's whole purpose is
+// to force a REAL fresh ingestion run on a schedule, which is exactly
+// what the cached wrapper exists to avoid everywhere else.
 //
 // HONESTY NOTE: there is no database/KV layer in this project (see
 // lib/youtubeAutomation.js's own header comment) — "articles" are not
@@ -42,10 +54,11 @@
 // store, because none exists.
 
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 function isAuthorized(request) {
   const expected = process.env.CRON_SECRET;
@@ -68,9 +81,14 @@ export async function GET(request) {
   try {
     const feed = await getYoutubeAutomationFeed();
 
-    // Force /market-analysis and /ai-news to regenerate on next visit
-    // with whatever getYoutubeAutomationFeed() just returned, instead
-    // of waiting out their own `revalidate` window.
+    // Invalidate the Data Cache entry /market-analysis, /ai-news and
+    // app/api/youtube-automation/route.js actually read from (see the
+    // file header above) so the next visitor gets THIS run's fresh
+    // videos/articles instead of waiting out the cache's own window.
+    revalidateTag("youtube-automation");
+    // Harmless no-op safety net for either page's HTML-level cache —
+    // both are `force-dynamic` now, so there's nothing for this to
+    // invalidate in practice, but it costs nothing to keep.
     revalidatePath("/market-analysis");
     revalidatePath("/ai-news");
 

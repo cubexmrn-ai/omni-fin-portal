@@ -10,13 +10,23 @@
 // NewsStructuredData.jsx — so the feed is never a separate, divergent
 // source of truth from what's on the page.
 //
-// revalidate matches the aggregator's own cache window so this doesn't
-// hit the upstream feeds any more often than the page itself does.
+// Used to be `export const revalidate = 900` (ISR) to match the
+// aggregator's own cache window without hitting the upstream feeds any
+// more often than the page itself does — but that's exactly the
+// page-level static generation that started timing out at build time
+// elsewhere once a real paid GEMINI_API_KEY made getAggregatedNews()'s
+// headline summarization actually run (see
+// app/api/sentiment-engine/route.js's comment for the fuller
+// explanation). `force-dynamic` skips that build-time prerender; the
+// cached wrapper (lib/cachedData.js) preserves the same ~15-minute
+// refresh cadence a layer deeper, shared with /ai-news and
+// /api/news-ai rather than a separate cache of its own.
 
-import { getAggregatedNews } from "@/lib/newsAggregator";
+import { getCachedAggregatedNews } from "@/lib/cachedData";
 import { getSiteUrl } from "@/lib/siteUrl";
 
-export const revalidate = 900;
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function escapeXml(str) {
   return String(str || "")
@@ -43,7 +53,7 @@ export async function GET() {
 
   let items = [];
   try {
-    const news = await getAggregatedNews();
+    const news = await getCachedAggregatedNews();
     items = news.items || [];
   } catch {
     items = [];

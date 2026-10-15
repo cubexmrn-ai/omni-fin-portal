@@ -58,6 +58,11 @@ async function generateAiAnalysis() {
   throw new Error("AI analysis not implemented yet");
 }
 
+// Already dynamic in practice (reads request.url's searchParams below),
+// but declared explicitly for consistency with every other route in
+// app/api after /api/sentiment-engine's build-time timeout.
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);

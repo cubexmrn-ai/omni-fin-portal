@@ -4,8 +4,7 @@ import EconomicCalendar from "@/components/EconomicCalendar";
 import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
 import MarketInsightsExplorer from "@/components/ai-news/MarketInsightsExplorer";
-import { getAggregatedNews } from "@/lib/newsAggregator";
-import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
+import { getCachedAggregatedNews, getCachedYoutubeAutomationFeed } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
@@ -29,21 +28,36 @@ export const metadata = {
   },
 };
 
-export const revalidate = 900; // Align with /api/news-ai's ISR cache.
+// This page used to be `export const revalidate = 900` (ISR): Next.js
+// tried to statically render it once at build time, then refresh in
+// the background every 15 minutes. That build-time prerender is what
+// started timing out once a real paid GEMINI_API_KEY made
+// getYoutubeAutomationFeed()/getAggregatedNews()'s headline
+// summarization actually perform their full AI calls instead of
+// short-circuiting to instant fallbacks — same root cause as
+// /market-analysis (see that page's own comment for the full
+// explanation). `force-dynamic` skips that build-time prerender
+// entirely; the 15-minute refresh cadence is preserved a layer deeper
+// via lib/cachedData.js's unstable_cache()-wrapped versions of both
+// functions instead of the page-level `revalidate`.
+export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export default async function AiNewsPage() {
   let data = null;
   let loadError = null;
 
   try {
-    // Calling the aggregator directly (not via an HTTP self-fetch to
-    // /api/news-ai) — see the top of lib/newsAggregator.js for why that
-    // self-fetch was the actual cause of this page's "DOCTYPE is not
-    // valid JSON" error in production. getAggregatedNews() is also
-    // designed to never throw (per-feed try/catch + a static mock
-    // fallback if every feed fails), so loadError below should now only
-    // ever fire on a truly unexpected bug, not a network/feed issue.
-    data = await getAggregatedNews();
+    // Calling the aggregator through lib/cachedData.js's cached
+    // wrapper (not lib/newsAggregator.js directly, and no HTTP
+    // self-fetch to /api/news-ai either — see the top of
+    // lib/newsAggregator.js for why that self-fetch was the actual
+    // cause of this page's "DOCTYPE is not valid JSON" error in
+    // production). getAggregatedNews() is also designed to never throw
+    // (per-feed try/catch + a static mock fallback if every feed
+    // fails), so loadError below should now only ever fire on a truly
+    // unexpected bug, not a network/feed issue.
+    data = await getCachedAggregatedNews();
   } catch (err) {
     loadError = err.message;
   }
@@ -61,12 +75,12 @@ export default async function AiNewsPage() {
 
   const items = data?.items || [];
 
-  // Same direct-call pattern as getAggregatedNews()/getUnifiedRates()
-  // above — no self-fetch to /api/youtube-automation. Never throws, but
+  // Same cached-wrapper pattern as getCachedAggregatedNews() above —
+  // no self-fetch to /api/youtube-automation. Never throws, but
   // guarded anyway so a truly unexpected error can't take the page down.
   let videoPosts = [];
   try {
-    const videoData = await getYoutubeAutomationFeed();
+    const videoData = await getCachedYoutubeAutomationFeed();
     videoPosts = (videoData.posts || []).filter((p) => p.category === "ai-news");
   } catch {
     videoPosts = [];

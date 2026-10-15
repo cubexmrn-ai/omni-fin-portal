@@ -16,14 +16,27 @@
 // guarded, with mock/templated fallbacks), but this guarantees the route
 // ALWAYS returns valid JSON, never Next.js's default HTML error page.
 
-import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
+import { getCachedYoutubeAutomationFeed } from "@/lib/cachedData";
+
+// `force-dynamic` stops Next.js from attempting to statically
+// prerender this route at build time — same build-time static
+// generation that started timing out elsewhere once a real paid
+// GEMINI_API_KEY made getYoutubeAutomationFeed()'s AI extraction
+// actually run (see app/api/sentiment-engine/route.js's comment for
+// the fuller explanation). Calling the cached wrapper
+// (lib/cachedData.js) means a direct hit on this route shares the same
+// cached result the pages use, instead of re-running the whole
+// ingestion pipeline on every request — `category` filtering below
+// still happens per-request, after the (possibly cached) fetch.
+export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
 
-    const data = await getYoutubeAutomationFeed();
+    const data = await getCachedYoutubeAutomationFeed();
 
     if (category) {
       return Response.json(

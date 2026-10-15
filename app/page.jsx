@@ -10,10 +10,24 @@ import {
 } from "@/components/HomeSections";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { getUnifiedRates } from "@/lib/marketData";
-import { getSentimentEngineSnapshot } from "@/lib/sentimentEngine";
+import { getCachedSentimentEngineSnapshot } from "@/lib/cachedData";
 import { getCompositeSentiment, getVolatilityWatch } from "@/lib/marketPulse";
 
-export const revalidate = 3600; // Align page-level ISR with the unified rates API cache.
+// This page used to be `export const revalidate = 3600` (ISR), which
+// made Next.js try to statically prerender it at build time — the same
+// build-time static generation that started timing out on
+// /market-analysis and /api/sentiment-engine once a real paid
+// GEMINI_API_KEY made getSentimentEngineSnapshot() actually run its
+// full sequential per-asset AI calls instead of short-circuiting to an
+// instant fallback (see app/market-analysis/page.jsx's comment for the
+// full explanation — this page calls the exact same function for its
+// hero's "AI Market Pulse" cards). `force-dynamic` skips that
+// build-time prerender; the hourly refresh cadence is preserved a
+// layer deeper via lib/cachedData.js's unstable_cache()-wrapped
+// version of getSentimentEngineSnapshot (getUnifiedRates below keeps
+// its own existing fetch-level cache either way).
+export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 // Every link target referenced by the 3 ecosystem sections below, in
 // page order — kept as one flat list purely so the JSON-LD ItemList
@@ -101,7 +115,7 @@ export default async function HomePage() {
 
   let sentimentSnapshot = { assets: [] };
   try {
-    sentimentSnapshot = await getSentimentEngineSnapshot();
+    sentimentSnapshot = await getCachedSentimentEngineSnapshot();
   } catch {
     sentimentSnapshot = { assets: [] };
   }

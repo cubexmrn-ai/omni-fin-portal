@@ -16,6 +16,14 @@
 
 import { getUnifiedRates, RATES_REVALIDATE_SECONDS } from "@/lib/marketData";
 
+// Explicit for consistency with every other route in app/api now that
+// /api/sentiment-engine's build-time static-generation timeout showed
+// what an un-declared, no-params GET route risks — this one's own
+// getUnifiedRates() fetches are already Next fetch-cached
+// (RATES_REVALIDATE_SECONDS), so it was never actually at risk, but
+// declaring it removes any doubt rather than relying on that.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const responseBody = await getUnifiedRates();
 
