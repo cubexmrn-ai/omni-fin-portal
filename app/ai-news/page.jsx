@@ -1,10 +1,10 @@
-import NewsFeed from "@/components/NewsFeed";
 import NewsStructuredData from "@/components/NewsStructuredData";
 import SocialBuzzTracker from "@/components/SocialBuzzTracker";
 import EconomicCalendar from "@/components/EconomicCalendar";
 import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
-import AutomatedVideoInsights from "@/components/market-analysis/AutomatedVideoInsights";
+import SentimentPulseBar from "@/components/ai-news/SentimentPulseBar";
+import MarketInsightsExplorer from "@/components/ai-news/MarketInsightsExplorer";
 import { getAggregatedNews } from "@/lib/newsAggregator";
 import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
 import { getUnifiedRates } from "@/lib/marketData";
@@ -80,6 +80,10 @@ export default async function AiNewsPage() {
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <AiNewsHero />
 
+          <div className="mt-6">
+            <SentimentPulseBar ratesData={ratesData} />
+          </div>
+
           <div
             className={`mt-5 inline-flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
               data?.aiSummarization?.enabled
@@ -112,71 +116,27 @@ export default async function AiNewsPage() {
         </div>
       </section>
 
-      {/* Four tiers, all stacked and simultaneously visible — no tabs,
-          nothing hidden behind a toggle. Order: AI Video Insights, then
-          Live Market Sentiment, then the Economic Calendar, then the
-          News RSS feed at the bottom. */}
+      {/* Tiers, all stacked and simultaneously visible — no tabs at the
+          page level, nothing hidden behind a toggle. Order: the unified
+          category explorer (AI Video Insights + Live News Feed, one
+          shared All/Forex/Crypto/Metals & Commodities/Macro tab row),
+          then Live Market Sentiment, then the Economic Calendar. */}
       <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
-        {/* Tier 1: AI Video Insights — structured posts generated from
-            tracked finance/trading YouTube channels. */}
         <div>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">AI Video Insights</h2>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-              {videoPosts.length} videos
-            </span>
-          </div>
-
+          <SocialBuzzTracker />
           <div className="mt-6">
-            <AutomatedVideoInsights posts={videoPosts} />
+            <MarketInsightsExplorer
+              videoPosts={videoPosts}
+              newsItems={items}
+              loadError={loadError}
+              warnings={data?.warnings}
+            />
           </div>
         </div>
 
-        {/* Tier 2: Live Market Sentiment (Gold, EUR/USD, BTC) */}
         <LiveSentimentIndicator ratesData={ratesData} />
 
-        {/* Tier 3: official live TradingView Economic Calendar */}
         <EconomicCalendar />
-
-        {/* Tier 4: Social Buzz + the full live news feed grid with
-            category filters (Forex/Crypto/Commodities/Stocks map to
-            the user's Forex/Metals/Crypto/Macro framing — see
-            components/NewsFeed.jsx's CATEGORY_ORDER). */}
-        <div>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900">Live News Feed</h2>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-              {items.length} headlines
-            </span>
-          </div>
-
-          <div className="mt-3">
-            <SocialBuzzTracker />
-          </div>
-
-          <div className="mt-6">
-            {loadError && (
-              <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                Couldn&apos;t load the news feed right now ({loadError}). Please
-                try again shortly.
-              </div>
-            )}
-
-            {data?.warnings?.length > 0 && (
-              <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                Some sources were unavailable: {data.warnings.join(" · ")}
-              </div>
-            )}
-
-            {!loadError && items.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                No headlines available right now — please check back shortly.
-              </p>
-            ) : (
-              <NewsFeed items={items} />
-            )}
-          </div>
-        </div>
       </section>
     </>
   );

@@ -157,8 +157,16 @@ function NewsCard({ item }) {
  * already small (≤60 items, see MAX_ITEMS in app/api/news-ai/route.js)
  * and ISR-cached, so there's nothing to gain from a server round trip
  * per keystroke/category click, and the UI feels instant either way.
+ *
+ * `showCategoryTabs` (default true) hides this component's own
+ * Stocks/Forex/Crypto/Commodities tab row and category filtering when
+ * a parent already provides a broader category filter — see
+ * components/ai-news/MarketInsightsExplorer.jsx, which pre-filters
+ * `items` by its own All/Forex/Crypto/Metals & Commodities/Macro tabs
+ * on /ai-news so there's only ever one set of category tabs on screen.
+ * The search box still works either way.
  */
-export default function NewsFeed({ items }) {
+export default function NewsFeed({ items, showCategoryTabs = true }) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
@@ -172,43 +180,45 @@ export default function NewsFeed({ items }) {
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return items.filter((item) => {
-      if (activeCategory !== "All" && item.category !== activeCategory) {
+      if (showCategoryTabs && activeCategory !== "All" && item.category !== activeCategory) {
         return false;
       }
       if (!normalizedQuery) return true;
       const haystack = `${item.title} ${item.excerpt || ""} ${item.source || ""}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [items, query, activeCategory]);
+  }, [items, query, activeCategory, showCategoryTabs]);
 
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div
-          className="flex flex-wrap gap-2"
-          role="tablist"
-          aria-label="Filter news by category"
-        >
-          {categories.map((category) => {
-            const active = category === activeCategory;
-            return (
-              <button
-                key={category}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setActiveCategory(category)}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-                  active
-                    ? "bg-brand-600 text-white shadow-sm"
-                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {category}
-              </button>
-            );
-          })}
-        </div>
+        {showCategoryTabs && (
+          <div
+            className="flex flex-wrap gap-2"
+            role="tablist"
+            aria-label="Filter news by category"
+          >
+            {categories.map((category) => {
+              const active = category === activeCategory;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveCategory(category)}
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                    active
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="relative w-full sm:w-64">
           <svg
@@ -241,7 +251,7 @@ export default function NewsFeed({ items }) {
 
       <p className="mt-3 text-xs text-slate-400">
         Showing {filtered.length} of {items.length} headlines
-        {activeCategory !== "All" ? ` in ${activeCategory}` : ""}
+        {showCategoryTabs && activeCategory !== "All" ? ` in ${activeCategory}` : ""}
         {query.trim() ? ` matching "${query.trim()}"` : ""}.
       </p>
 
