@@ -161,6 +161,22 @@ function SiteFooter() {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* JetBrains Mono — reserved exclusively for live numeric data
+            (prices, scores, percentages, timestamps) in the terminal-
+            style modules on /market-analysis, /ai-news and the homepage
+            hero (see tailwind.config.js's `mono` font family / the
+            `--font-mono` variable in globals.css). Everything else on
+            the site keeps using Inter (`--font-sans`) — this is a
+            single, deliberate typographic device, not a site-wide font
+            change. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        />
+      </head>
       <body className="flex min-h-screen flex-col bg-slate-50">
         {/* Mounted once, globally, outside every provider below — GA4
             tracking has no dependency on language/currency context and

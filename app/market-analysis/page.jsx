@@ -61,13 +61,12 @@ export default async function MarketAnalysisPage() {
           Engine (this page's "Live Market Sentiment" equivalent), then
           the live charts/overview board, then the FAQ. */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <h2 className="text-sm font-bold text-slate-900">
-          AI Video Insights
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Structured summaries generated from recent uploads by tracked
-          trading &amp; market-analysis YouTube channels.
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-900">AI Video Insights</h2>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+            {videoPosts.length} videos
+          </span>
+        </div>
         <div className="mt-5">
           <AutomatedVideoInsights posts={videoPosts} />
         </div>

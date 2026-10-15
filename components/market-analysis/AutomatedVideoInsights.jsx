@@ -1,19 +1,61 @@
+"use client";
+
 // components/market-analysis/AutomatedVideoInsights.jsx
 //
-// Server component rendering a card grid of generated video-insight
-// posts (see lib/youtubeAutomation.js's getYoutubeAutomationFeed()).
-// Visual style matches the rest of the project's card UI (rounded-lg
-// borders, slate palette, text-sm body copy) — see
-// components/NewsFeed.jsx / components/MarketOverviewBoard.jsx.
+// Compact card grid of generated video-insight posts (see
+// lib/youtubeAutomation.js's getYoutubeAutomationFeed()). Redesigned
+// from a text-wall card (paragraph summary + bullet list + up to 4
+// provenance badges, always visible) into a scannable tile: channel +
+// time, a 2-line title, and 2-3 derived signal pills — clicking the
+// tile opens VideoInsightDrawer with the full breakdown, embedded
+// player, and the honest provenance disclosure that used to live on
+// the card itself.
 //
-// Each card is honest about its provenance: a small badge reads
-// "AI-generated" only when `usingAi` is true, "Template-generated"
-// otherwise, a separate "Mock video" badge appears whenever `isMock`
-// is true, and a "Real transcript" / "Metadata only" badge reflects
-// `extractionSource` — whether the content behind this post came from
-// the video's actual caption track or just its title/description —
-// never presenting placeholder or metadata-only content as a real
-// transcript read.
+// Now a client component (it owns which card's drawer is open), but
+// still just takes the same `posts` prop both app/market-analysis/
+// page.jsx and app/ai-news/page.jsx already pass in — no prop-shape
+// change for either caller.
+
+import { useState } from "react";
+import { computeKeywordSentiment } from "@/lib/sentimentKeywords";
+import { classifyTopic } from "@/lib/topicTags";
+import VideoInsightDrawer from "./VideoInsightDrawer";
+
+const TOPIC_PILL = {
+  Forex: { icon: "💱", label: "Forex" },
+  Crypto: { icon: "₿", label: "Crypto" },
+  "Metals & Commodities": { icon: "🪙", label: "Metals" },
+  Macro: { icon: "📊", label: "Macro" },
+};
+
+const BIAS_PILL = {
+  Bullish: { icon: "🟢", label: "Bullish Bias", className: "bg-emerald-50 text-emerald-700" },
+  Bearish: { icon: "🔴", label: "Bearish Bias", className: "bg-rose-50 text-rose-700" },
+  Neutral: { icon: "⚪", label: "Neutral", className: "bg-slate-100 text-slate-500" },
+};
+
+// A video's own keyLevels array sometimes holds an honest disclaimer
+// line instead of a real level ("Key levels not available…", "This
+// video was outside the 6-video AI batch cap…", "Configure
+// GEMINI_API_KEY…") — see lib/youtubeAutomation.js's
+// templatedExtraction(). Those must never be mistaken for an actual
+// price level pill.
+const PLACEHOLDER_LEVEL_PATTERNS = [
+  /^key levels not available/i,
+  /^this video was outside/i,
+  /^configure gemini/i,
+];
+
+function extractLevelPill(keyLevels) {
+  if (!Array.isArray(keyLevels)) return null;
+  for (const line of keyLevels) {
+    if (typeof line !== "string") continue;
+    if (PLACEHOLDER_LEVEL_PATTERNS.some((re) => re.test(line))) continue;
+    const match = line.match(/\$[\d,]+(?:\.\d+)?/);
+    if (match) return match[0];
+  }
+  return null;
+}
 
 function timeAgo(isoDate) {
   if (!isoDate) return "";
@@ -27,111 +69,58 @@ function timeAgo(isoDate) {
   return `${diffDay}d ago`;
 }
 
-function VideoInsightCard({ post }) {
+function VideoInsightCard({ post, onOpen }) {
+  // The analysis text itself (headline + body) is scanned with the same
+  // deterministic keyword sentiment used for news headlines — these
+  // generated posts have no separate numeric score to read instead.
+  const bias = BIAS_PILL[computeKeywordSentiment(post.title, post.body)];
+  const levelText = extractLevelPill(post.keyLevels);
+  const topic = TOPIC_PILL[classifyTopic(`${post.title} ${post.body}`)];
+
   return (
-    <article className="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-card-hover">
-      <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
-          {post.sourceLabel}
+    <article className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-card transition-shadow hover:shadow-card-hover">
+      <div className="flex items-center justify-between gap-2 text-xs font-medium text-slate-400">
+        <span className="truncate">{post.sourceLabel}</span>
+        {post.publishedAt && <span className="shrink-0 font-mono">{timeAgo(post.publishedAt)}</span>}
+      </div>
+
+      <h3 className="mt-2 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
+        {post.title}
+      </h3>
+
+      <div className="mt-3 flex flex-1 flex-wrap items-start gap-1.5">
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold ${bias.className}`}>
+          <span aria-hidden="true">{bias.icon}</span>
+          {bias.label}
         </span>
-        {post.publishedAt && <span>{timeAgo(post.publishedAt)}</span>}
-        <span
-          className={`rounded-full px-2 py-0.5 font-semibold ${
-            post.usingAi
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-slate-100 text-slate-500"
-          }`}
-          title={
-            post.aiProvider === "gemini"
-              ? "Extracted by the Gemini API from the video's title/description"
-              : post.aiProvider === "claude"
-              ? "Extracted by the Claude API from the video's title/description"
-              : "Generated by a rule-based template, not an AI model"
-          }
-        >
-          {post.aiProvider === "gemini"
-            ? "Gemini AI Extracted"
-            : post.aiProvider === "claude"
-            ? "AI-generated (Claude)"
-            : "Template-generated"}
-        </span>
-        {post.isMock && (
-          <span
-            className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700"
-            title="No live YouTube Data API key is configured — this is a deterministic sample video, not a real upload"
-          >
-            Mock video
+        {levelText && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">
+            <span aria-hidden="true">🎯</span>
+            <span className="font-mono tracking-tight">{levelText}</span>
           </span>
         )}
-        {!post.isMock && post.extractionSource && (
-          <span
-            className={`rounded-full px-2 py-0.5 font-semibold ${
-              post.extractionSource === "transcript"
-                ? "bg-sky-50 text-sky-700"
-                : "bg-slate-100 text-slate-500"
-            }`}
-            title={
-              post.extractionSource === "transcript"
-                ? "This post was built from the video's real caption track (fetched via YouTube's public captions endpoint), not just its title/description"
-                : "No caption track was available for this video — this post was inferred from its title/description only"
-            }
-          >
-            {post.extractionSource === "transcript" ? "Real transcript" : "Metadata only"}
+        {topic && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">
+            <span aria-hidden="true">{topic.icon}</span>
+            {topic.label}
           </span>
         )}
       </div>
 
-      <h3 className="mt-2.5 text-base font-semibold text-slate-900">{post.title}</h3>
-
-      {post.summary && (
-        <p className="mt-1.5 flex-1 text-sm text-slate-500">{post.summary}</p>
-      )}
-
-      {Array.isArray(post.keyLevels) && post.keyLevels.length > 0 && (
-        <ul className="mt-2.5 list-inside list-disc space-y-1 text-xs text-slate-500">
-          {post.keyLevels.slice(0, 4).map((level, idx) => (
-            <li key={idx}>{level}</li>
-          ))}
-        </ul>
-      )}
-
-      <a
-        href={post.sourceVideoUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500 hover:text-brand-700"
+      <button
+        type="button"
+        onClick={() => onOpen(post)}
+        className="mt-3.5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-700"
       >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M10 9L15 12L10 15V9Z"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M21 12A9 9 0 113 12A9 9 0 0121 12Z"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        Watch: {post.sourceVideoTitle}
-      </a>
+        <span aria-hidden="true">▶</span> Watch &amp; Read Analysis
+      </button>
     </article>
   );
 }
 
 export default function AutomatedVideoInsights({ posts }) {
   const items = Array.isArray(posts) ? posts : [];
+  const [openPost, setOpenPost] = useState(null);
 
   if (items.length === 0) {
     return (
@@ -142,10 +131,13 @@ export default function AutomatedVideoInsights({ posts }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((post) => (
-        <VideoInsightCard key={post.id} post={post} />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((post) => (
+          <VideoInsightCard key={post.id} post={post} onOpen={setOpenPost} />
+        ))}
+      </div>
+      <VideoInsightDrawer post={openPost} onClose={() => setOpenPost(null)} />
+    </>
   );
 }

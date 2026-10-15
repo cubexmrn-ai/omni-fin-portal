@@ -4,6 +4,9 @@
 
 :root {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Reserved for live numeric data only — see app/layout.jsx's <head>
+     comment and tailwind.config.js's `mono` font family. */
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
 html {

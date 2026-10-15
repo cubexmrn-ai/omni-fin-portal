@@ -59,6 +59,17 @@ module.exports = {
           "Arial",
           "sans-serif",
         ],
+        // Reserved for live numeric data (prices, scores, percentages,
+        // timestamps) in the new terminal-style modules — see
+        // app/layout.jsx's <head> comment. Everything else keeps `sans`.
+        mono: [
+          "var(--font-mono)",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Consolas",
+          "monospace",
+        ],
       },
       boxShadow: {
         card: "0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.08)",
