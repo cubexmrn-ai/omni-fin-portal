@@ -5,7 +5,11 @@
 // /market-analysis's half of the multi-instrument sentiment bar
 // upgrade — the same shared, sticky SentimentPulseBar used on
 // /ai-news (components/market-pulse/SentimentPulseBar.jsx), sitting
-// above the AI Video Insights grid here. There's no news feed or
+// above the AI Video Insights grid here. Passes `gaugeStyle` so this
+// page gets the semicircle speedometer dial instead of the flat
+// progress bar /ai-news still uses — same composite data and pill
+// filter either way, only the top visualization differs. There's no
+// news feed or
 // broad Forex/Crypto/Metals/Macro bucket tabs on this page (that's
 // /ai-news's MarketInsightsExplorer), so this only needs the
 // instrument-level filter: clicking a pill (Gold, BTC, EUR/USD,
@@ -44,6 +48,7 @@ export default function MarketAnalysisExplorer({ videoPosts, ratesData }) {
         composite={composite}
         activeInstrument={activeInstrument}
         onSelectInstrument={setActiveInstrument}
+        gaugeStyle
       />
 
       <div className="mt-6 flex items-center justify-between gap-3">

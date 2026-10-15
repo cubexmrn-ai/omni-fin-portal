@@ -21,9 +21,19 @@
 // Header.jsx's `h-16`) rather than changing shape when pinned — a
 // persistent ticker rail, not a second shrink/expand animation to get
 // wrong on every viewport.
+//
+// `gaugeStyle` (new): /market-analysis passes this to get the
+// TradingView/Bloomberg-terminal-style semicircle dial
+// (SentimentGaugeDial) instead of the flat SentimentMeter progress bar
+// — /ai-news doesn't pass it, so its banner is byte-for-byte unchanged.
+// Both branches share the exact same `composite` data and instrument
+// pills/click handler below; only the dial vs. bar presentation
+// differs, so nothing about the underlying numbers or the filter
+// behavior forks between the two pages.
 
 import { bandFor } from "@/lib/marketPulse";
 import SentimentMeter from "@/components/SentimentMeter";
+import SentimentGaugeDial from "@/components/market-pulse/SentimentGaugeDial";
 
 const SHORT_LABEL = {
   XAU: "Gold",
@@ -41,15 +51,73 @@ function toneClass(score) {
   return "text-rose-400";
 }
 
+function InstrumentPills({ pulses, activeInstrument, onSelectInstrument }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {pulses.map((pulse) => {
+        const active = activeInstrument === pulse.code;
+        return (
+          <button
+            key={pulse.code}
+            type="button"
+            onClick={() => onSelectInstrument?.(active ? null : pulse.code)}
+            aria-pressed={active}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+              active ? "bg-white text-slate-900" : "bg-white/5 text-slate-200 hover:bg-white/10"
+            }`}
+          >
+            {SHORT_LABEL[pulse.code] || pulse.code}:
+            <span className={active ? "font-mono text-slate-700" : `font-mono ${toneClass(pulse.score)}`}>
+              {bandFor(pulse.score).label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SentimentPulseBar({
   composite,
   activeInstrument = null,
   onSelectInstrument,
   sticky = true,
+  gaugeStyle = false,
 }) {
   if (!composite) return null;
 
   const { compositeScore, bullishPct, directionWord, greedFearWord, pulses } = composite;
+
+  if (gaugeStyle) {
+    return (
+      <div className={sticky ? "sticky top-16 z-30" : undefined}>
+        <div className="rounded-2xl border border-white/10 bg-ink px-5 py-6 text-white shadow-card sm:px-8">
+          <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:gap-10">
+            <SentimentGaugeDial score={compositeScore} size={200} />
+
+            <div className="hidden h-28 w-px shrink-0 bg-white/10 lg:block" aria-hidden="true" />
+
+            <div className="w-full flex-1">
+              <p className="text-sm font-semibold text-slate-200">
+                {directionWord} <span className="text-slate-500">·</span> {greedFearWord}
+              </p>
+              <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-400">
+                Composite read across {pulses.length} key instruments — tap one below to filter
+                the video insights.
+              </p>
+              <div className="mt-4">
+                <InstrumentPills
+                  pulses={pulses}
+                  activeInstrument={activeInstrument}
+                  onSelectInstrument={onSelectInstrument}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={sticky ? "sticky top-16 z-30" : undefined}>
@@ -70,29 +138,7 @@ export default function SentimentPulseBar({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {pulses.map((pulse) => {
-              const active = activeInstrument === pulse.code;
-              return (
-                <button
-                  key={pulse.code}
-                  type="button"
-                  onClick={() => onSelectInstrument?.(active ? null : pulse.code)}
-                  aria-pressed={active}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    active
-                      ? "bg-white text-slate-900"
-                      : "bg-white/5 text-slate-200 hover:bg-white/10"
-                  }`}
-                >
-                  {SHORT_LABEL[pulse.code] || pulse.code}:
-                  <span className={active ? "font-mono text-slate-700" : `font-mono ${toneClass(pulse.score)}`}>
-                    {bandFor(pulse.score).label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <InstrumentPills pulses={pulses} activeInstrument={activeInstrument} onSelectInstrument={onSelectInstrument} />
         </div>
 
         <div className="mt-4 dark">
