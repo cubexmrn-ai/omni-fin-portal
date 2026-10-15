@@ -4,25 +4,23 @@
 // AI News page's Social Buzz Tracker. Same "call the plain function
 // directly from the server component, use this route only for
 // external/client-side callers" architecture as app/api/news-ai/route.js
-// and app/api/market-ai/route.js — getSocialBuzz() itself is pure,
-// synchronous math with no I/O, so there's no self-fetch risk here, but
-// the pattern is kept consistent across the project.
+// and app/api/market-ai/route.js.
 //
-// See the big header comment in lib/socialBuzz.js for why every number
-// this returns is explicitly simulated, not live social data.
+// getSocialBuzz() is now async: when REDDIT_CLIENT_ID/REDDIT_CLIENT_SECRET
+// are configured it makes real network calls to Reddit's API per asset,
+// falling back to the original deterministic simulation per-asset on
+// any failure (see the header comment in lib/socialBuzz.js).
 
 import { getSocialBuzz } from "@/lib/socialBuzz";
 
-// Explicit for consistency with every other route in app/api after
-// /api/sentiment-engine's build-time timeout — getSocialBuzz() itself
-// is pure, synchronous, no-I/O math (see the header comment above), so
-// this route was never actually at risk, but declaring it removes any
-// doubt rather than relying on that.
+// Required now that getSocialBuzz() can make outbound network calls
+// (Reddit) rather than being pure, synchronous math — same reasoning as
+// every other live-data route in app/api.
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const body = getSocialBuzz();
+    const body = await getSocialBuzz();
     return Response.json(body, {
       status: 200,
       headers: {

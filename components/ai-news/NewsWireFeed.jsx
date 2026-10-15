@@ -49,6 +49,23 @@ function timeAgo(isoDate) {
   return `${diffDay}d`;
 }
 
+// AUDIT FIX (Phase 2 item 4): the relative "4h"/"2d" labels above are
+// scannable but imprecise — this gives the exact release time on
+// hover/tap (a `title` tooltip, same mechanism this project already
+// uses for every other "why is this the way it is" disclosure). Fixed
+// to UTC, like lib/marketPulse.js's formatFetchedAt(), rather than the
+// viewer's local timezone, so it reads identically for every visitor
+// and never depends on their device's clock/locale settings.
+function absoluteUtcLabel(isoDate) {
+  if (!isoDate) return null;
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return null;
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()} ${hh}:${mm} UTC`;
+}
+
 function WireRow({ item }) {
   const dotStyle = item.sentiment ? SENTIMENT_DOT_STYLES[item.sentiment] : "bg-slate-300";
   const badgeStyle = CATEGORY_BADGE_STYLES[item.category] || DEFAULT_BADGE_STYLE;
@@ -57,7 +74,12 @@ function WireRow({ item }) {
     <article className="flex gap-3 border-t border-slate-100 py-3 first:border-t-0">
       <div className="flex w-14 shrink-0 flex-col items-start gap-1.5 pt-0.5">
         <span className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} aria-hidden="true" />
-        <span className="font-mono text-[11px] text-slate-400">{timeAgo(item.publishedAt)}</span>
+        <span
+          className="font-mono text-[11px] text-slate-400"
+          title={absoluteUtcLabel(item.publishedAt) || undefined}
+        >
+          {timeAgo(item.publishedAt)}
+        </span>
       </div>
 
       <div className="min-w-0 flex-1">
