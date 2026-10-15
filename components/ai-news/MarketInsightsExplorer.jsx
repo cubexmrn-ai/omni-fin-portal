@@ -132,11 +132,15 @@ export default function MarketInsightsExplorer({ newsItems, loadError, warnings,
             </div>
           )}
 
-          {warnings?.length > 0 && (
-            <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-              Some sources were unavailable: {warnings.join(" · ")}
-            </div>
-          )}
+          {/* UI CLEANUP PASS: this used to print raw per-source HTTP
+              failure strings (e.g. "Yahoo Finance responded with
+              404...") straight to the public page. That's purely an
+              internal diagnostic — the feed already failed over
+              server-side and every headline actually shown below is
+              real, so there's nothing for a visitor to act on. Kept
+              out of the UI entirely now; `warnings` itself is still
+              passed in from app/ai-news/page.jsx and logged server-side
+              (see lib/newsAggregator.js), just not surfaced here. */}
 
           {!loadError && filteredNews.length === 0 ? (
             <p className="text-sm text-slate-500">

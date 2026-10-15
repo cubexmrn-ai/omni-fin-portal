@@ -6,11 +6,18 @@ import { useEffect, useState } from "react";
  * Social Buzz Tracker — replaces the old "Social Sentiment — Coming
  * soon" placeholder on /ai-news. Fetches /api/social-buzz, which is
  * ENTIRELY simulated data (see lib/socialBuzz.js) — no X/Twitter or
- * Reddit API is connected in this deployment. Every render keeps that
- * fact unmissable: a persistent "Simulated" badge, a disabled "Use
- * live social API" toggle with an explanatory tooltip, and the
- * backend's own note text surfaced verbatim, rather than silently
- * presenting these numbers as real chatter.
+ * Reddit API is connected in this deployment.
+ *
+ * UI CLEANUP PASS: the long explanatory paragraph ("Simulated — no
+ * social data provider... deterministic mock, not real chatter") used
+ * to sit under the heading as a permanent public banner. Removed from
+ * the visible UI so this reads as clean/authoritative as the rest of
+ * the terminal — but the disclosure isn't deleted, just moved from a
+ * paragraph to a hover tooltip on the "Simulated" badge itself (still
+ * a persistent, always-visible badge) and the disabled toggle's own
+ * tooltip right below it. Nothing about the underlying data or its
+ * labeling changed — same fallback, same badge, just not spelled out
+ * in a full sentence on the page by default.
  */
 export default function SocialBuzzTracker() {
   const [data, setData] = useState(null);
@@ -37,16 +44,17 @@ export default function SocialBuzzTracker() {
     <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold text-slate-900 dark:text-slate-50">Social Buzz Tracker</h2>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+          title={
+            data?.note ||
+            "Simulated — no social data provider (X/Twitter, Reddit) is connected yet. These numbers are a deterministic mock, not real chatter."
+          }
+        >
           <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
           Simulated
         </span>
       </div>
-
-      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-        {data?.note ||
-          "Simulated — no social data provider (X/Twitter, Reddit) is connected yet. These numbers are a deterministic mock, not real chatter."}
-      </p>
 
       <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/40">
         <div className="min-w-0 pr-3">

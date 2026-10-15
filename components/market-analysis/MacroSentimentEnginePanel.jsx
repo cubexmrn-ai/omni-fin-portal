@@ -32,9 +32,16 @@
 // so the whole page reads as one dashboard rather than two different
 // card systems stitched together.
 //
-// Honesty note (unchanged): `snapshot.note` still says outright
-// whether themes/blogs came from a real AI call or a deterministic
-// pool/template, and nothing here hides or relabels that.
+// UI CLEANUP PASS: `snapshot.note` used to be printed verbatim next to
+// the category tabs — it's an internal diagnostic string (e.g. "A
+// GEMINI_API_KEY is configured, but the live theme-generation call
+// failed... See lib/sentimentEngine.js"), not something a visitor
+// needs to see. No longer rendered here. The honest provenance signal
+// visitors actually see stays intact: each asset card's "AI"/"Pool"
+// chip and each Market Blog card's "AI"/"Template-generated" chip
+// (both below) still say, per item, whether it came from a live AI
+// call or the deterministic fallback — nothing about that labeling
+// changed, only this one verbose top-level diagnostic line.
 
 import { useMemo, useState } from "react";
 
@@ -250,7 +257,6 @@ export default function MacroSentimentEnginePanel({ snapshot }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CategoryTabs categories={CATEGORIES} activeId={activeCategory} onChange={setActiveCategory} />
-        {snapshot?.note && <p className="text-xs text-slate-400">{snapshot.note}</p>}
       </div>
 
       {filteredBlogs.length > 0 && (

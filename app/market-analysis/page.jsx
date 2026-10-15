@@ -3,8 +3,8 @@ import MarketAnalysisHero from "@/components/MarketAnalysisHero";
 import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysisFAQSection";
 import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
 import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
-import MacroSentimentEnginePanel from "@/components/market-analysis/MacroSentimentEnginePanel";
-import { getCachedYoutubeAutomationFeed, getCachedSentimentEngineSnapshot } from "@/lib/cachedData";
+import EconomicHeatmapDashboard from "@/components/market-analysis/EconomicHeatmapDashboard";
+import { getCachedYoutubeAutomationFeed } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
@@ -54,17 +54,6 @@ export default async function MarketAnalysisPage() {
     videoPosts = [];
   }
 
-  // Calling the sentiment engine through lib/cachedData.js's cached
-  // wrapper — same reasoning as getCachedYoutubeAutomationFeed() above.
-  // Never throws, but guarded anyway so a truly unexpected error can't
-  // take the page down.
-  let sentimentSnapshot = { assets: [], note: "" };
-  try {
-    sentimentSnapshot = await getCachedSentimentEngineSnapshot();
-  } catch {
-    sentimentSnapshot = { assets: [], note: "" };
-  }
-
   // Same getUnifiedRates() payload /ai-news and the homepage read from
   // — powers this page's own copy of the shared multi-instrument
   // sentiment bar (components/market-pulse/SentimentPulseBar.jsx) via
@@ -81,24 +70,25 @@ export default async function MarketAnalysisPage() {
       <MarketAnalysisFAQStructuredData />
       <MarketAnalysisHero />
 
-      {/* Order: AI Video Insights at the top, then the Macro Sentiment
-          Engine (this page's "Live Market Sentiment" equivalent), then
-          the live charts/overview board, then the FAQ. */}
+      {/* Order: AI Video Insights at the top, then the Macro Economic
+          Heatmap & Impact Dial Dashboard (this page's "Live Market
+          Sentiment" equivalent — an institutional heatmap/gauge panel
+          in place of the old text-card Macro Sentiment Engine grid),
+          then the live charts/overview board, then the FAQ. */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <MarketAnalysisExplorer videoPosts={videoPosts} ratesData={ratesData} />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <h2 className="text-sm font-bold text-slate-900">
-          Macro Sentiment Engine
+          Macro Economic Heatmap & Impact Dial Dashboard
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Autonomous retail-vs-institutional sentiment comparison and
-          rotating contextual themes across metals, energy, forex, and
-          crypto.
+          Economic-release heatmap, live USD and commodities impact
+          gauges, and real-time asset macro score rankings.
         </p>
-        <div className="mt-5">
-          <MacroSentimentEnginePanel snapshot={sentimentSnapshot} />
+        <div className="mt-5 rounded-2xl border border-white/10 bg-ink p-4 sm:p-6">
+          <EconomicHeatmapDashboard ratesData={ratesData} />
         </div>
       </section>
 
