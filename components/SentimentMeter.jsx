@@ -42,7 +42,7 @@ export default function SentimentMeter({ score, compact = false, showLabels = tr
           ))}
         </div>
         <div
-          className="absolute top-0 h-full w-[3px] -translate-x-1/2 rounded-full bg-slate-900 ring-2 ring-white dark:bg-white dark:ring-slate-900"
+          className="absolute top-0 h-full w-[3px] -translate-x-1/2 rounded-full bg-slate-900 ring-2 ring-white transition-[left] duration-700 ease-out dark:bg-white dark:ring-slate-900"
           style={{ left: `${markerPct}%` }}
           aria-hidden="true"
         />

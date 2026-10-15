@@ -31,7 +31,7 @@
 // differs, so nothing about the underlying numbers or the filter
 // behavior forks between the two pages.
 
-import { bandFor } from "@/lib/marketPulse";
+import { bandFor, bullishPctFor, directionWordFor, greedFearWordFor } from "@/lib/marketPulse";
 import SentimentMeter from "@/components/SentimentMeter";
 import SentimentGaugeDial from "@/components/market-pulse/SentimentGaugeDial";
 
@@ -62,8 +62,10 @@ function InstrumentPills({ pulses, activeInstrument, onSelectInstrument }) {
             type="button"
             onClick={() => onSelectInstrument?.(active ? null : pulse.code)}
             aria-pressed={active}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-              active ? "bg-white text-slate-900" : "bg-white/5 text-slate-200 hover:bg-white/10"
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+              active
+                ? "bg-white text-slate-900 ring-2 ring-brand-400 ring-offset-2 ring-offset-ink"
+                : "bg-white/5 text-slate-200 hover:bg-white/10"
             }`}
           >
             {SHORT_LABEL[pulse.code] || pulse.code}:
@@ -140,22 +142,46 @@ export default function SentimentPulseBar({
     );
   }
 
+  // Same binding as the gaugeStyle branch above: a selected pill drives
+  // the big number, the status text AND the progress bar from THAT
+  // instrument's own real score — previously this branch only passed
+  // activeInstrument down to the pills for their own highlight state
+  // and never read it back for the banner itself, so the big "NN%"
+  // and the bar stayed pinned to the composite no matter what was
+  // selected. bullishPctFor/directionWordFor/greedFearWordFor
+  // (lib/marketPulse.js) are the exact same formulas
+  // getCompositeSentiment() already used for the composite case, so a
+  // single instrument reads on the same scale, not a second one.
+  const selectedPulse = activeInstrument ? pulses.find((p) => p.code === activeInstrument) : null;
+  const displayScore = selectedPulse ? selectedPulse.score : compositeScore;
+  const displayPct = selectedPulse ? bullishPctFor(selectedPulse.score) : bullishPct;
+  const displayDirectionWord = selectedPulse ? directionWordFor(selectedPulse.score) : directionWord;
+  const displayGreedFearWord = selectedPulse ? greedFearWordFor(selectedPulse.score) : greedFearWord;
+  const displayLabel = selectedPulse ? SHORT_LABEL[selectedPulse.code] || selectedPulse.label : null;
+
   return (
     <div className={sticky ? "sticky top-16 z-30" : undefined}>
       <div className="rounded-2xl border border-white/10 bg-ink px-5 py-5 text-white shadow-card sm:px-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div>
+              {displayLabel && (
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  {displayLabel}
+                </p>
+              )}
               <p className="font-mono text-3xl font-bold leading-none tracking-tight sm:text-4xl">
-                {bullishPct}%
+                {displayPct}%
               </p>
               <p className="mt-1.5 text-xs font-semibold text-slate-400">
-                {directionWord} · {greedFearWord}
+                {displayDirectionWord} · {displayGreedFearWord}
               </p>
             </div>
             <div className="hidden h-10 w-px bg-white/10 sm:block" aria-hidden="true" />
             <p className="hidden max-w-xs text-xs leading-relaxed text-slate-400 sm:block">
-              A live composite across the instruments below — tap one to filter the page.
+              {selectedPulse
+                ? `Showing ${displayLabel}'s own read — tap its pill again for the composite.`
+                : "A live composite across the instruments below — tap one to filter the page."}
             </p>
           </div>
 
@@ -163,7 +189,7 @@ export default function SentimentPulseBar({
         </div>
 
         <div className="mt-4 dark">
-          <SentimentMeter score={compositeScore} showLabels={false} />
+          <SentimentMeter score={displayScore} showLabels={false} />
         </div>
       </div>
     </div>
