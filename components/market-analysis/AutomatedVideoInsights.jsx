@@ -126,7 +126,12 @@ function VideoInsightCard({ post, onOpen, compact }) {
         <button
           type="button"
           onClick={() => onOpen(post)}
-          className="mt-2.5 inline-flex items-center gap-1 self-start text-xs font-semibold text-brand-600 hover:text-brand-700"
+          // AUDIT FIX (Phase 3): a text-only link had too small a tap
+          // target on mobile in compact density. The p-1.5/-m-1.5 pair
+          // grows the actual hit area without shifting the visible
+          // layout (the negative margin cancels the padding's visual
+          // offset) — same trick, applied consistently below.
+          className="-m-1.5 mt-1 inline-flex items-center gap-1 self-start p-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
         >
           <span aria-hidden="true">▶</span> Watch &amp; Read
         </button>
@@ -147,7 +152,7 @@ function DensityToggle({ compact, onChange }) {
         role="tab"
         aria-selected={!compact}
         onClick={() => onChange(false)}
-        className={`rounded-full px-2.5 py-1 transition-colors ${
+        className={`rounded-full px-2.5 py-1.5 transition-colors ${
           !compact ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"
         }`}
       >
@@ -158,7 +163,7 @@ function DensityToggle({ compact, onChange }) {
         role="tab"
         aria-selected={compact}
         onClick={() => onChange(true)}
-        className={`rounded-full px-2.5 py-1 transition-colors ${
+        className={`rounded-full px-2.5 py-1.5 transition-colors ${
           compact ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"
         }`}
       >

@@ -91,7 +91,7 @@ export default function MarketInsightsExplorer({ newsItems, loadError, warnings,
               role="tab"
               aria-selected={active}
               onClick={() => setActiveTopic(tab)}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+              className={`rounded-full px-3.5 py-2 text-sm font-semibold transition-colors ${
                 active
                   ? "bg-brand-600 text-white shadow-sm"
                   : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -109,7 +109,7 @@ export default function MarketInsightsExplorer({ newsItems, loadError, warnings,
           <button
             type="button"
             onClick={() => setActiveInstrument(null)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100"
+            className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-2 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100"
           >
             Filtered: {INSTRUMENT_LABEL[activeInstrument] || activeInstrument}
             <span aria-hidden="true">✕</span>

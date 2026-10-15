@@ -199,7 +199,7 @@ export default function NewsWireFeed({ items }) {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
               >
                 {expanded ? "Show less" : `View all ${filtered.length} headlines`}
               </button>

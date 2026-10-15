@@ -58,7 +58,7 @@ export default function MarketAnalysisExplorer({ videoPosts, ratesData }) {
             <button
               type="button"
               onClick={() => setActiveInstrument(null)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100"
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-2 text-xs font-semibold text-brand-700 transition-colors hover:bg-brand-100"
             >
               Filtered: {INSTRUMENT_LABEL[activeInstrument] || activeInstrument}
               <span aria-hidden="true">✕</span>

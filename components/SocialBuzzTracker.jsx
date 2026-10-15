@@ -116,7 +116,18 @@ export default function SocialBuzzTracker() {
           </p>
         )}
 
-        {status === "ready" && Array.isArray(data?.assets) && (
+        {/* AUDIT FIX (Phase 3): the route's own catch-all error branch
+            returns `assets: []` with a 200 status (see
+            app/api/social-buzz/route.js) rather than throwing — without
+            this, that case used to render as a silent blank gap below
+            the header instead of an explained empty state. */}
+        {status === "ready" && Array.isArray(data?.assets) && data.assets.length === 0 && (
+          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+            {data?.note || "No buzz data available right now — try refreshing the page."}
+          </p>
+        )}
+
+        {status === "ready" && Array.isArray(data?.assets) && data.assets.length > 0 && (
           <div className="space-y-3">
             {data.assets.map((asset) => (
               <div key={asset.asset}>

@@ -67,7 +67,7 @@ function InstrumentPills({ pulses, activeInstrument, onSelectInstrument }) {
                 ? undefined
                 : `${SHORT_LABEL[pulse.code] || pulse.label} has no live price provider in this deployment yet — this score is computed from a static reference price, not a live feed.`
             }
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
               active
                 ? "bg-white text-slate-900 ring-2 ring-brand-400 ring-offset-2 ring-offset-ink"
                 : "bg-white/5 text-slate-200 hover:bg-white/10"
