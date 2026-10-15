@@ -1,6 +1,5 @@
 import NewsStructuredData from "@/components/NewsStructuredData";
 import EconomicCalendar from "@/components/EconomicCalendar";
-import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
 import MarketInsightsExplorer from "@/components/ai-news/MarketInsightsExplorer";
 import { getCachedAggregatedNews } from "@/lib/cachedData";
@@ -63,13 +62,14 @@ export default async function AiNewsPage() {
 
   // Same getUnifiedRates() payload the Metals & Commodities Calculator,
   // Currency Converter, and /market-analysis's AI Technical Analysis
-  // tool all read from — Tier 1's sentiment cards reuse it directly
-  // rather than hitting a second data source.
+  // tool all read from — the sentiment pulse bar inside
+  // MarketInsightsExplorer reuses it directly rather than hitting a
+  // second data source.
   let ratesData = null;
   try {
     ratesData = await getUnifiedRates();
   } catch {
-    ratesData = null; // LiveSentimentIndicator/resolveInstrumentPrice handle a null payload gracefully.
+    ratesData = null; // getCompositeSentiment()/resolveInstrumentPrice handle a null payload gracefully.
   }
 
   const items = data?.items || [];
@@ -117,15 +117,17 @@ export default async function AiNewsPage() {
           page level, nothing hidden behind a toggle. Order: the unified
           category explorer (sticky multi-instrument sentiment bar, then
           the Live Macro News Wire Feed, sharing one All/Forex/Crypto/
-          Metals & Commodities/Macro tab row), then Live Market
-          Sentiment, then the Economic Calendar. No AI Video Insights
-          grid here any more — that's /market-analysis's alone now, so
-          the two pages don't duplicate each other (see
+          Metals & Commodities/Macro tab row), then the Economic
+          Calendar. No AI Video Insights grid here any more — that's
+          /market-analysis's alone now, so the two pages don't
+          duplicate each other (see
           components/ai-news/MarketInsightsExplorer.jsx's header).
           UI CLEANUP PASS: the Social Buzz Tracker (simulated/Reddit
-          chatter card) was removed entirely from this page — no
-          simulated social pills, no live-API toggle, no Reddit/X
-          integration anywhere in this deployment any more. */}
+          chatter card) and the "Live Market Sentiment" 3-card block
+          (components/LiveSentimentIndicator.jsx, deleted — a redundant,
+          disclaimer-heavy rule-based blend that duplicated what the
+          sentiment pulse bar above already shows per-instrument) have
+          both been removed entirely from this page. */}
       <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
         <MarketInsightsExplorer
           newsItems={items}
@@ -133,8 +135,6 @@ export default async function AiNewsPage() {
           warnings={data?.warnings}
           ratesData={ratesData}
         />
-
-        <LiveSentimentIndicator ratesData={ratesData} />
 
         <EconomicCalendar />
       </section>
