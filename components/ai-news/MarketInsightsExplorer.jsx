@@ -2,32 +2,35 @@
 
 // components/ai-news/MarketInsightsExplorer.jsx
 //
-// Phase 2 of the /ai-news redesign: ONE category tab row (All / Forex /
-// Crypto / Metals & Commodities / Macro) filtering BOTH the AI video
-// insight cards and the news headline grid, instead of the news feed's
-// own separate Stocks/Forex/Crypto/Commodities tabs (still used as-is
-// by every OTHER NewsFeed caller — see that component's
-// `showCategoryTabs` prop) and the video grid having no topic filter
-// at all.
+// /ai-news's content explorer: the shared SentimentPulseBar (composite
+// gauge + instrument pills), one category tab row (All / Forex /
+// Crypto / Metals & Commodities / Macro), and the Live Macro News Wire
+// Feed (components/ai-news/NewsWireFeed.jsx) below it.
 //
-// Layered on top of that (the multi-instrument sentiment bar upgrade):
-// this component now also owns the shared SentimentPulseBar — clicking
-// an instrument pill there (Gold, BTC, EUR/USD, GBP/USD, Crude Oil)
-// ANDs an instrument-level filter on top of whichever broad category
-// tab is active, using lib/topicTags.js's matchesInstrument() keyword
-// match (the same deterministic, no-AI approach already established
-// by lib/sentimentKeywords.js — not a claim of precise classification).
+// DEDUPE PASS: this used to also render AutomatedVideoInsights — the
+// exact same AI Video Insights grid /market-analysis already shows —
+// which made the two pages feel like duplicates of each other. Removed
+// entirely here (video posts aren't fetched by app/ai-news/page.jsx
+// any more either, so nothing gets pulled or AI-processed just to be
+// thrown away). /market-analysis keeps the only AI Video Insights grid
+// on the site; /ai-news's own identity is this wire feed instead — a
+// dense headline list, not a card grid, so the two pages read as
+// genuinely different tools rather than the same grid under two names.
 //
-// Neither video posts nor news items carry a real Forex/Crypto/Metals/
-// Macro label (see lib/topicTags.js's header for why), so this uses
-// that module's plain keyword classifier to bucket each item.
+// The category tab row still ANDs with the pill-row instrument filter
+// using lib/topicTags.js's matchesInstrument() keyword match (the same
+// deterministic, no-AI approach used elsewhere) — now applied to news
+// items only.
+//
+// News items don't carry a real Forex/Crypto/Metals/Macro label (see
+// lib/topicTags.js's header for why), so this still uses that module's
+// plain keyword classifier to bucket each headline.
 
 import { useMemo, useState } from "react";
-import AutomatedVideoInsights from "@/components/market-analysis/AutomatedVideoInsights";
-import NewsFeed from "@/components/NewsFeed";
+import NewsWireFeed from "@/components/ai-news/NewsWireFeed";
 import SentimentPulseBar from "@/components/market-pulse/SentimentPulseBar";
 import { getCompositeSentiment } from "@/lib/marketPulse";
-import { MASTER_TOPICS, topicForNewsItem, topicForVideoPost, matchesInstrument } from "@/lib/topicTags";
+import { MASTER_TOPICS, topicForNewsItem, matchesInstrument } from "@/lib/topicTags";
 
 const TABS = ["All", ...MASTER_TOPICS];
 
@@ -39,49 +42,29 @@ const INSTRUMENT_LABEL = {
   WTI: "Crude Oil",
 };
 
-export default function MarketInsightsExplorer({ videoPosts, newsItems, loadError, warnings, ratesData }) {
+export default function MarketInsightsExplorer({ newsItems, loadError, warnings, ratesData }) {
   const [activeTopic, setActiveTopic] = useState("All");
   const [activeInstrument, setActiveInstrument] = useState(null);
 
   const composite = useMemo(() => getCompositeSentiment(ratesData), [ratesData]);
 
-  const taggedVideos = useMemo(
-    () => videoPosts.map((post) => ({ post, topic: topicForVideoPost(post) })),
-    [videoPosts]
-  );
   const taggedNews = useMemo(
     () => newsItems.map((item) => ({ item, topic: topicForNewsItem(item) })),
     [newsItems]
   );
 
   const counts = useMemo(() => {
-    const result = { All: videoPosts.length + newsItems.length };
+    const result = { All: newsItems.length };
     for (const topic of MASTER_TOPICS) {
-      result[topic] =
-        taggedVideos.filter((v) => v.topic === topic).length +
-        taggedNews.filter((n) => n.topic === topic).length;
+      result[topic] = taggedNews.filter((n) => n.topic === topic).length;
     }
     return result;
-  }, [taggedVideos, taggedNews, videoPosts.length, newsItems.length]);
+  }, [taggedNews, newsItems.length]);
 
-  const byTopicVideos = useMemo(
-    () =>
-      activeTopic === "All"
-        ? taggedVideos
-        : taggedVideos.filter((v) => v.topic === activeTopic),
-    [activeTopic, taggedVideos]
-  );
   const byTopicNews = useMemo(
     () => (activeTopic === "All" ? taggedNews : taggedNews.filter((n) => n.topic === activeTopic)),
     [activeTopic, taggedNews]
   );
-
-  const filteredVideos = useMemo(() => {
-    if (!activeInstrument) return byTopicVideos.map((v) => v.post);
-    return byTopicVideos
-      .filter((v) => matchesInstrument(`${v.post.title} ${v.post.body}`, activeInstrument))
-      .map((v) => v.post);
-  }, [byTopicVideos, activeInstrument]);
 
   const filteredNews = useMemo(() => {
     if (!activeInstrument) return byTopicNews.map((n) => n.item);
@@ -136,19 +119,7 @@ export default function MarketInsightsExplorer({ videoPosts, newsItems, loadErro
 
       <div className="mt-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-slate-900">AI Video Insights</h2>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-            {filteredVideos.length} videos
-          </span>
-        </div>
-        <div className="mt-4">
-          <AutomatedVideoInsights posts={filteredVideos} />
-        </div>
-      </div>
-
-      <div className="mt-10">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-slate-900">Live News Feed</h2>
+          <h2 className="text-sm font-bold text-slate-900">Live Macro News Wire Feed</h2>
           <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
             {filteredNews.length} headlines
           </span>
@@ -172,7 +143,7 @@ export default function MarketInsightsExplorer({ videoPosts, newsItems, loadErro
               No headlines match this filter right now — try a different tab or instrument.
             </p>
           ) : (
-            <NewsFeed items={filteredNews} showCategoryTabs={false} />
+            <NewsWireFeed items={filteredNews} />
           )}
         </div>
       </div>

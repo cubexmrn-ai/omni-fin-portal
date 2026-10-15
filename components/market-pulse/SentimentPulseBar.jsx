@@ -89,21 +89,42 @@ export default function SentimentPulseBar({
   const { compositeScore, bullishPct, directionWord, greedFearWord, pulses } = composite;
 
   if (gaugeStyle) {
+    // When a pill is selected, the dial switches from the composite
+    // read to THAT instrument's own real score (still the same
+    // buildAnalysis() output, just a different one of the `pulses`
+    // already computed for the pill row — never a second number
+    // invented for the dial). Clearing the selection (tapping the
+    // active pill again, via the existing onSelectInstrument toggle)
+    // returns the dial to the composite.
+    const selectedPulse = activeInstrument ? pulses.find((p) => p.code === activeInstrument) : null;
+    const gaugeScore = selectedPulse ? selectedPulse.score : compositeScore;
+    const gaugeInstrumentLabel = selectedPulse ? SHORT_LABEL[selectedPulse.code] || selectedPulse.label : null;
+
     return (
       <div className={sticky ? "sticky top-16 z-30" : undefined}>
         <div className="rounded-2xl border border-white/10 bg-ink px-5 py-6 text-white shadow-card sm:px-8">
           <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:gap-10">
-            <SentimentGaugeDial score={compositeScore} size={200} />
+            <SentimentGaugeDial score={gaugeScore} size={200} instrumentLabel={gaugeInstrumentLabel} />
 
             <div className="hidden h-28 w-px shrink-0 bg-white/10 lg:block" aria-hidden="true" />
 
             <div className="w-full flex-1">
               <p className="text-sm font-semibold text-slate-200">
-                {directionWord} <span className="text-slate-500">·</span> {greedFearWord}
+                {selectedPulse ? (
+                  <>
+                    Showing <span className="text-white">{gaugeInstrumentLabel}</span>{" "}
+                    <span className="text-slate-500">·</span> tap its pill again for the composite
+                  </>
+                ) : (
+                  <>
+                    {directionWord} <span className="text-slate-500">·</span> {greedFearWord}
+                  </>
+                )}
               </p>
               <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-400">
-                Composite read across {pulses.length} key instruments — tap one below to filter
-                the video insights.
+                {selectedPulse
+                  ? `The dial now reads ${gaugeInstrumentLabel}'s own technical score, not the blended composite.`
+                  : `Composite read across ${pulses.length} key instruments — tap one below to focus the dial on it.`}
               </p>
               <div className="mt-4">
                 <InstrumentPills

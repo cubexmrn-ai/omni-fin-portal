@@ -4,7 +4,7 @@ import EconomicCalendar from "@/components/EconomicCalendar";
 import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
 import MarketInsightsExplorer from "@/components/ai-news/MarketInsightsExplorer";
-import { getCachedAggregatedNews, getCachedYoutubeAutomationFeed } from "@/lib/cachedData";
+import { getCachedAggregatedNews } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
@@ -75,17 +75,6 @@ export default async function AiNewsPage() {
 
   const items = data?.items || [];
 
-  // Same cached-wrapper pattern as getCachedAggregatedNews() above —
-  // no self-fetch to /api/youtube-automation. Never throws, but
-  // guarded anyway so a truly unexpected error can't take the page down.
-  let videoPosts = [];
-  try {
-    const videoData = await getCachedYoutubeAutomationFeed();
-    videoPosts = (videoData.posts || []).filter((p) => p.category === "ai-news");
-  } catch {
-    videoPosts = [];
-  }
-
   return (
     <>
       <NewsStructuredData items={items} />
@@ -128,15 +117,17 @@ export default async function AiNewsPage() {
       {/* Tiers, all stacked and simultaneously visible — no tabs at the
           page level, nothing hidden behind a toggle. Order: the unified
           category explorer (sticky multi-instrument sentiment bar, then
-          AI Video Insights + Live News Feed sharing one
-          All/Forex/Crypto/Metals & Commodities/Macro tab row), then
-          Live Market Sentiment, then the Economic Calendar. */}
+          the Live Macro News Wire Feed, sharing one All/Forex/Crypto/
+          Metals & Commodities/Macro tab row), then Live Market
+          Sentiment, then the Economic Calendar. No AI Video Insights
+          grid here any more — that's /market-analysis's alone now, so
+          the two pages don't duplicate each other (see
+          components/ai-news/MarketInsightsExplorer.jsx's header). */}
       <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
         <div>
           <SocialBuzzTracker />
           <div className="mt-6">
             <MarketInsightsExplorer
-              videoPosts={videoPosts}
               newsItems={items}
               loadError={loadError}
               warnings={data?.warnings}

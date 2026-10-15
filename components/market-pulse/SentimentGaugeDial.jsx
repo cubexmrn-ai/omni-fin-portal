@@ -21,6 +21,15 @@
 // that center, with 0 pointing straight up — so Strong Sell's band sits
 // under the needle's leftmost sweep and Strong Buy under its rightmost,
 // matching this component's own left-to-right band order below.
+//
+// DYNAMIC PER-INSTRUMENT MODE: `score` isn't fixed to the composite —
+// the caller (SentimentPulseBar's gaugeStyle branch) passes whichever
+// instrument's own score is currently selected via the pill row, with
+// an optional `instrumentLabel` to show which one. Because `angle` is
+// React state that only ever moves toward the latest `score` (see the
+// effect below), switching instruments re-triggers the exact same
+// smooth sweep as the initial mount animation — there's no separate
+// "selection changed" code path to keep in sync.
 
 import { useEffect, useState } from "react";
 import { SCORE_LABEL_BANDS } from "@/lib/technicalAnalysis";
@@ -43,7 +52,7 @@ const R = 96;
 const SEGMENT_SPAN = 100 / SCORE_LABEL_BANDS.length; // 20 — bands are equal width
 const ARC_PATH = `M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`;
 
-export default function SentimentGaugeDial({ score, size = 200 }) {
+export default function SentimentGaugeDial({ score, size = 200, instrumentLabel = null }) {
   const clamped = Math.min(100, Math.max(-100, Number.isFinite(score) ? score : 0));
   const band = bandFor(clamped);
   const targetAngle = (clamped / 100) * 90;
@@ -88,6 +97,11 @@ export default function SentimentGaugeDial({ score, size = 200 }) {
       </svg>
 
       <div className="-mt-3 text-center" role="status">
+        {instrumentLabel && (
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            {instrumentLabel}
+          </p>
+        )}
         <p className="font-mono text-2xl font-bold leading-none text-white">
           {clamped > 0 ? "+" : ""}
           {Math.round(clamped)}
