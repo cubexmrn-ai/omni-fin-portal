@@ -109,6 +109,13 @@ export async function GET(request) {
         // lib/youtubeAutomation.js's recordGeminiError(). Empty array
         // when Gemini wasn't attempted or every call succeeded.
         geminiErrors: feed.geminiErrors || [],
+        // Same, but for the YouTube Data API fetches themselves — one
+        // entry per tracked source that failed this run (quota
+        // exceeded, bad key, renamed/deleted channel, timeout, etc.).
+        // See lib/youtubeAutomation.js's recordYoutubeError(). Empty
+        // array when YOUTUBE_API_KEY isn't configured, or every
+        // source's live fetch succeeded.
+        youtubeErrors: feed.youtubeErrors || [],
         revalidatedPaths: ["/market-analysis", "/ai-news"],
       },
       { status: 200 }
