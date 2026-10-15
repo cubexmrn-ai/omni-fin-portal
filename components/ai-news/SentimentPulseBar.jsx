@@ -3,43 +3,19 @@
 // The /ai-news "top banner" interactive sentiment pulse — a plain
 // Server Component, same architectural pattern as
 // components/LiveSentimentIndicator.jsx (which it sits above on the
-// page). The composite score is a plain average of that SAME real,
-// rule-based buildAnalysis() score (lib/technicalAnalysis.js) computed
-// for Gold (XAU/USD), Bitcoin and EUR/USD from real live prices — not a
-// second, separately invented number living next to the detailed
-// sentiment cards below it. EUR/USD's score is inverted for the "USD"
-// pill only (EUR/USD bullish price action means a weaker dollar),
-// matching that instrument's own `invert` flag in lib/technicalAnalysis.js.
+// page). The composite score/pills come from lib/marketPulse.js's
+// getCompositeSentiment(), the SAME real, rule-based buildAnalysis()
+// score (lib/technicalAnalysis.js) for Gold (XAU/USD), Bitcoin and
+// EUR/USD already used by LiveSentimentIndicator — not a second,
+// separately invented number — and also reused by the homepage's "AI
+// Market Pulse" cards (components/HomeSections.jsx's Hero).
 //
 // Renders nothing (rather than a fabricated placeholder) when none of
 // the three instruments resolved a live price — same honesty bar as
 // the rest of this project.
 
-import {
-  INSTRUMENT_BY_CODE,
-  resolveInstrumentPrice,
-  buildAnalysis,
-  getAnalysisType,
-  SCORE_LABEL_BANDS,
-} from "@/lib/technicalAnalysis";
+import { getCompositeSentiment, bandFor } from "@/lib/marketPulse";
 import SentimentMeter from "@/components/SentimentMeter";
-
-const PULSE_CODES = ["XAU", "BTC", "EURUSD"];
-
-// Greed/Fear framing layered on top of the exact same SCORE_LABEL_BANDS
-// keys the rest of the site already uses (Strong Sell..Strong Buy) —
-// an alternate label for the same real band, not a different metric.
-const GREED_FEAR_LABEL = {
-  strong_sell: "Extreme Fear",
-  sell: "Fear",
-  neutral: "Neutral",
-  buy: "Greed",
-  strong_buy: "Extreme Greed",
-};
-
-function bandFor(score) {
-  return SCORE_LABEL_BANDS.find((b) => score >= b.min && score <= b.max) || SCORE_LABEL_BANDS[2];
-}
 
 function toneClass(score) {
   if (score >= 60) return "text-emerald-400";
@@ -50,27 +26,10 @@ function toneClass(score) {
 }
 
 export default function SentimentPulseBar({ ratesData }) {
-  const scores = {};
-  for (const code of PULSE_CODES) {
-    const instrument = INSTRUMENT_BY_CODE[code];
-    const price = resolveInstrumentPrice(instrument, ratesData);
-    if (!Number.isFinite(price)) continue;
-    const analysis = buildAnalysis(instrument, getAnalysisType("full_report"), price, ratesData);
-    scores[code] = analysis.overallSentiment.score;
-  }
+  const pulse = getCompositeSentiment(ratesData);
+  if (!pulse) return null;
 
-  const finiteScores = Object.values(scores).filter((s) => Number.isFinite(s));
-  if (finiteScores.length === 0) return null;
-
-  const compositeScore = finiteScores.reduce((sum, s) => sum + s, 0) / finiteScores.length;
-  const bullishPct = Math.max(0, Math.min(100, Math.round((compositeScore + 100) / 2)));
-  const directionWord = compositeScore > 10 ? "Bullish" : compositeScore < -10 ? "Bearish" : "Neutral";
-  const greedFearWord = GREED_FEAR_LABEL[bandFor(compositeScore).key] || "Neutral";
-
-  // USD pulls the opposite direction from EUR/USD's own score — a
-  // stronger EUR/USD (bullish EUR/USD) is a weaker dollar, and vice
-  // versa — so this is the dollar's OWN directional read, not EUR's.
-  const usdScore = Number.isFinite(scores.EURUSD) ? -scores.EURUSD : null;
+  const { compositeScore, bullishPct, directionWord, greedFearWord, scores, usdScore } = pulse;
 
   const pills = [
     { label: "Gold", score: scores.XAU },

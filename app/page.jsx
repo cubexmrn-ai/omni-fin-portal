@@ -9,6 +9,9 @@ import {
   SupportedCurrencies,
 } from "@/components/HomeSections";
 import { getSiteUrl } from "@/lib/siteUrl";
+import { getUnifiedRates } from "@/lib/marketData";
+import { getSentimentEngineSnapshot } from "@/lib/sentimentEngine";
+import { getCompositeSentiment, getVolatilityWatch } from "@/lib/marketPulse";
 
 export const revalidate = 3600; // Align page-level ISR with the unified rates API cache.
 
@@ -81,7 +84,41 @@ function EcosystemStructuredData() {
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Same direct-call pattern used by app/market-analysis/page.jsx and
+  // app/ai-news/page.jsx (no self-fetch to an API route — see
+  // lib/newsAggregator.js's header comment for why that pattern broke
+  // production previously). Both calls are guarded independently so a
+  // failure in one never blocks the other or the rest of the page —
+  // the Hero falls back to its static feature copy (see
+  // components/HomeSections.jsx) if neither resolves anything useful.
+  let ratesData = null;
+  try {
+    ratesData = await getUnifiedRates();
+  } catch {
+    ratesData = null;
+  }
+
+  let sentimentSnapshot = { assets: [] };
+  try {
+    sentimentSnapshot = await getSentimentEngineSnapshot();
+  } catch {
+    sentimentSnapshot = { assets: [] };
+  }
+
+  // The hero's 3 "AI Market Pulse" cards — every number/theme here is
+  // read from the SAME real engines already used elsewhere on the site
+  // (lib/marketPulse.js wraps lib/technicalAnalysis.js's buildAnalysis;
+  // macroThemes reads lib/sentimentEngine.js's own rotating/AI-generated
+  // theme snapshot), not separately invented for the homepage.
+  const technical = getCompositeSentiment(ratesData);
+  const volatility = getVolatilityWatch(ratesData);
+  const macroThemes = Array.from(
+    new Set((sentimentSnapshot.assets || []).flatMap((asset) => asset.themes || []))
+  ).slice(0, 3);
+
+  const marketPulse = { technical, volatility, macroThemes };
+
   return (
     <>
       {/* Two stacked top bars, directly under the global header and
@@ -92,12 +129,18 @@ export default function HomePage() {
           Hero below the fold. */}
       <EconomicNewsStrip />
       <HomeMarketTicker />
-      <Hero />
+      <Hero marketPulse={marketPulse} />
       {/* id preserved here (rather than inside ConvertersTabs itself) so
           the nav's "/#metals-calculator" link and the hero's CTA above
-          both still scroll to this section correctly. */}
-      <div id="metals-calculator">
-        <ConvertersTabs defaultTab="metals" />
+          both still scroll to this section correctly. The glass frame
+          below is homepage-only — ConvertersTabs/GoldCalculator/
+          CurrencyConverter are shared with /converters and /calculators,
+          so this wraps around them here rather than styling those
+          components themselves. */}
+      <div id="metals-calculator" className="bg-gradient-to-b from-slate-50 to-white py-10">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-white/60 bg-white/60 py-6 shadow-card backdrop-blur-md sm:py-8">
+          <ConvertersTabs defaultTab="metals" />
+        </div>
       </div>
       <EcosystemStructuredData />
       <UnifiedSuiteSection />

@@ -35,13 +35,34 @@ const ACADEMY_THEME_DOT = {
   rose: "bg-rose-400",
 };
 
-export function Hero() {
+// Static fallback shown only when no live `marketPulse` data resolved
+// (e.g. the unified rates/sentiment-engine fetches both failed) —
+// never fabricate the AI Market Pulse cards' numbers, show this plain
+// translated copy instead.
+const STATIC_FEATURES = [
+  { titleKey: "feature1Title", descKey: "feature1Desc" },
+  { titleKey: "feature2Title", descKey: "feature2Desc" },
+  { titleKey: "feature3Title", descKey: "feature3Desc" },
+];
+
+/** One of the 3 dark "AI Market Pulse" cards below the hero copy —
+ * shared layout so Technical Score / Macro Radar / Volatility Watch
+ * all read as one family despite very different content. */
+function PulseCard({ label, big, sub, children }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-ink p-5 text-white shadow-card transition-shadow hover:shadow-card-hover">
+      <p className="text-[11px] font-semibold text-slate-400">{label}</p>
+      <p className="mt-2 font-mono text-2xl font-bold leading-none tracking-tight">{big}</p>
+      {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
+      {children}
+    </div>
+  );
+}
+
+export function Hero({ marketPulse }) {
   const { t } = useLanguage();
-  const FEATURES = [
-    { titleKey: "feature1Title", descKey: "feature1Desc" },
-    { titleKey: "feature2Title", descKey: "feature2Desc" },
-    { titleKey: "feature3Title", descKey: "feature3Desc" },
-  ];
+  const { technical, macroThemes, volatility } = marketPulse || {};
+  const hasLivePulse = Boolean(technical || (macroThemes && macroThemes.length > 0) || volatility);
 
   return (
     <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
@@ -69,17 +90,73 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div
-              key={f.titleKey}
-              className="rounded-xl border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-card-hover"
-            >
-              <h3 className="text-sm font-semibold text-slate-900">{t(f.titleKey)}</h3>
-              <p className="mt-1.5 text-sm text-slate-500">{t(f.descKey)}</p>
-            </div>
-          ))}
-        </div>
+        {hasLivePulse ? (
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {technical && (
+              <PulseCard
+                label="Technical Score"
+                big={`${technical.bullishPct}%`}
+                sub={`${technical.directionWord} · ${technical.greedFearWord}`}
+              >
+                <p className="mt-3 text-xs leading-relaxed text-slate-400">
+                  Composite AI read across Gold, Bitcoin &amp; EUR/USD.{" "}
+                  <Link href="/market-analysis" className="text-blue-400 hover:text-blue-300">
+                    See the full breakdown
+                  </Link>
+                  .
+                </p>
+              </PulseCard>
+            )}
+
+            {macroThemes && macroThemes.length > 0 && (
+              <div className="rounded-2xl border border-white/10 bg-ink p-5 text-white shadow-card transition-shadow hover:shadow-card-hover">
+                <p className="text-[11px] font-semibold text-slate-400">Macro Radar</p>
+                <p className="mt-2 text-base font-bold leading-snug">{macroThemes[0]}</p>
+                {macroThemes.length > 1 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {macroThemes.slice(1).map((theme, idx) => (
+                      <span
+                        key={idx}
+                        className="rounded-full bg-white/5 px-2 py-1 text-[11px] text-slate-300"
+                      >
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-3 text-xs leading-relaxed text-slate-400">
+                  High-impact themes currently rotating across tracked macro assets.
+                </p>
+              </div>
+            )}
+
+            {volatility && (
+              <div className="rounded-2xl border border-white/10 bg-ink p-5 text-white shadow-card transition-shadow hover:shadow-card-hover">
+                <p className="text-[11px] font-semibold text-slate-400">Volatility Watch</p>
+                <p className="mt-2 text-base font-bold leading-snug">{volatility.instrumentLabel}</p>
+                <p className="mt-1 font-mono text-sm text-amber-300">
+                  {volatility.distancePct.toFixed(2)}% from {volatility.side}
+                  {volatility.level ? ` (${volatility.level})` : ""}
+                </p>
+                <p className="mt-3 text-xs leading-relaxed text-slate-400">
+                  The tightest breakout zone right now among the instruments tracked above.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {STATIC_FEATURES.map((f) => (
+              <div
+                key={f.titleKey}
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-card-hover"
+              >
+                <h3 className="text-sm font-semibold text-slate-900">{t(f.titleKey)}</h3>
+                <p className="mt-1.5 text-sm text-slate-500">{t(f.descKey)}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
