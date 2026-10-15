@@ -9,7 +9,7 @@
 // stay a plain server component with its own metadata export — same
 // split used throughout this project (ConvertersTabs, AcademyHub, etc).
 //
-// All seven calculators are real components (not placeholders/cards
+// All nine calculators are real components (not placeholders/cards
 // that link elsewhere), so the hub is itself a complete, usable tool
 // page — this mirrors ConvertersTabs.jsx's pattern of switching between
 // full tool components rather than summary cards.
@@ -23,6 +23,8 @@ import MarginCalculator from "@/components/calculators/MarginCalculator";
 import InflationCalculator from "@/components/calculators/InflationCalculator";
 import CompoundGrowthCalculator from "@/components/calculators/CompoundGrowthCalculator";
 import ProfitMarginCalculator from "@/components/calculators/ProfitMarginCalculator";
+import RentalYieldCalculator from "@/components/calculators/RentalYieldCalculator";
+import TaxFeeCalculator from "@/components/calculators/TaxFeeCalculator";
 
 // Maps a CALCULATORS registry id (lib/calculatorsRegistry.js) to the
 // actual component to render. Kept local to the hub rather than in the
@@ -37,6 +39,8 @@ const CALCULATOR_COMPONENTS = {
   inflation: InflationCalculator,
   "compound-growth": CompoundGrowthCalculator,
   "profit-margin": ProfitMarginCalculator,
+  "rental-yield": RentalYieldCalculator,
+  "tax-fee": TaxFeeCalculator,
 };
 
 export default function CalculatorsHub() {
@@ -57,9 +61,9 @@ export default function CalculatorsHub() {
             Trading &amp; Financial Calculators
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Position sizing, pip value, risk/reward, margin, inflation, compound growth, and
-            profit margin — seven free calculators every trader and household needs, all in one
-            place.
+            Position sizing, pip value, risk/reward, margin, inflation, compound growth, profit
+            margin, rental yield &amp; mortgage, and tax/fee estimates — nine free calculators every
+            trader, investor, and household needs, all in one place.
           </p>
         </div>
       </section>

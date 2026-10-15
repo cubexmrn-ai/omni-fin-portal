@@ -70,7 +70,7 @@ export default function CalculatorsStructuredData() {
     applicationCategory: "FinanceApplication",
     operatingSystem: "Any (web-based)",
     description:
-      "A free, unified trading and personal-finance calculator suite: All-in-One Trade Execution (profit/loss, risk:reward, pip value, margin), Position & Lot Size, Pip Value & Custom Math, Margin & Leverage, and Wealth & Personal Finance (inflation, compound growth, profit margin) — synced to live market rates.",
+      "A free, unified trading and personal-finance calculator suite: All-in-One Trade Execution (profit/loss, risk:reward, pip value, margin), Position & Lot Size, Pip Value & Custom Math, Margin & Leverage, and Wealth & Personal Finance (inflation, compound growth, profit margin, rental yield & mortgage amortization, tax & fee estimates) — synced to live market rates.",
     featureList: [
       "All-in-One Trade Execution Suite",
       "Position & Lot Size Calculator",
@@ -79,6 +79,8 @@ export default function CalculatorsStructuredData() {
       "Inflation & Purchasing Power Calculator",
       "Compound Interest / Wealth Growth Calculator",
       "Business Profit Margin & Markup Calculator",
+      "Rental Yield & Mortgage Calculator",
+      "Tax & Fee Estimator",
     ],
     offers: {
       "@type": "Offer",

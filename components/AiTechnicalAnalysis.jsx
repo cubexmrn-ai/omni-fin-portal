@@ -1,9 +1,85 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { INSTRUMENT_OPTIONS, ANALYSIS_TYPES } from "@/lib/technicalAnalysis";
 import SentimentMeter from "@/components/SentimentMeter";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+
+// AUDIT FIX (Beginner persona): this report's own section titles are
+// unavoidably jargon ("RSI / Moving Averages", "Pivot Points") with no
+// explanation at the point of confusion. The 34-lesson Academy
+// (lib/academyData.js) already explains every one of these terms in
+// plain English — it just never linked from here. This maps each
+// report section title to its matching Academy lesson (level id +
+// lesson id, used as /learn/<level>/<lesson>), so "Learn this" sits
+// right next to the term instead of requiring the visitor to find the
+// Academy on their own. "Overall Sentiment" and "Price Action"/
+// "Support & Resistance" use plain-enough language on their own and
+// aren't included; where no exact lesson exists (Fundamental Bias,
+// Pivot Points), this points at the closest real lesson rather than
+// going unlinked.
+const ACADEMY_LESSON_FOR_TITLE = {
+  "Technical Bias": { level: "analyst", lesson: "support-resistance" },
+  "Fundamental Bias": { level: "strategist", lesson: "central-bank-rates" },
+  "Pivot Points": { level: "analyst", lesson: "support-resistance" },
+  "RSI / Moving Averages": { level: "analyst", lesson: "rsi-indicator" },
+  "Fibonacci Retracement": { level: "analyst", lesson: "fibonacci-retracements" },
+  "Gann Theory": { level: "analyst", lesson: "gann-basics" },
+};
+
+function AcademyLink({ title }) {
+  const lesson = ACADEMY_LESSON_FOR_TITLE[title];
+  if (!lesson) return null;
+  return (
+    <Link
+      href={`/learn/${lesson.level}/${lesson.lesson}`}
+      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 transition-colors hover:bg-brand-100 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-300"
+      title={`New to this term? Learn it in the Academy.`}
+    >
+      Learn this
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </Link>
+  );
+}
+
+/**
+ * Short, plain-English availability tag shown next to a section's
+ * title — AUDIT FIX (Beginner persona): previously the only signal a
+ * visitor got that a section like RSI/Gann wasn't a real calculation
+ * was a wall of text buried in the amber "limitations" box below. This
+ * surfaces the same honest distinction (already computed in
+ * lib/technicalAnalysis.js — never a new claim invented here) as a
+ * one-glance tag: no dataPoints at all = genuinely unavailable; a
+ * limitations note with dataPoints present = an illustrative
+ * approximation; neither = a real live calculation.
+ */
+function AvailabilityTag({ section }) {
+  if (!section) return null;
+  const hasData = Array.isArray(section.dataPoints) && section.dataPoints.length > 0;
+
+  if (!hasData && section.limitations) {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400">
+        Not available — needs price history
+      </span>
+    );
+  }
+  if (hasData && section.limitations) {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+        Illustrative estimate
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+      Live calculation
+    </span>
+  );
+}
 
 const BIAS_TEXT_COLOR = {
   "Strong Buy": "text-emerald-700 dark:text-emerald-300",
@@ -20,6 +96,7 @@ function BiasCard({ title, score, label, note, subtitle }) {
         <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           {title}
         </h4>
+        <AcademyLink title={title} />
       </div>
       <p className={`mt-1 text-xl font-extrabold ${BIAS_TEXT_COLOR[label] || "text-slate-800"}`}>
         {label}
@@ -37,7 +114,13 @@ function ReportSection({ title, section }) {
   if (!section) return null;
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-50">{title}</h4>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-50">{title}</h4>
+        <div className="flex items-center gap-1.5">
+          <AvailabilityTag section={section} />
+          <AcademyLink title={title} />
+        </div>
+      </div>
       <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300">{section.summary}</p>
 
       {Array.isArray(section.dataPoints) && section.dataPoints.length > 0 && (

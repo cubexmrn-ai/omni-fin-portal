@@ -203,14 +203,83 @@ function AssetSelect({ id, label, assetClass, code, onChange }) {
 }
 
 /**
- * Placeholder 24h trend badge. No historical rate store is wired up
- * yet — see the TODO below for how to make this real once one exists.
+ * Real 24h trend badge — RETENTION UPGRADE: this used to be a
+ * permanent "coming soon" placeholder (no historical rate store
+ * existed). It now fetches yesterday's pair rate from
+ * /api/rate-history (lib/rateHistory.js: Frankfurter for fiat,
+ * CoinGecko for crypto) and compares it against `pairRate`, the exact
+ * same live rate already shown above this badge — no second,
+ * differently-sourced "today" number.
+ *
+ * Metals have no free keyless historical source, so that leg of the
+ * pair always resolves `available: false` — shown here as an honest
+ * "not available for this pair" state, never a fabricated percentage.
  */
-function TrendBadge() {
+function TrendBadge({ fromClass, fromCode, toClass, toCode, pairRate }) {
+  const [state, setState] = useState({ status: "loading", pct: null });
+
+  useEffect(() => {
+    if (!fromClass || !fromCode || !toClass || !toCode || !Number.isFinite(pairRate)) {
+      setState({ status: "unavailable", pct: null });
+      return;
+    }
+
+    let cancelled = false;
+    setState({ status: "loading", pct: null });
+
+    const params = new URLSearchParams({ fromClass, fromCode, toClass, toCode });
+    fetch(`/api/rate-history?${params.toString()}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (!data?.available || !Number.isFinite(data.pairRate) || data.pairRate === 0) {
+          setState({ status: "unavailable", pct: null });
+          return;
+        }
+        const pct = ((pairRate - data.pairRate) / data.pairRate) * 100;
+        setState({ status: "ready", pct });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ status: "unavailable", pct: null });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fromClass, fromCode, toClass, toCode, pairRate]);
+
+  if (state.status === "loading") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-400">
+        24h trend · loading…
+      </span>
+    );
+  }
+
+  if (state.status === "unavailable") {
+    return (
+      <span
+        title="A real 24h change needs a historical rate for both sides of this pair. That's not available yet for this asset combination (most often because one side is a precious metal, which has no free historical price source wired up)."
+        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-400"
+      >
+        24h trend · not available for this pair
+      </span>
+    );
+  }
+
+  const pct = state.pct;
+  const isUp = pct > 0;
+  const isFlat = Math.abs(pct) < 0.005;
+  const toneClass = isFlat
+    ? "border-slate-200 bg-slate-50 text-slate-500"
+    : isUp
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : "border-rose-200 bg-rose-50 text-rose-700";
+
   return (
     <span
-      title="Historical rate tracking isn't wired up yet — this will show real 24h % change once a rate history store is added."
-      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-400"
+      title={`1 ${fromCode} = ${toCode} rate vs. this time yesterday (yesterday's rate from a free historical FX/crypto provider).`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClass}`}
     >
       <svg
         width="12"
@@ -219,6 +288,7 @@ function TrendBadge() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
+        className={isUp ? "" : "rotate-180"}
       >
         <path
           d="M3 17L9 11L13 15L21 7M21 7H15M21 7V13"
@@ -228,11 +298,7 @@ function TrendBadge() {
           strokeLinejoin="round"
         />
       </svg>
-      24h trend · coming soon
-      {/* TODO (Phase 3): persist a daily rate snapshot (e.g. in a small
-          KV/DB keyed by date) and compute ((today - yesterday) / yesterday)
-          here once that history exists. Until then this stays a labeled
-          placeholder rather than a fabricated number. */}
+      {isFlat ? "Flat" : `${isUp ? "+" : ""}${pct.toFixed(2)}%`} · 24h
     </span>
   );
 }
@@ -432,7 +498,13 @@ export default function CurrencyConverter({
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                 Converted Amount
               </p>
-              <TrendBadge />
+              <TrendBadge
+                fromClass={fromClass}
+                fromCode={fromCode}
+                toClass={toClass}
+                toCode={toCode}
+                pairRate={pairRate}
+              />
             </div>
             <p className="mt-2 text-3xl font-extrabold text-brand-700">
               {toMeta?.symbol}{" "}
