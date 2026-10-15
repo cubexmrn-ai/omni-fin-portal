@@ -17,6 +17,21 @@
 // mention that instrument, using lib/topicTags.js's matchesInstrument()
 // keyword match — the same deterministic, no-AI approach already used
 // elsewhere on the site, not a claim of precise classification.
+//
+// AUDIT FIX: on mount, with no pill explicitly clicked yet, the gauge
+// used to show the blended COMPOSITE score — an "offset" number that
+// doesn't match any single pill, which read as an awkward default
+// state. `activeInstrument` (the real, nullable filter selection that
+// drives the video grid + "Filtered: X" chip below) still starts
+// `null` so the grid shows every video by default, same as before —
+// but `displayInstrument` (what's passed to SentimentPulseBar for the
+// dial + pill highlight) falls back to Gold ("XAU") whenever nothing
+// is explicitly selected, so the dial always reads one concrete,
+// labeled instrument's score, with that instrument's pill highlighted
+// to match. Clicking any pill still drives both the dial AND the video
+// filter together, exactly as before; clicking the already-highlighted
+// default pill again is a no-op (nothing to "unfilter" since it was
+// never a real filter) rather than reverting to the composite.
 
 import { useMemo, useState } from "react";
 import AutomatedVideoInsights from "@/components/market-analysis/AutomatedVideoInsights";
@@ -32,8 +47,11 @@ const INSTRUMENT_LABEL = {
   WTI: "Crude Oil",
 };
 
+const DEFAULT_GAUGE_INSTRUMENT = "XAU"; // Gold — see header comment.
+
 export default function MarketAnalysisExplorer({ videoPosts, ratesData }) {
   const [activeInstrument, setActiveInstrument] = useState(null);
+  const displayInstrument = activeInstrument || DEFAULT_GAUGE_INSTRUMENT;
 
   const composite = useMemo(() => getCompositeSentiment(ratesData), [ratesData]);
 
@@ -46,7 +64,7 @@ export default function MarketAnalysisExplorer({ videoPosts, ratesData }) {
     <div>
       <SentimentPulseBar
         composite={composite}
-        activeInstrument={activeInstrument}
+        activeInstrument={displayInstrument}
         onSelectInstrument={setActiveInstrument}
         gaugeStyle
       />

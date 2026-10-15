@@ -14,17 +14,16 @@
 // placeholder (a deterministic, seeded squiggle — same post always
 // renders the same squiggle, so it doesn't flicker on every re-render,
 // but it is never presented as a real chart). This mirrors the
-// project's established no-fabrication convention (see the Social Buzz
-// Tracker's persistent "Simulated" badge and the Market Analysis page's
-// "illustrative, not a real detected swing" labels).
+// project's established no-fabrication convention (see the Market
+// Analysis page's "illustrative, not a real detected swing" labels).
 
 import { useMemo, useState } from "react";
 import Modal from "@/components/community/Modal";
 import { getAssetTag, getCategory } from "@/lib/communityData";
 
-// Small local seeded-hash utility (deliberately duplicated rather than
-// imported from lib/socialBuzz.js, whose hashString/mulberry32 helpers
-// are not exported — see that file). Deterministic string -> [0,1).
+// Small local seeded-hash utility (a standalone implementation rather
+// than importing a shared one — kept deliberately self-contained).
+// Deterministic string -> [0,1).
 function hashToUnit(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) {

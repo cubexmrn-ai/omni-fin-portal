@@ -83,7 +83,6 @@ app/
     rates/route.js            # Thin JSON wrapper around lib/marketData.js
     market-ai/route.js        # On-demand technical analysis (rule-based; see lib/technicalAnalysis.js)
     news-ai/route.js          # Thin JSON wrapper around lib/newsAggregator.js
-    social-buzz/route.js      # Thin JSON wrapper around lib/socialBuzz.js (simulated data)
   converters/
     page.jsx                  # Tabbed directory (Currency / Metals & Commodities / Units) + featured pairs
     [pair]/page.jsx           # Programmatic SEO routes across fiat/crypto/metals, e.g. usd-to-pkr,
@@ -135,8 +134,6 @@ components/
   SentimentMeter.jsx          # Visual 5-segment Strong Sell..Strong Buy gauge bar (pure rendering
                                 # of a score already computed in lib/technicalAnalysis.js)
   NewsFeed.jsx                 # Client-side search + category filter + sentiment + asset-tag badges
-  SocialBuzzTracker.jsx       # Social Buzz Tracker card — fetches /api/social-buzz; keeps the
-                                # "Simulated" badge and disabled live-API toggle always visible
   academy/
     AcademyHub.jsx             # Progress banner + level roadmap grid + search/category filter
     LessonViewer.jsx           # Renders one lesson's sections, sticky nav, and the QuizModule
@@ -186,9 +183,6 @@ lib/
                                 # SCORE_LABEL_BANDS, Technical/Fundamental/Overall Bias, Pivot
                                 # Points, Fibonacci, and the honest RSI/EMA & Gann Theory
                                 # degradation (see its header comment)
-  socialBuzz.js                 # Social Buzz Tracker backend — deterministic, hourly-seeded
-                                # SIMULATED chatter-intensity + sentiment split per asset; no
-                                # real X/Twitter or Reddit API is wired in (see its header comment)
   assetConversion.js           # Cross-asset "convert anything to anything" engine
   unitSlugs.js                # URL-slug <-> unit mapping for SEO routes
   fxSlugs.js                   # URL-slug <-> currency-pair mapping for SEO routes (fiat-only;
@@ -279,14 +273,6 @@ cp .env.example .env.local
     always throws, so it safely falls through to the rule-based
     engine). Wire a real Claude API call in there to generate genuine
     AI-written technical analysis instead of the rule-based summary.
-- `SOCIAL_API_KEY` (not required, not wired to anything yet) — checked
-  by `lib/socialBuzz.js` purely to adjust its own explanatory `note`
-  text (e.g. "a key is configured but no provider is wired up yet").
-  The Social Buzz Tracker's data is **always** simulated right now
-  (`usingLiveApi: false` unconditionally) — there is no actual
-  X/Twitter or Reddit API integration in this codebase. Setting this
-  variable changes nothing about the numbers shown; it's a documented
-  placeholder for when a real social-listening provider is connected.
 
 ## Notes on number formatting safety
 
@@ -666,35 +652,24 @@ Each provider call:
   gracefully. `lib/fetchNews.js` is kept only for a genuine client-side
   caller (same pattern as `lib/fetchRates.js` + `GoldCalculator.jsx`),
   and is commented accordingly so this isn't reintroduced later. The
-  page also renders two cards above the feed: a **Headline Sentiment by
+  page also renders one card above the feed: a **Headline Sentiment by
   Asset** card (real — `assetSentimentBreakdown`'s per-asset Bullish/
   Neutral/Bearish bars from the actual loaded headlines, labeled
-  "Rule-based") and the **Social Buzz Tracker**
-  (`components/SocialBuzzTracker.jsx`, replacing the old plain "Coming
-  soon" placeholder) — see below.
+  "Rule-based"). The Social Buzz Tracker (a simulated Reddit/X
+  chatter card) that used to sit above the news feed has been removed
+  entirely — see below.
 - **`components/NewsFeed.jsx`**'s `NewsCard` now also shows each
   item's rule-based sentiment as a colored badge (green/Bullish, red/
   Bearish, slate/Neutral) next to its category badge, with a tooltip
   noting it's from a keyword scan, not AI-generated, plus one `#Asset`
   pill per entry in its `relatedAssets`.
-- **`lib/socialBuzz.js`** + **`app/api/social-buzz/route.js`** +
-  **`components/SocialBuzzTracker.jsx`** are the Social Buzz Tracker.
-  There is **no** real X/Twitter or Reddit API integration anywhere in
-  this codebase — `getSocialBuzz()` generates a per-asset "buzz
-  intensity" (0-100) and a Bullish/Bearish/Neutral sentiment split
-  using a deterministic seeded PRNG (`mulberry32`, seeded from the
-  asset code + the current UTC date-hour bucket via a `djb2`-style
-  string hash), so the numbers are **stable within an hour** rather
-  than randomly jittering on every page load, but are a simulation,
-  never a measurement. `usingLiveApi` is unconditionally `false`; a
-  `SOCIAL_API_KEY` env var is checked only to make the UI's own `note`
-  text slightly more specific (see the Environment Variables section
-  above), never to change the data. The component keeps this unmissable
-  at all times: a persistent amber "Simulated" badge, the backend's own
-  `note` text rendered verbatim, and a permanently disabled "Use live
-  social API" toggle with a tooltip explaining exactly why it's off —
-  this is the same honesty-over-fabrication bar kept everywhere else in
-  this project, never a silent "looks live" placeholder.
+- **Social Buzz Tracker — removed.** `lib/socialBuzz.js`,
+  `app/api/social-buzz/route.js`, and `components/SocialBuzzTracker.jsx`
+  (plus the `REDDIT_CLIENT_ID`/`REDDIT_CLIENT_SECRET`/`SOCIAL_API_KEY`
+  env vars that backed them) have been deleted from this codebase.
+  There is no social-chatter feature, simulated or otherwise, on
+  `/ai-news` or `/market-analysis` any more — a deliberate decision to
+  cut the clutter rather than keep a permanently-simulated card alive.
 
 ## Notes on programmatic SEO converter routes & structured data
 

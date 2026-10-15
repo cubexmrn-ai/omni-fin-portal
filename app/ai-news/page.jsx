@@ -1,5 +1,4 @@
 import NewsStructuredData from "@/components/NewsStructuredData";
-import SocialBuzzTracker from "@/components/SocialBuzzTracker";
 import EconomicCalendar from "@/components/EconomicCalendar";
 import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
@@ -122,19 +121,18 @@ export default async function AiNewsPage() {
           Sentiment, then the Economic Calendar. No AI Video Insights
           grid here any more — that's /market-analysis's alone now, so
           the two pages don't duplicate each other (see
-          components/ai-news/MarketInsightsExplorer.jsx's header). */}
+          components/ai-news/MarketInsightsExplorer.jsx's header).
+          UI CLEANUP PASS: the Social Buzz Tracker (simulated/Reddit
+          chatter card) was removed entirely from this page — no
+          simulated social pills, no live-API toggle, no Reddit/X
+          integration anywhere in this deployment any more. */}
       <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
-        <div>
-          <SocialBuzzTracker />
-          <div className="mt-6">
-            <MarketInsightsExplorer
-              newsItems={items}
-              loadError={loadError}
-              warnings={data?.warnings}
-              ratesData={ratesData}
-            />
-          </div>
-        </div>
+        <MarketInsightsExplorer
+          newsItems={items}
+          loadError={loadError}
+          warnings={data?.warnings}
+          ratesData={ratesData}
+        />
 
         <LiveSentimentIndicator ratesData={ratesData} />
 

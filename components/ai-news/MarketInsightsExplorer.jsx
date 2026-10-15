@@ -25,6 +25,16 @@
 // News items don't carry a real Forex/Crypto/Metals/Macro label (see
 // lib/topicTags.js's header for why), so this still uses that module's
 // plain keyword classifier to bucket each headline.
+//
+// AUDIT FIX: same default-binding fix as
+// components/market-analysis/MarketAnalysisExplorer.jsx — on mount,
+// with no pill clicked yet, the flat meter used to show the blended
+// COMPOSITE score (an "offset" number matching no single pill).
+// `activeInstrument` (the real, nullable filter that drives the news
+// feed + "Filtered: X" chip) still starts `null` so the feed shows
+// every headline by default — but `displayInstrument` (passed to
+// SentimentPulseBar for the meter + pill highlight) falls back to
+// Gold ("XAU") whenever nothing is explicitly selected.
 
 import { useMemo, useState } from "react";
 import NewsWireFeed from "@/components/ai-news/NewsWireFeed";
@@ -42,9 +52,12 @@ const INSTRUMENT_LABEL = {
   WTI: "Crude Oil",
 };
 
+const DEFAULT_GAUGE_INSTRUMENT = "XAU"; // Gold — see header comment.
+
 export default function MarketInsightsExplorer({ newsItems, loadError, warnings, ratesData }) {
   const [activeTopic, setActiveTopic] = useState("All");
   const [activeInstrument, setActiveInstrument] = useState(null);
+  const displayInstrument = activeInstrument || DEFAULT_GAUGE_INSTRUMENT;
 
   const composite = useMemo(() => getCompositeSentiment(ratesData), [ratesData]);
 
@@ -77,7 +90,7 @@ export default function MarketInsightsExplorer({ newsItems, loadError, warnings,
     <div>
       <SentimentPulseBar
         composite={composite}
-        activeInstrument={activeInstrument}
+        activeInstrument={displayInstrument}
         onSelectInstrument={setActiveInstrument}
       />
 
