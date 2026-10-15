@@ -99,7 +99,7 @@ export function Hero({ marketPulse }) {
                 sub={`${technical.directionWord} · ${technical.greedFearWord}`}
               >
                 <p className="mt-3 text-xs leading-relaxed text-slate-400">
-                  Composite AI read across Gold, Bitcoin &amp; EUR/USD.{" "}
+                  Composite AI read across the 5 tracked instruments.{" "}
                   <Link href="/market-analysis" className="text-blue-400 hover:text-blue-300">
                     See the full breakdown
                   </Link>

@@ -2,10 +2,11 @@ import MarketOverviewBoard from "@/components/MarketOverviewBoard";
 import MarketAnalysisHero from "@/components/MarketAnalysisHero";
 import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysisFAQSection";
 import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
-import AutomatedVideoInsights from "@/components/market-analysis/AutomatedVideoInsights";
+import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
 import MacroSentimentEnginePanel from "@/components/market-analysis/MacroSentimentEnginePanel";
 import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
 import { getSentimentEngineSnapshot } from "@/lib/sentimentEngine";
+import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = buildMetadata({
@@ -52,6 +53,17 @@ export default async function MarketAnalysisPage() {
     sentimentSnapshot = { assets: [], note: "" };
   }
 
+  // Same getUnifiedRates() payload /ai-news and the homepage read from
+  // — powers this page's own copy of the shared multi-instrument
+  // sentiment bar (components/market-pulse/SentimentPulseBar.jsx) via
+  // MarketAnalysisExplorer below.
+  let ratesData = null;
+  try {
+    ratesData = await getUnifiedRates();
+  } catch {
+    ratesData = null;
+  }
+
   return (
     <>
       <MarketAnalysisFAQStructuredData />
@@ -61,15 +73,7 @@ export default async function MarketAnalysisPage() {
           Engine (this page's "Live Market Sentiment" equivalent), then
           the live charts/overview board, then the FAQ. */}
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-slate-900">AI Video Insights</h2>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-            {videoPosts.length} videos
-          </span>
-        </div>
-        <div className="mt-5">
-          <AutomatedVideoInsights posts={videoPosts} />
-        </div>
+        <MarketAnalysisExplorer videoPosts={videoPosts} ratesData={ratesData} />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">

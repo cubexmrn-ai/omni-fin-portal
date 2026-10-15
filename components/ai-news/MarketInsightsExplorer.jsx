@@ -10,21 +10,40 @@
 // `showCategoryTabs` prop) and the video grid having no topic filter
 // at all.
 //
+// Layered on top of that (the multi-instrument sentiment bar upgrade):
+// this component now also owns the shared SentimentPulseBar — clicking
+// an instrument pill there (Gold, BTC, EUR/USD, GBP/USD, Crude Oil)
+// ANDs an instrument-level filter on top of whichever broad category
+// tab is active, using lib/topicTags.js's matchesInstrument() keyword
+// match (the same deterministic, no-AI approach already established
+// by lib/sentimentKeywords.js — not a claim of precise classification).
+//
 // Neither video posts nor news items carry a real Forex/Crypto/Metals/
 // Macro label (see lib/topicTags.js's header for why), so this uses
-// that module's plain keyword classifier to bucket each item — the
-// same deterministic, no-AI approach already established by
-// lib/sentimentKeywords.js, not a claim of precise classification.
+// that module's plain keyword classifier to bucket each item.
 
 import { useMemo, useState } from "react";
 import AutomatedVideoInsights from "@/components/market-analysis/AutomatedVideoInsights";
 import NewsFeed from "@/components/NewsFeed";
-import { MASTER_TOPICS, topicForNewsItem, topicForVideoPost } from "@/lib/topicTags";
+import SentimentPulseBar from "@/components/market-pulse/SentimentPulseBar";
+import { getCompositeSentiment } from "@/lib/marketPulse";
+import { MASTER_TOPICS, topicForNewsItem, topicForVideoPost, matchesInstrument } from "@/lib/topicTags";
 
 const TABS = ["All", ...MASTER_TOPICS];
 
-export default function MarketInsightsExplorer({ videoPosts, newsItems, loadError, warnings }) {
+const INSTRUMENT_LABEL = {
+  XAU: "Gold",
+  BTC: "Bitcoin",
+  EURUSD: "EUR/USD",
+  GBPUSD: "GBP/USD",
+  WTI: "Crude Oil",
+};
+
+export default function MarketInsightsExplorer({ videoPosts, newsItems, loadError, warnings, ratesData }) {
   const [activeTopic, setActiveTopic] = useState("All");
+  const [activeInstrument, setActiveInstrument] = useState(null);
+
+  const composite = useMemo(() => getCompositeSentiment(ratesData), [ratesData]);
 
   const taggedVideos = useMemo(
     () => videoPosts.map((post) => ({ post, topic: topicForVideoPost(post) })),
@@ -45,24 +64,41 @@ export default function MarketInsightsExplorer({ videoPosts, newsItems, loadErro
     return result;
   }, [taggedVideos, taggedNews, videoPosts.length, newsItems.length]);
 
-  const filteredVideos = useMemo(
+  const byTopicVideos = useMemo(
     () =>
       activeTopic === "All"
-        ? videoPosts
-        : taggedVideos.filter((v) => v.topic === activeTopic).map((v) => v.post),
-    [activeTopic, videoPosts, taggedVideos]
+        ? taggedVideos
+        : taggedVideos.filter((v) => v.topic === activeTopic),
+    [activeTopic, taggedVideos]
   );
-  const filteredNews = useMemo(
-    () =>
-      activeTopic === "All"
-        ? newsItems
-        : taggedNews.filter((n) => n.topic === activeTopic).map((n) => n.item),
-    [activeTopic, newsItems, taggedNews]
+  const byTopicNews = useMemo(
+    () => (activeTopic === "All" ? taggedNews : taggedNews.filter((n) => n.topic === activeTopic)),
+    [activeTopic, taggedNews]
   );
+
+  const filteredVideos = useMemo(() => {
+    if (!activeInstrument) return byTopicVideos.map((v) => v.post);
+    return byTopicVideos
+      .filter((v) => matchesInstrument(`${v.post.title} ${v.post.body}`, activeInstrument))
+      .map((v) => v.post);
+  }, [byTopicVideos, activeInstrument]);
+
+  const filteredNews = useMemo(() => {
+    if (!activeInstrument) return byTopicNews.map((n) => n.item);
+    return byTopicNews
+      .filter((n) => matchesInstrument(`${n.item.title} ${n.item.excerpt || ""}`, activeInstrument))
+      .map((n) => n.item);
+  }, [byTopicNews, activeInstrument]);
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter by market category">
+      <SentimentPulseBar
+        composite={composite}
+        activeInstrument={activeInstrument}
+        onSelectInstrument={setActiveInstrument}
+      />
+
+      <div className="mt-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter by market category">
         {TABS.map((tab) => {
           const active = tab === activeTopic;
           return (
@@ -85,6 +121,17 @@ export default function MarketInsightsExplorer({ videoPosts, newsItems, loadErro
             </button>
           );
         })}
+
+        {activeInstrument && (
+          <button
+            type="button"
+            onClick={() => setActiveInstrument(null)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100"
+          >
+            Filtered: {INSTRUMENT_LABEL[activeInstrument] || activeInstrument}
+            <span aria-hidden="true">✕</span>
+          </button>
+        )}
       </div>
 
       <div className="mt-6">
@@ -122,7 +169,7 @@ export default function MarketInsightsExplorer({ videoPosts, newsItems, loadErro
 
           {!loadError && filteredNews.length === 0 ? (
             <p className="text-sm text-slate-500">
-              No headlines match this category right now — try a different tab.
+              No headlines match this filter right now — try a different tab or instrument.
             </p>
           ) : (
             <NewsFeed items={filteredNews} showCategoryTabs={false} />

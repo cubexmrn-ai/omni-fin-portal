@@ -3,7 +3,6 @@ import SocialBuzzTracker from "@/components/SocialBuzzTracker";
 import EconomicCalendar from "@/components/EconomicCalendar";
 import LiveSentimentIndicator from "@/components/LiveSentimentIndicator";
 import AiNewsHero from "@/components/AiNewsHero";
-import SentimentPulseBar from "@/components/ai-news/SentimentPulseBar";
 import MarketInsightsExplorer from "@/components/ai-news/MarketInsightsExplorer";
 import { getAggregatedNews } from "@/lib/newsAggregator";
 import { getYoutubeAutomationFeed } from "@/lib/youtubeAutomation";
@@ -80,10 +79,6 @@ export default async function AiNewsPage() {
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <AiNewsHero />
 
-          <div className="mt-6">
-            <SentimentPulseBar ratesData={ratesData} />
-          </div>
-
           <div
             className={`mt-5 inline-flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
               data?.aiSummarization?.enabled
@@ -118,9 +113,10 @@ export default async function AiNewsPage() {
 
       {/* Tiers, all stacked and simultaneously visible — no tabs at the
           page level, nothing hidden behind a toggle. Order: the unified
-          category explorer (AI Video Insights + Live News Feed, one
-          shared All/Forex/Crypto/Metals & Commodities/Macro tab row),
-          then Live Market Sentiment, then the Economic Calendar. */}
+          category explorer (sticky multi-instrument sentiment bar, then
+          AI Video Insights + Live News Feed sharing one
+          All/Forex/Crypto/Metals & Commodities/Macro tab row), then
+          Live Market Sentiment, then the Economic Calendar. */}
       <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
         <div>
           <SocialBuzzTracker />
@@ -130,6 +126,7 @@ export default async function AiNewsPage() {
               newsItems={items}
               loadError={loadError}
               warnings={data?.warnings}
+              ratesData={ratesData}
             />
           </div>
         </div>

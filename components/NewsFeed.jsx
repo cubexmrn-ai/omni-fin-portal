@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // Stable display order for category pills; any category present in the
 // data but not listed here still shows up, just appended at the end —
@@ -16,13 +16,17 @@ const CATEGORY_BADGE_STYLES = {
 };
 const DEFAULT_BADGE_STYLE = "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
 
-// Rule-based sentiment badge styles (see computeSentiment() in
-// lib/newsAggregator.js — a keyword scan, not an AI/NLP call).
-const SENTIMENT_BADGE_STYLES = {
-  Bullish: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
-  Bearish: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300",
-  Neutral: "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+// Rule-based sentiment dot colors (see computeSentiment() in
+// lib/newsAggregator.js — a keyword scan, not an AI/NLP call). Folded
+// into the single category pill as a colored dot rather than a second
+// badge, so one card only ever shows one tag.
+const SENTIMENT_DOT_STYLES = {
+  Bullish: "bg-emerald-500",
+  Bearish: "bg-rose-500",
+  Neutral: "bg-slate-400",
 };
+
+const MAX_DEFAULT_VISIBLE = 6;
 
 function timeAgo(isoDate) {
   if (!isoDate) return "";
@@ -36,34 +40,37 @@ function timeAgo(isoDate) {
   return `${diffDay}d ago`;
 }
 
-function NewsCard({ item }) {
+function NewsCard({ item, compact }) {
   const badgeStyle = CATEGORY_BADGE_STYLES[item.category] || DEFAULT_BADGE_STYLE;
+  const dotStyle = item.sentiment ? SENTIMENT_DOT_STYLES[item.sentiment] : null;
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-card-hover">
-      <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
+    <article
+      className={`flex h-full flex-col rounded-xl border border-slate-200 bg-white shadow-card transition-shadow hover:shadow-card-hover ${
+        compact ? "p-3" : "p-5"
+      }`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium text-slate-400">
         {item.category && (
-          <span className={`rounded-full px-2 py-0.5 font-semibold ${badgeStyle}`}>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-semibold ${badgeStyle}`}
+            title={
+              item.sentiment
+                ? `Rule-based sentiment from a keyword scan, not AI-generated: ${item.sentiment}`
+                : undefined
+            }
+          >
+            {dotStyle && <span className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} aria-hidden="true" />}
             {item.category}
           </span>
         )}
-        {item.sentiment && (
-          <span
-            className={`rounded-full px-2 py-0.5 font-semibold ${
-              SENTIMENT_BADGE_STYLES[item.sentiment] || DEFAULT_BADGE_STYLE
-            }`}
-            title="Rule-based sentiment from a keyword scan, not AI-generated"
-          >
-            {item.sentiment}
-          </span>
-        )}
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+        <span className="truncate text-slate-400">
           {item.source}
+          {item.publishedAt && <span className="font-mono"> · {timeAgo(item.publishedAt)}</span>}
         </span>
-        {item.publishedAt && <span>{timeAgo(item.publishedAt)}</span>}
       </div>
 
-      <h3 className="mt-2.5 text-base font-semibold text-slate-900">
+      <h3 className={`font-semibold text-slate-900 ${compact ? "mt-2 line-clamp-2 text-sm" : "mt-2.5 text-base"}`}>
         {item.link ? (
           <a
             href={item.link}
@@ -78,14 +85,14 @@ function NewsCard({ item }) {
         )}
       </h3>
 
-      {item.excerpt && (
+      {!compact && item.excerpt && (
         <p className="mt-1.5 flex-1 text-sm text-slate-500">
           {item.excerpt}
           {item.excerpt.length >= 220 ? "…" : ""}
         </p>
       )}
 
-      {Array.isArray(item.relatedAssets) && item.relatedAssets.length > 0 && (
+      {!compact && Array.isArray(item.relatedAssets) && item.relatedAssets.length > 0 && (
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {item.relatedAssets.map((asset) => (
             <span
@@ -99,7 +106,7 @@ function NewsCard({ item }) {
         </div>
       )}
 
-      {item.summaryStatus === "ready" && item.summary ? (
+      {!compact && item.summaryStatus === "ready" && item.summary && (
         <div className="mt-3 flex items-start gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
           <svg
             width="12"
@@ -125,28 +132,41 @@ function NewsCard({ item }) {
             {item.summary}
           </span>
         </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 8V12L15 15M21 12A9 9 0 113 12A9 9 0 0121 12Z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Rule-based sentiment only — see the excerpt above
-        </div>
       )}
     </article>
+  );
+}
+
+function DensityToggle({ compact, onChange }) {
+  return (
+    <div
+      className="inline-flex rounded-full border border-slate-200 bg-white p-0.5 text-xs font-semibold"
+      role="tablist"
+      aria-label="Card density"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={!compact}
+        onClick={() => onChange(false)}
+        className={`rounded-full px-2.5 py-1 transition-colors ${
+          !compact ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"
+        }`}
+      >
+        Comfortable
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={compact}
+        onClick={() => onChange(true)}
+        className={`rounded-full px-2.5 py-1 transition-colors ${
+          compact ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-700"
+        }`}
+      >
+        Compact
+      </button>
+    </div>
   );
 }
 
@@ -165,10 +185,17 @@ function NewsCard({ item }) {
  * `items` by its own All/Forex/Crypto/Metals & Commodities/Macro tabs
  * on /ai-news so there's only ever one set of category tabs on screen.
  * The search box still works either way.
+ *
+ * The filtered grid caps to MAX_DEFAULT_VISIBLE cards by default (a
+ * "View all" expand reveals the rest, no refetch) and offers the same
+ * Compact/Comfortable density toggle as the video insights grid, so a
+ * broad search/filter never dumps a 15+ card wall on screen at once.
  */
 export default function NewsFeed({ items, showCategoryTabs = true }) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [expanded, setExpanded] = useState(false);
+  const [compact, setCompact] = useState(false);
 
   const categories = useMemo(() => {
     const present = new Set(items.map((item) => item.category).filter(Boolean));
@@ -188,6 +215,16 @@ export default function NewsFeed({ items, showCategoryTabs = true }) {
       return haystack.includes(normalizedQuery);
     });
   }, [items, query, activeCategory, showCategoryTabs]);
+
+  // A new filter/search result (fewer or different items) should start
+  // collapsed again, rather than silently staying "expanded" from a
+  // previous, longer list.
+  useEffect(() => {
+    setExpanded(false);
+  }, [filtered]);
+
+  const visible = expanded ? filtered : filtered.slice(0, MAX_DEFAULT_VISIBLE);
+  const hasMore = filtered.length > MAX_DEFAULT_VISIBLE;
 
   return (
     <div>
@@ -220,47 +257,68 @@ export default function NewsFeed({ items, showCategoryTabs = true }) {
           </div>
         )}
 
-        <div className="relative w-full sm:w-64">
-          <svg
-            width="15"
-            height="15"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M21 21L15.8 15.8M18 10.5A7.5 7.5 0 113 10.5A7.5 7.5 0 0118 10.5Z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <div className="flex w-full items-center gap-2.5 sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <svg
+              width="15"
+              height="15"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M21 21L15.8 15.8M18 10.5A7.5 7.5 0 113 10.5A7.5 7.5 0 0118 10.5Z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search headlines…"
+              aria-label="Search headlines"
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 shadow-sm transition-colors focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
             />
-          </svg>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search headlines…"
-            aria-label="Search headlines"
-            className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 shadow-sm transition-colors focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-          />
+          </div>
+          <DensityToggle compact={compact} onChange={setCompact} />
         </div>
       </div>
 
       <p className="mt-3 text-xs text-slate-400">
-        Showing {filtered.length} of {items.length} headlines
+        Showing {visible.length} of {filtered.length} headlines
         {showCategoryTabs && activeCategory !== "All" ? ` in ${activeCategory}` : ""}
         {query.trim() ? ` matching "${query.trim()}"` : ""}.
       </p>
 
       {filtered.length > 0 ? (
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((item, idx) => (
-            <NewsCard key={`${item.link || item.title}-${idx}`} item={item} />
-          ))}
-        </div>
+        <>
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${
+              compact ? "mt-4 gap-2.5" : "mt-5 gap-4"
+            }`}
+          >
+            {visible.map((item, idx) => (
+              <NewsCard key={`${item.link || item.title}-${idx}`} item={item} compact={compact} />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+              >
+                {expanded ? "Show less" : `View all ${filtered.length} headlines`}
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <p className="mt-10 text-center text-sm text-slate-500">
           No headlines match your filters right now — try a different
