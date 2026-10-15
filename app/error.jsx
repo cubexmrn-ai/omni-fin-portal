@@ -37,8 +37,8 @@ export default function RootError({ error, reset }) {
       </p>
       <h1 className="mt-4 text-xl font-bold text-slate-900">Something went wrong</h1>
       <p className="mt-2 text-sm text-slate-500">
-        This page hit an unexpected error. It's been logged — try again, or
-        head back to the homepage.
+        This page hit an unexpected error. It&apos;s been logged — try again,
+        or head back to the homepage.
       </p>
       <div className="mt-6 flex items-center gap-3">
         <button
