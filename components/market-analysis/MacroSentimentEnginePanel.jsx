@@ -1,11 +1,22 @@
+"use client";
+
 // components/market-analysis/MacroSentimentEnginePanel.jsx
 //
-// Server component rendering the Macro Sentiment Engine snapshot (see
+// Renders the Macro Sentiment Engine snapshot (see
 // lib/sentimentEngine.js's getSentimentEngineSnapshot()) as a card grid,
 // one card per tracked asset. Visual style matches the rest of the
 // project's card UI (rounded-lg borders, slate palette, text-sm body
 // copy) — see components/market-analysis/AutomatedVideoInsights.jsx and
 // components/MarketOverviewBoard.jsx.
+//
+// Market Blog cards clamp their body to ~5 lines with a per-card "Read
+// full update" expand (useState — why this is a client component now)
+// rather than showing the full generated paragraph on every card at
+// once, which read as a dense wall of text sitting right under the
+// hero. No text is cut from the underlying data, just collapsed by
+// default — same "cap it, let the person expand" pattern already used
+// by the video/news grids (components/market-analysis/
+// AutomatedVideoInsights.jsx, components/NewsFeed.jsx).
 //
 // Honesty note: `snapshot.note` (surfaced directly under the heading)
 // is the same kind of plain-language status string used by
@@ -13,6 +24,8 @@
 // whether themes came from a real Claude API call or a rotating
 // contextual pool, and that the sentiment scores are a deterministic
 // simulation unless a real data provider is wired up.
+
+import { useState } from "react";
 
 function DivergenceBadge({ divergence }) {
   if (divergence === "aligned") {
@@ -117,6 +130,8 @@ function AssetSentimentCard({ asset }) {
 }
 
 function MarketBlogCard({ blog }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <article className="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-card-hover">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -144,8 +159,25 @@ function MarketBlogCard({ blog }) {
             : "Template-generated"}
         </span>
       </div>
-      <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">{blog.body}</p>
-      <p className="mt-3 text-[11px] text-slate-400">{blog.wordCount} words</p>
+
+      <p
+        className={`mt-3 flex-1 text-sm leading-relaxed text-slate-600 ${
+          expanded ? "" : "line-clamp-5"
+        }`}
+      >
+        {blog.body}
+      </p>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+        >
+          {expanded ? "Show less" : "Read full update"}
+        </button>
+        <span className="font-mono text-[11px] text-slate-400">{blog.wordCount}w</span>
+      </div>
     </article>
   );
 }
