@@ -86,6 +86,11 @@ export async function GET(request) {
         usingClaudeExtraction: feed.usingClaudeExtraction,
         transcriptCount: feed.transcriptCount,
         note: feed.note,
+        // Exact per-model Gemini failure reasons from this run (HTTP
+        // status + Gemini's own error body / exception message) — see
+        // lib/youtubeAutomation.js's recordGeminiError(). Empty array
+        // when Gemini wasn't attempted or every call succeeded.
+        geminiErrors: feed.geminiErrors || [],
         revalidatedPaths: ["/market-analysis", "/ai-news"],
       },
       { status: 200 }
