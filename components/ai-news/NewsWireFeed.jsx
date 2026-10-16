@@ -35,7 +35,13 @@ const SENTIMENT_DOT_STYLES = {
   Neutral: "bg-slate-300",
 };
 
-const MAX_DEFAULT_VISIBLE = 10;
+// UX FIX: this used to show all 10 default items unseparated, with a
+// "View all N" toggle that dumped the entire remaining list at once.
+// Now shows a smaller, genuinely "uncluttered" initial page (6-8
+// compact cards) with a real incremental "Load More" button instead,
+// per the Public News Wire layout spec.
+const MAX_DEFAULT_VISIBLE = 8;
+const LOAD_MORE_STEP = 8;
 
 function timeAgo(isoDate) {
   if (!isoDate) return "";
@@ -71,7 +77,7 @@ function WireRow({ item }) {
   const badgeStyle = CATEGORY_BADGE_STYLES[item.category] || DEFAULT_BADGE_STYLE;
 
   return (
-    <article className="flex gap-3 border-t border-slate-100 py-3 first:border-t-0">
+    <article className="flex gap-3 rounded-lg border border-slate-100 bg-white px-3 py-3 shadow-sm">
       <div className="flex w-14 shrink-0 flex-col items-start gap-1.5 pt-0.5">
         <span className={`h-1.5 w-1.5 rounded-full ${dotStyle}`} aria-hidden="true" />
         <span
@@ -122,7 +128,7 @@ function WireRow({ item }) {
 
 export default function NewsWireFeed({ items }) {
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(MAX_DEFAULT_VISIBLE);
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -133,14 +139,15 @@ export default function NewsWireFeed({ items }) {
     });
   }, [items, query]);
 
-  // A new filter/search result should start collapsed again, same
-  // convention as NewsFeed.jsx and AutomatedVideoInsights.jsx.
+  // A new filter/search result should start back at the compact
+  // initial page, same convention as NewsFeed.jsx and
+  // AutomatedVideoInsights.jsx used for their own "start collapsed" rule.
   useEffect(() => {
-    setExpanded(false);
+    setVisibleCount(MAX_DEFAULT_VISIBLE);
   }, [filtered]);
 
-  const visible = expanded ? filtered : filtered.slice(0, MAX_DEFAULT_VISIBLE);
-  const hasMore = filtered.length > MAX_DEFAULT_VISIBLE;
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = filtered.length > visibleCount;
 
   return (
     <div className="rounded-xl border border-slate-200/70 bg-white/90 p-4 shadow-card backdrop-blur-sm sm:p-5">
@@ -188,20 +195,20 @@ export default function NewsWireFeed({ items }) {
         </p>
       ) : (
         <>
-          <div className="mt-1">
+          <div className="mt-3 space-y-2">
             {visible.map((item, idx) => (
               <WireRow key={`${item.link || item.title}-${idx}`} item={item} />
             ))}
           </div>
 
           {hasMore && (
-            <div className="mt-2 flex justify-center border-t border-slate-100 pt-3">
+            <div className="mt-3 flex justify-center border-t border-slate-100 pt-3">
               <button
                 type="button"
-                onClick={() => setExpanded((v) => !v)}
+                onClick={() => setVisibleCount((v) => v + LOAD_MORE_STEP)}
                 className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
               >
-                {expanded ? "Show less" : `View all ${filtered.length} headlines`}
+                Load More ({filtered.length - visibleCount} more)
               </button>
             </div>
           )}

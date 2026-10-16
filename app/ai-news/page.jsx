@@ -2,6 +2,7 @@ import NewsStructuredData from "@/components/NewsStructuredData";
 import EconomicCalendar from "@/components/EconomicCalendar";
 import AiNewsHero from "@/components/AiNewsHero";
 import MarketInsightsExplorer from "@/components/ai-news/MarketInsightsExplorer";
+import MacroImpactHero from "@/components/ai-news/MacroImpactHero";
 import { getCachedAggregatedNews } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
@@ -80,63 +81,41 @@ export default async function AiNewsPage() {
       <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
           <AiNewsHero />
-
-          <div
-            className={`mt-5 inline-flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
-              data?.aiSummarization?.enabled
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-amber-200 bg-amber-50 text-amber-800"
-            }`}
-          >
-            <svg
-              width="16"
-              height="16"
-              className="mt-0.5 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18A2 2 0 003.54 21H20.46A2 2 0 0022.18 18L13.71 3.86A2 2 0 0010.29 3.86Z"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span>
-              {data?.aiSummarization?.note ||
-                "Headlines are live from RSS, with rule-based sentiment badges."}
-            </span>
-          </div>
         </div>
       </section>
 
-      {/* Tiers, all stacked and simultaneously visible — no tabs at the
-          page level, nothing hidden behind a toggle. Order: the unified
-          category explorer (sticky multi-instrument sentiment bar, then
-          the Live Macro News Wire Feed, sharing one All/Forex/Crypto/
-          Metals & Commodities/Macro tab row), then the Economic
-          Calendar. No AI Video Insights grid here any more — that's
-          /market-analysis's alone now, so the two pages don't
-          duplicate each other (see
-          components/ai-news/MarketInsightsExplorer.jsx's header).
-          UI CLEANUP PASS: the Social Buzz Tracker (simulated/Reddit
-          chatter card) and the "Live Market Sentiment" 3-card block
-          (components/LiveSentimentIndicator.jsx, deleted — a redundant,
-          disclaimer-heavy rule-based blend that duplicated what the
-          sentiment pulse bar above already shows per-instrument) have
-          both been removed entirely from this page. */}
-      <section className="mx-auto max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
+      {/* LAYOUT REFACTOR: fixed top-to-bottom order is now (1) header +
+          macro sentiment meter bar, (2) the NEW "AI High-Impact News &
+          Sentiment" hero (MacroImpactHero — structured directional-
+          impact cards for top-tier macro headlines only, replacing the
+          old raw developer-status banner that used to sit right under
+          the hero text above, e.g. "AI-generated one-line summaries...
+          8 via Gemini"), (3) the real-time Economic Calendar widget,
+          (4) the Public News Wire at the very bottom (search + category
+          tabs + compact cards + Load More — see NewsWireFeed.jsx).
+          MarketInsightsExplorer still owns the meter bar AND the wire
+          feed (they share state — see its own header comment), so (2)
+          and (3) are passed in as `children` to land in exactly that
+          slot between the two. No AI Video Insights grid here any
+          more — that's /market-analysis's alone, so the two pages
+          don't duplicate each other. UI CLEANUP PASS: the Social Buzz
+          Tracker (simulated/Reddit chatter card) and the "Live Market
+          Sentiment" 3-card block (components/LiveSentimentIndicator.jsx,
+          deleted — a redundant, disclaimer-heavy rule-based blend that
+          duplicated what the sentiment pulse bar above already shows
+          per-instrument) have both been removed entirely from this page. */}
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <MarketInsightsExplorer
           newsItems={items}
           loadError={loadError}
           warnings={data?.warnings}
           ratesData={ratesData}
-        />
-
-        <EconomicCalendar />
+        >
+          <MacroImpactHero macroImpact={data?.macroImpact} />
+          <div className="mt-10">
+            <EconomicCalendar />
+          </div>
+        </MarketInsightsExplorer>
       </section>
     </>
   );

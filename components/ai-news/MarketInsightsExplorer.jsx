@@ -3,9 +3,11 @@
 // components/ai-news/MarketInsightsExplorer.jsx
 //
 // /ai-news's content explorer: the shared SentimentPulseBar (composite
-// gauge + instrument pills), one category tab row (All / Forex /
-// Crypto / Metals & Commodities / Macro), and the Live Macro News Wire
-// Feed (components/ai-news/NewsWireFeed.jsx) below it.
+// gauge + instrument pills) at the top, then whatever's passed in as
+// `children` (the AI High-Impact hero + Economic Calendar — see the
+// LAYOUT REFACTOR comment below), then the Public News Wire section:
+// one category tab row (All / Forex / Crypto / Metals & Commodities /
+// Macro) and the search+paginate feed (components/ai-news/NewsWireFeed.jsx).
 //
 // DEDUPE PASS: this used to also render AutomatedVideoInsights — the
 // exact same AI Video Insights grid /market-analysis already shows —
@@ -54,7 +56,18 @@ const INSTRUMENT_LABEL = {
 
 const DEFAULT_GAUGE_INSTRUMENT = "XAU"; // Gold — see header comment.
 
-export default function MarketInsightsExplorer({ newsItems, loadError, warnings, ratesData }) {
+// LAYOUT REFACTOR: this component owns the shared activeInstrument/
+// activeTopic state the sentiment meter bar AND the Public News Wire
+// tabs both need, so it still renders both — but the page's required
+// top-to-bottom order is meter bar → AI High-Impact hero → Economic
+// Calendar → Public News Wire, with two whole OTHER components (the
+// hero, the calendar) physically between this component's own two
+// halves. Rather than lifting all this state up into a server
+// component page (which can't hold client state) or duplicating it
+// across two separate client components, this accepts `children` and
+// renders it in exactly that slot — the page passes
+// <MacroImpactHero/> and <EconomicCalendar/> in as children.
+export default function MarketInsightsExplorer({ newsItems, loadError, warnings, ratesData, children }) {
   const [activeTopic, setActiveTopic] = useState("All");
   const [activeInstrument, setActiveInstrument] = useState(null);
   const displayInstrument = activeInstrument || DEFAULT_GAUGE_INSTRUMENT;
@@ -94,7 +107,14 @@ export default function MarketInsightsExplorer({ newsItems, loadError, warnings,
         onSelectInstrument={setActiveInstrument}
       />
 
-      <div className="mt-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter by market category">
+      {children}
+
+      <h2 className="mt-10 text-base font-bold text-slate-900">Public News Wire</h2>
+      <p className="mt-1 text-xs text-slate-400">
+        Search or filter by category, then load more as needed.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter by market category">
         {TABS.map((tab) => {
           const active = tab === activeTopic;
           return (
@@ -130,15 +150,14 @@ export default function MarketInsightsExplorer({ newsItems, loadError, warnings,
         )}
       </div>
 
-      <div className="mt-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-slate-900">Live Macro News Wire Feed</h2>
+      <div className="mt-4">
+        <div className="flex items-center justify-end gap-3">
           <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">
             {filteredNews.length} headlines
           </span>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-3">
           {loadError && (
             <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               Couldn&apos;t load the news feed right now ({loadError}). Please try again shortly.
