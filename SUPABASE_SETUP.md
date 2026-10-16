@@ -165,10 +165,9 @@ create policy "youtube_blog_posts_write_anon" on youtube_blog_posts
   for all using (true) with check (true);
 ```
 
-Also set `ADMIN_YOUTUBE_IMPORTER_PASSKEY` in Vercel's Environment Variables
-(and `.env.local` for local use) — see `lib/youtubeBlogPipeline.js`'s
-`isValidAdminPasskey()` for the (deliberately simple, not real auth infra)
-check this gates.
+The `/admin/youtube-importer` passkey is a single hardcoded value in
+`lib/youtubeBlogPipeline.js`'s `isValidAdminPasskey()` — no environment
+variable involved, by design (deliberately simple, not real auth infra).
 
 ## Scope notes (what this does *not* cover)
 
