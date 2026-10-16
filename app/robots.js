@@ -8,8 +8,14 @@
 //
 // Allows all crawlers everywhere except the internal Next.js API
 // routes (app/api/*) — those return live rate/news/AI data meant to be
-// called by this app's own client code, not indexed as pages — and the
-// Next.js build output folder, which isn't a real route at all.
+// called by this app's own client code, not indexed as pages — the
+// Next.js build output folder, which isn't a real route at all — and
+// /admin/ as a standing precaution. There is no live route under
+// /admin/ right now (the YouTube importer admin panel that used to
+// live at /admin/youtube-importer was removed entirely, routes and
+// all), but disallowing the whole prefix costs nothing and means any
+// future admin page added under it is excluded from crawling/indexing
+// by default rather than by having to remember to add it here later.
 
 import { getSiteUrl } from "@/lib/siteUrl";
 
@@ -20,7 +26,7 @@ export default function robots() {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/_next/"],
+      disallow: ["/api/", "/_next/", "/admin/"],
     },
     sitemap: `${siteUrl}/sitemap.xml`,
     host: siteUrl,

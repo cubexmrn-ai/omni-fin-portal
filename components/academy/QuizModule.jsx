@@ -22,7 +22,7 @@
 // answers and a failing score (see components/academy/LessonViewer.jsx's
 // header comment for the full 3-color accent system this page uses).
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 function buildInitialAnswers(questions) {
   return questions.map(() => null);

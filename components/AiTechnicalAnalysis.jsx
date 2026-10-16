@@ -261,12 +261,12 @@ function DenseDataTable({ dataPoints }) {
       {dataPoints.map((dp, i) => (
         <div
           key={dp.label}
-          className={`flex items-center justify-between gap-3 px-3 py-1.5 ${
+          className={`flex min-w-0 items-center justify-between gap-3 px-3 py-1.5 ${
             i % 2 === 1 ? "sm:bg-slate-50 dark:sm:bg-slate-900/40" : ""
           } border-b border-slate-100 last:border-b-0 dark:border-slate-800 sm:[&:nth-last-child(-n+2)]:border-b-0`}
         >
-          <span className="text-xs text-slate-500 dark:text-slate-400">{dp.label}</span>
-          <span className="font-mono text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
+          <span className="min-w-0 truncate text-xs text-slate-500 dark:text-slate-400">{dp.label}</span>
+          <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
             {dp.value}
           </span>
         </div>
@@ -303,11 +303,23 @@ function LadderRow({ row }) {
     : "border-slate-700 bg-slate-800/40 text-slate-300";
 
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 ${toneClass}`}>
-      <span className={`text-[11px] font-bold uppercase tracking-wide ${row.isCenter ? "" : "opacity-70"}`}>
+    // AUDIT FIX (mobile): this row used to have no shrink/truncation
+    // rule on either child — on a narrow phone (320-375px) a longer
+    // label ("R3 · Resistance 3") plus the price and its +/-% distance
+    // could together exceed the row's width, and since the parent
+    // PriceLadderCard clips with `overflow-hidden`, the overflow was
+    // silently CUT OFF rather than wrapping or shrinking — the price
+    // itself (the one number that must stay fully readable) could get
+    // clipped. `min-w-0` on the row lets its children actually shrink
+    // below their content size (required for `truncate` to work inside
+    // a flex item); the label now truncates with an ellipsis first,
+    // while the price/% span is `shrink-0` so it's never the one
+    // sacrificed for space.
+    <div className={`flex min-w-0 items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 ${toneClass}`}>
+      <span className={`min-w-0 truncate text-[11px] font-bold uppercase tracking-wide ${row.isCenter ? "" : "opacity-70"}`}>
         {row.isCenter ? row.label : `${row.tier} · ${row.label}`}
       </span>
-      <span className="flex items-baseline gap-2 font-mono">
+      <span className="flex shrink-0 items-baseline gap-2 font-mono">
         <span className={`text-sm font-bold tabular-nums ${row.isCenter ? "text-base" : ""}`}>
           {row.formatted}
         </span>
