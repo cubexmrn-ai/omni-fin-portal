@@ -12,7 +12,7 @@ import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 // (lib/academyData.js) already explains every one of these terms in
 // plain English — it just never linked from here. This maps each
 // report section title to its matching Academy lesson (level id +
-// lesson id, used as /learn/<level>/<lesson>), so "Learn this" sits
+// lesson id, used as /learn/<level>/<lesson>), so "Learn More" sits
 // right next to the term instead of requiring the visitor to find the
 // Academy on their own. "Overall Sentiment" and "Price Action"/
 // "Support & Resistance" use plain-enough language on their own and
@@ -28,6 +28,20 @@ const ACADEMY_LESSON_FOR_TITLE = {
   "Gann Theory": { level: "analyst", lesson: "gann-basics" },
 };
 
+// Report sections whose dataPoints read better as a dense, bordered
+// label/value table (Pivot Points, Fibonacci, Oscillators, Gann,
+// Confluence — all "many short rows of numbers") rather than the
+// colored accent tiles used for Price Action / Support & Resistance,
+// where highlighting WHICH number is support/resistance/current price
+// is the point. Anything not listed here falls back to the tile grid.
+const DENSE_TABLE_TITLES = new Set([
+  "Pivot Points",
+  "RSI / Moving Averages",
+  "Multi-Timeframe Confluence",
+  "Fibonacci Retracement",
+  "Gann Theory",
+]);
+
 function AcademyLink({ title }) {
   const lesson = ACADEMY_LESSON_FOR_TITLE[title];
   if (!lesson) return null;
@@ -35,9 +49,9 @@ function AcademyLink({ title }) {
     <Link
       href={`/learn/${lesson.level}/${lesson.lesson}`}
       className="inline-flex shrink-0 items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 transition-colors hover:bg-brand-100 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-300"
-      title={`New to this term? Learn it in the Academy.`}
+      title="New to this term? Learn it in the Academy."
     >
-      Learn this
+      Learn More
       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -47,36 +61,69 @@ function AcademyLink({ title }) {
 
 /**
  * Short, plain-English availability tag shown next to a section's
- * title — AUDIT FIX (Beginner persona): previously the only signal a
- * visitor got that a section like RSI/Gann wasn't a real calculation
- * was a wall of text buried in the amber "limitations" box below. This
- * surfaces the same honest distinction (already computed in
- * lib/technicalAnalysis.js — never a new claim invented here) as a
- * one-glance tag: no dataPoints at all = genuinely unavailable; a
- * limitations note with dataPoints present = an illustrative
- * approximation; neither = a real live calculation.
+ * title — the same honest distinction as before (already computed in
+ * lib/technicalAnalysis.js — never a new claim invented here): no
+ * dataPoints at all = genuinely unavailable; a limitations note with
+ * dataPoints present = an illustrative approximation; neither = a real
+ * live calculation.
+ *
+ * UX FIX: when the top-level badge already tells the visitor this
+ * whole report is running on live data (`reportIsLive`), repeating a
+ * green "Live calculation" pill on every single card underneath it is
+ * noise, not signal — so that pill is suppressed in that case. The
+ * amber "Illustrative" and grey "Not available" pills are NEVER
+ * suppressed: those are exactly the contradictions a visitor needs to
+ * see even when the report overall is live (e.g. a swing couldn't be
+ * detected for one particular section).
  */
-function AvailabilityTag({ section }) {
+function AvailabilityTag({ section, reportIsLive }) {
   if (!section) return null;
   const hasData = Array.isArray(section.dataPoints) && section.dataPoints.length > 0;
 
   if (!hasData && section.limitations) {
     return (
       <span className="inline-flex shrink-0 items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400">
-        Not available — needs price history
+        Not available
       </span>
     );
   }
   if (hasData && section.limitations) {
     return (
       <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-        Illustrative estimate
+        Illustrative
       </span>
     );
   }
+  if (reportIsLive) return null; // already covered by the one top-level "Live" badge.
   return (
     <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-      Live calculation
+      Live
+    </span>
+  );
+}
+
+/**
+ * Small "ⓘ" affordance carrying a section's methodology/limitations
+ * text as a native tooltip (title attribute) — replaces the old
+ * always-visible paragraph blocks under every card, which buried the
+ * actual numbers under a wall of disclosure text. Nothing is hidden
+ * (the full text is still there, on hover/focus/tap-and-hold), it's
+ * just no longer competing with the data for attention by default.
+ */
+function InfoNote({ section }) {
+  if (!section) return null;
+  const text = [section.limitations, section.methodology ? `Method: ${section.methodology}` : null]
+    .filter(Boolean)
+    .join(" ");
+  if (!text) return null;
+  return (
+    <span
+      tabIndex={0}
+      title={text}
+      className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-slate-300 text-[10px] font-bold text-slate-400 hover:border-slate-400 hover:text-slate-600 dark:border-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+      aria-label="Methodology and limitations"
+    >
+      i
     </span>
   );
 }
@@ -87,6 +134,17 @@ const BIAS_TEXT_COLOR = {
   Neutral: "text-slate-600 dark:text-slate-300",
   Sell: "text-rose-600 dark:text-rose-400",
   "Strong Sell": "text-rose-700 dark:text-rose-300",
+};
+
+// Terminal-style numeric tone for the always-dark Overall Sentiment
+// panel (a different palette than BIAS_TEXT_COLOR's light/dark-aware
+// one, since this panel is intentionally dark regardless of site theme).
+const TERMINAL_TEXT_COLOR = {
+  "Strong Buy": "text-emerald-400",
+  Buy: "text-emerald-400",
+  Neutral: "text-slate-300",
+  Sell: "text-rose-400",
+  "Strong Sell": "text-rose-400",
 };
 
 function BiasCard({ title, score, label, note, subtitle }) {
@@ -110,44 +168,105 @@ function BiasCard({ title, score, label, note, subtitle }) {
   );
 }
 
-function ReportSection({ title, section }) {
+// Classifies a Price Action / Support & Resistance data point by its
+// label so Resistance levels get a subtle red accent, Support levels a
+// subtle green accent, and the current live price a blue accent —
+// everything else (distances, percentages) stays neutral. Pure string
+// matching on the labels lib/technicalAnalysis.js already emits (e.g.
+// "Resistance 1", "Support 2", "Nearest Resistance", "Live Price") —
+// no new claims, just a visual read of data already there.
+function classifyLevel(label) {
+  const l = label.toLowerCase();
+  if (l.includes("resistance")) return "resistance";
+  if (l.includes("support")) return "support";
+  if (l.includes("live price") || l === "live price") return "price";
+  return "neutral";
+}
+
+const LEVEL_TILE_CLASS = {
+  resistance:
+    "border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10",
+  support:
+    "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10",
+  price:
+    "border-brand-200 bg-brand-50 dark:border-brand-500/30 dark:bg-brand-500/10",
+  neutral:
+    "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40",
+};
+
+const LEVEL_VALUE_CLASS = {
+  resistance: "text-rose-700 dark:text-rose-300",
+  support: "text-emerald-700 dark:text-emerald-300",
+  price: "text-brand-700 dark:text-brand-300",
+  neutral: "text-slate-900 dark:text-slate-100",
+};
+
+function AccentTileGrid({ dataPoints }) {
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+      {dataPoints.map((dp) => {
+        const kind = classifyLevel(dp.label);
+        return (
+          <div
+            key={dp.label}
+            className={`rounded-lg border px-2.5 py-2 text-center ${LEVEL_TILE_CLASS[kind]}`}
+          >
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{dp.label}</p>
+            <p className={`mt-0.5 text-sm font-bold ${LEVEL_VALUE_CLASS[kind]}`}>{dp.value}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Clean bordered label/value rows for the data-dense sections (Pivot
+// Points, Oscillators, Confluence, Fibonacci, Gann) — a tighter,
+// tabular read than tiles once a section has 8-15 data points.
+function DenseDataTable({ dataPoints }) {
+  return (
+    <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-0 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 sm:grid-cols-2">
+      {dataPoints.map((dp, i) => (
+        <div
+          key={dp.label}
+          className={`flex items-center justify-between gap-3 px-3 py-1.5 ${
+            i % 2 === 1 ? "sm:bg-slate-50 dark:sm:bg-slate-900/40" : ""
+          } border-b border-slate-100 last:border-b-0 dark:border-slate-800 sm:[&:nth-last-child(-n+2)]:border-b-0`}
+        >
+          <span className="text-xs text-slate-500 dark:text-slate-400">{dp.label}</span>
+          <span className="font-mono text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
+            {dp.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ReportSection({ title, section, reportIsLive }) {
   if (!section) return null;
+  const hasData = Array.isArray(section.dataPoints) && section.dataPoints.length > 0;
+  const useDenseTable = DENSE_TABLE_TITLES.has(title);
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-50">{title}</h4>
         <div className="flex items-center gap-1.5">
-          <AvailabilityTag section={section} />
+          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-50">{title}</h4>
+          <InfoNote section={section} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <AvailabilityTag section={section} reportIsLive={reportIsLive} />
           <AcademyLink title={title} />
         </div>
       </div>
       <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300">{section.summary}</p>
 
-      {Array.isArray(section.dataPoints) && section.dataPoints.length > 0 && (
-        <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
-          {section.dataPoints.map((dp) => (
-            <div
-              key={dp.label}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-center dark:border-slate-700 dark:bg-slate-900/40"
-            >
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">{dp.label}</p>
-              <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100">{dp.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {section.limitations && (
-        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-          {section.limitations}
-        </p>
-      )}
-
-      {section.methodology && (
-        <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
-          Method: {section.methodology}
-        </p>
-      )}
+      {hasData && (useDenseTable ? (
+        <DenseDataTable dataPoints={section.dataPoints} />
+      ) : (
+        <AccentTileGrid dataPoints={section.dataPoints} />
+      ))}
     </div>
   );
 }
@@ -157,10 +276,10 @@ function ReportSection({ title, section }) {
  * and an analysis type and hits "Run Analysis" — each click is a fresh
  * GET to /api/market-ai, which always returns the full rule-based
  * report (Buy/Sell meter, Technical/Fundamental/Overall bias, Price
- * Action, Support/Resistance, Pivot Points, Oscillators), plus an
- * additive Fibonacci or Gann section when selected. See
+ * Action, Support/Resistance, Pivot Points, Oscillators, Confluence),
+ * plus an additive Fibonacci or Gann section when selected. See
  * lib/technicalAnalysis.js for exactly what is and isn't genuinely
- * calculable without a stored price history.
+ * calculable for a given instrument/provider.
  */
 export default function AiTechnicalAnalysis() {
   const [symbol, setSymbol] = useState(INSTRUMENT_OPTIONS[0].code);
@@ -206,6 +325,26 @@ export default function AiTechnicalAnalysis() {
   }
 
   const selectedAnalysisType = ANALYSIS_TYPES.find((a) => a.key === analysisType);
+
+  // UX FIX (badge contradiction): there used to be TWO badges — a top
+  // "Rule-based"/"AI-generated" pill about who WROTE the analysis, and
+  // a separate "Real intraday candles via..." pill about the DATA it's
+  // based on — which could read as contradictory ("Rule-based" next to
+  // "Real intraday candles" looked like two different claims about the
+  // same thing). This collapses both into exactly one top-level badge:
+  // AI-generated (if that ever ships), else Live Intraday Data (when a
+  // real candle series resolved), else Rule-based/illustrative (when it
+  // didn't). `reportIsLive` is also what ReportSection uses to decide
+  // whether to repeat a redundant green pill on every card below.
+  const reportIsLive = Boolean(result?.usingAi || result?.usingLiveCandles);
+  const topBadge = result?.usingAi
+    ? { text: "AI-generated", tone: "live" }
+    : result?.usingLiveCandles
+    ? {
+        text: `Live Intraday Data · ${result.candleSource === "twelvedata" ? "Twelve Data" : "Alpha Vantage"}`,
+        tone: "live",
+      }
+    : { text: "Rule-based (illustrative)", tone: "muted" };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card dark:border-slate-700 dark:bg-slate-800">
@@ -294,53 +433,39 @@ export default function AiTechnicalAnalysis() {
 
           {status === "ready" && result && (
             <div className="space-y-5">
-              {/* Header: instrument + AI/rule-based badge */}
+              {/* Header: instrument + ONE status badge (see reportIsLive/topBadge comment above) */}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-50">
                   {result.label} · {fmtPrice(result)}
                 </h3>
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
-                    result.usingAi
+                    topBadge.tone === "live"
                       ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
                       : "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
                   }`}
                 >
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${
-                      result.usingAi ? "bg-emerald-500" : "bg-amber-500"
+                      topBadge.tone === "live" ? "bg-emerald-500" : "bg-amber-500"
                     }`}
                   />
-                  {result.usingAi ? "AI-generated" : "Rule-based"}
+                  {topBadge.text}
                 </span>
               </div>
 
-              {/* AUDIT FIX: real-candle transparency badge — distinct
-                  from the AI/rule-based badge above (which is about the
-                  WRITER of the analysis, not the data it's based on).
-                  Only appears when a real OHLC series actually resolved
-                  this request (lib/candleData.js); its absence is
-                  already covered by each section's own
-                  AvailabilityTag below, so no "no candles" badge is
-                  needed here. */}
-              {result.usingLiveCandles && (
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Real intraday candles via{" "}
-                  {result.candleSource === "twelvedata" ? "Twelve Data" : "Alpha Vantage"}
-                </div>
-              )}
-
-              {/* Big overall meter */}
+              {/* Overall meter — a dark, high-contrast "terminal" panel
+                  regardless of site theme, so the headline read gets
+                  the most visual weight on the page. */}
               {result.overallSentiment && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+                <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <h4 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                       Overall Market Sentiment
                     </h4>
                     <span
-                      className={`text-lg font-extrabold ${
-                        BIAS_TEXT_COLOR[result.overallSentiment.label] || "text-slate-800"
+                      className={`font-mono text-base font-bold tracking-tight ${
+                        TERMINAL_TEXT_COLOR[result.overallSentiment.label] || "text-slate-200"
                       }`}
                     >
                       {result.overallSentiment.label}
@@ -349,7 +474,7 @@ export default function AiTechnicalAnalysis() {
                   <div className="mt-3">
                     <SentimentMeter score={result.overallSentiment.score} />
                   </div>
-                  <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  <p className="mt-3 text-xs leading-relaxed text-slate-400">
                     {result.overallSentiment.note}
                   </p>
                 </div>
@@ -388,15 +513,17 @@ export default function AiTechnicalAnalysis() {
 
               {/* Full report sections */}
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <ReportSection title="Price Action" section={result.priceAction} />
-                <ReportSection title="Support & Resistance" section={result.supportResistance} />
-                <ReportSection title="Pivot Points" section={result.pivotPoints} />
-                <ReportSection title="RSI / Moving Averages" section={result.oscillators} />
-                <ReportSection title="Multi-Timeframe Confluence" section={result.confluence} />
+                <ReportSection title="Price Action" section={result.priceAction} reportIsLive={reportIsLive} />
+                <ReportSection title="Support & Resistance" section={result.supportResistance} reportIsLive={reportIsLive} />
+                <ReportSection title="Pivot Points" section={result.pivotPoints} reportIsLive={reportIsLive} />
+                <ReportSection title="RSI / Moving Averages" section={result.oscillators} reportIsLive={reportIsLive} />
+                <ReportSection title="Multi-Timeframe Confluence" section={result.confluence} reportIsLive={reportIsLive} />
               </div>
 
               {/* Additive Fibonacci / Gann section */}
-              {result.extra && <ReportSection title={result.extra.label} section={result.extra} />}
+              {result.extra && (
+                <ReportSection title={result.extra.label} section={result.extra} reportIsLive={reportIsLive} />
+              )}
 
               <p className="text-xs text-slate-400 dark:text-slate-500">
                 {result.engineNote} For informational purposes only — not financial advice.
