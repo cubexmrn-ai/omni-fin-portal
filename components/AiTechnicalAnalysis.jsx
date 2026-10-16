@@ -275,6 +275,119 @@ function DenseDataTable({ dataPoints }) {
   );
 }
 
+// Unified Vertical Price Ladder — replaces the old separate Pivot
+// Points and Support & Resistance cards with one stacked ladder card:
+// resistances above the live price (red), the live price/pivot
+// highlighted in the middle (blue/amber), supports below (green), and
+// a real distance-from-spot % next to every level. Pulls raw numbers
+// straight from lib/technicalAnalysis.js's buildPriceLadder() (see
+// its own header comment) rather than re-parsing any already-
+// formatted string, so the % distances here are computed once, from
+// the same real numbers the ladder itself displays.
+const LADDER_TABS = [
+  { key: "roundLevels", label: "Round Levels" },
+  { key: "standard", label: "Standard" },
+  { key: "woodie", label: "Woodie" },
+  { key: "camarilla", label: "Camarilla" },
+];
+
+function LadderRow({ row }) {
+  const isResistance = row.tier.startsWith("R");
+  const isSupport = row.tier.startsWith("S");
+  const toneClass = row.isCenter
+    ? "border-amber-400/50 bg-amber-400/10 text-amber-200"
+    : isResistance
+    ? "border-rose-500/30 bg-rose-500/5 text-rose-300"
+    : isSupport
+    ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-300"
+    : "border-slate-700 bg-slate-800/40 text-slate-300";
+
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 ${toneClass}`}>
+      <span className={`text-[11px] font-bold uppercase tracking-wide ${row.isCenter ? "" : "opacity-70"}`}>
+        {row.isCenter ? row.label : `${row.tier} · ${row.label}`}
+      </span>
+      <span className="flex items-baseline gap-2 font-mono">
+        <span className={`text-sm font-bold tabular-nums ${row.isCenter ? "text-base" : ""}`}>
+          {row.formatted}
+        </span>
+        {!row.isCenter && row.distPct !== null && (
+          <span className="text-[11px] tabular-nums opacity-70">
+            {row.distPct > 0 ? "+" : ""}
+            {row.distPct.toFixed(2)}%
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function PriceLadderCard({ ladder }) {
+  const [activeTab, setActiveTab] = useState("roundLevels");
+  if (!ladder) return null;
+
+  const method = ladder.methods?.[activeTab];
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <h4 className="text-sm font-bold text-slate-50">Price Ladder</h4>
+          <span
+            tabIndex={0}
+            title={
+              ladder.limitations ||
+              "Pivot points computed from the real previous complete session's high/low/close. Round Levels are nearest-round-number levels around the live price."
+            }
+            className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-slate-600 text-[10px] font-bold text-slate-400 hover:text-slate-200"
+            aria-label="Methodology and limitations"
+          >
+            i
+          </span>
+        </div>
+        {method && !method.isLive && activeTab !== "roundLevels" && (
+          <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+            Illustrative
+          </span>
+        )}
+        {method && method.isLive && activeTab !== "roundLevels" && method.prevDayDate && (
+          <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+            Live · prev session {method.prevDayDate}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Pivot method">
+        {LADDER_TABS.map((tab) => {
+          const active = tab.key === activeTab;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(tab.key)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                active ? "bg-brand-600 text-white" : "border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {method && (
+        <div className="mt-3 space-y-1.5">
+          {method.rows.map((row) => (
+            <LadderRow key={row.tier + row.label} row={row} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReportSection({ title, section, reportIsLive }) {
   if (!section) return null;
   const hasData = Array.isArray(section.dataPoints) && section.dataPoints.length > 0;
@@ -548,11 +661,18 @@ export default function AiTechnicalAnalysis() {
                 )}
               </div>
 
-              {/* Full report sections */}
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {/* Price Action + the Unified Vertical Price Ladder (replaces
+                  the old separate Pivot Points / Support & Resistance
+                  cards — see PriceLadderCard's header comment) stacked
+                  full-width, since the ladder reads best tall rather
+                  than squeezed into a half-width grid cell. */}
+              <div className="grid grid-cols-1 gap-3">
                 <ReportSection title="Price Action" section={result.priceAction} reportIsLive={reportIsLive} />
-                <ReportSection title="Support & Resistance" section={result.supportResistance} reportIsLive={reportIsLive} />
-                <ReportSection title="Pivot Points" section={result.pivotPoints} reportIsLive={reportIsLive} />
+                <PriceLadderCard ladder={result.priceLadder} />
+              </div>
+
+              {/* Remaining report sections */}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 <ReportSection title="RSI / Moving Averages" section={result.oscillators} reportIsLive={reportIsLive} />
                 <ReportSection title="Multi-Timeframe Confluence" section={result.confluence} reportIsLive={reportIsLive} />
               </div>

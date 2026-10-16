@@ -3,7 +3,6 @@
 import { useState } from "react";
 import TickerStrip from "@/components/TickerStrip";
 import MarketDashboard from "@/components/MarketDashboard";
-import AiTechnicalAnalysis from "@/components/AiTechnicalAnalysis";
 
 // Top strip: a small set of high-value, universally-recognized
 // symbols rather than the old 15-widget grid (S&P 500 / Nasdaq 100 /
@@ -66,8 +65,7 @@ export default function MarketOverviewBoard() {
                 Market Snapshot
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                A live glance at the markets, a full chart for research, and
-                on-demand technical analysis below.
+                A live glance at the markets and a full chart for research.
               </p>
             </div>
             <ThemeToggle theme={theme} onChange={setTheme} />
@@ -80,12 +78,6 @@ export default function MarketOverviewBoard() {
 
         <div className="border-t border-slate-200 dark:border-slate-700">
           <MarketDashboard theme={theme} />
-        </div>
-
-        <div className="border-t border-slate-200 dark:border-slate-700">
-          <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-            <AiTechnicalAnalysis />
-          </section>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import MarketOverviewBoard from "@/components/MarketOverviewBoard";
 import MarketAnalysisHero from "@/components/MarketAnalysisHero";
+import AiTechnicalAnalysis from "@/components/AiTechnicalAnalysis";
 import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysisFAQSection";
 import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
 import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
@@ -70,13 +71,24 @@ export default async function MarketAnalysisPage() {
       <MarketAnalysisFAQStructuredData />
       <MarketAnalysisHero />
 
-      {/* Order: AI Video Insights at the top, then the Macro Economic
-          Heatmap & Impact Dial Dashboard (this page's "Live Market
-          Sentiment" equivalent — an institutional heatmap/gauge panel
-          in place of the old text-card Macro Sentiment Engine grid),
-          then the live charts/overview board, then the FAQ. */}
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <MarketAnalysisExplorer videoPosts={videoPosts} ratesData={ratesData} />
+      {/* INSTITUTIONAL TERMINAL RESTRUCTURE — fixed top-to-bottom
+          order is now: (1) the On-Demand AI Technical Analysis tool
+          itself, as this page's real hero (the single richest tool on
+          the page, now the very first thing a visitor interacts with,
+          not buried at the bottom of MarketOverviewBoard); (2) the
+          Macro Economic Heatmap & Impact Dial Dashboard directly below
+          it; (3) AI Video Insights + the sentiment pulse dial;
+          (4) the live ticker strip + full chart (MarketOverviewBoard,
+          with its own AiTechnicalAnalysis instance removed — see that
+          component's header comment); (5) the FAQ. */}
+      {/* `dark` activates AiTechnicalAnalysis's existing dark:-variant
+          classes (already written throughout that component) so this
+          hero slot gets the full high-contrast terminal look rather
+          than a light card dropped onto a dark section background. */}
+      <section className="dark bg-slate-950 py-10 sm:py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <AiTechnicalAnalysis />
+        </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -90,6 +102,10 @@ export default async function MarketAnalysisPage() {
         <div className="mt-5 rounded-2xl border border-white/10 bg-ink p-4 sm:p-6">
           <EconomicHeatmapDashboard ratesData={ratesData} />
         </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <MarketAnalysisExplorer videoPosts={videoPosts} ratesData={ratesData} />
       </section>
 
       <MarketOverviewBoard />
