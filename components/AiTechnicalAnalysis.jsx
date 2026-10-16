@@ -392,6 +392,7 @@ export default function AiTechnicalAnalysis() {
                 <ReportSection title="Support & Resistance" section={result.supportResistance} />
                 <ReportSection title="Pivot Points" section={result.pivotPoints} />
                 <ReportSection title="RSI / Moving Averages" section={result.oscillators} />
+                <ReportSection title="Multi-Timeframe Confluence" section={result.confluence} />
               </div>
 
               {/* Additive Fibonacci / Gann section */}
