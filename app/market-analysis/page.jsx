@@ -5,7 +5,10 @@ import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysi
 import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
 import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
 import EconomicHeatmapDashboard from "@/components/market-analysis/EconomicHeatmapDashboard";
+import WatchlistStrip from "@/components/market-analysis/WatchlistStrip";
+import CorrelationMatrix from "@/components/market-analysis/CorrelationMatrix";
 import { getUnifiedRates } from "@/lib/marketData";
+import { getWatchlistSnapshot } from "@/lib/marketPulse";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = buildMetadata({
@@ -50,6 +53,12 @@ export default async function MarketAnalysisPage() {
     ratesData = null;
   }
 
+  // PHASE 3 ADDITION: the watchlist strip's 5 rows (price, live bias
+  // score, 24h change where genuinely available, volatility flag) —
+  // computed server-side from the exact same ratesData above, so
+  // there's no second live-rate fetch for this one section.
+  const watchlistRows = ratesData ? getWatchlistSnapshot(ratesData) : [];
+
   return (
     <>
       <MarketAnalysisFAQStructuredData />
@@ -76,9 +85,17 @@ export default async function MarketAnalysisPage() {
           classes (already written throughout that component) so this
           hero slot gets the full high-contrast terminal look rather
           than a light card dropped onto a dark section background. */}
+      {/* PHASE 3 ADDITION: the Watchlist Strip sits directly below the
+          AI Technical Analysis panel it controls — a "workspace"
+          layout rather than a single-instrument snapshot. Clicking any
+          row updates the panel above via the shared `?instrument=` URL
+          param (lib/instrumentParam.js), no page reload. */}
       <section className="dark bg-slate-950 py-10 sm:py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <AiTechnicalAnalysis />
+          <div className="mt-6">
+            <WatchlistStrip rows={watchlistRows} />
+          </div>
         </div>
       </section>
 
@@ -92,6 +109,13 @@ export default async function MarketAnalysisPage() {
         </p>
         <div className="mt-5 rounded-2xl border border-white/10 bg-ink p-4 sm:p-6">
           <EconomicHeatmapDashboard ratesData={ratesData} />
+        </div>
+        {/* PHASE 3 ADDITION: client-side asset correlation card — see
+            CorrelationMatrix.jsx's header comment for why this builds
+            a real correlation from live session samples rather than
+            faking a historical one with no data behind it. */}
+        <div className="mt-5">
+          <CorrelationMatrix initialRatesData={ratesData} />
         </div>
       </section>
 

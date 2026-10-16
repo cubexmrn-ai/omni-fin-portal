@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { INSTRUMENT_OPTIONS, ANALYSIS_TYPES } from "@/lib/technicalAnalysis";
+import { INSTRUMENT_OPTIONS, INSTRUMENT_BY_CODE, ANALYSIS_TYPES } from "@/lib/technicalAnalysis";
 import SentimentMeter from "@/components/SentimentMeter";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useInstrumentParam, CANONICAL_TO_TECHNICAL, TECHNICAL_TO_CANONICAL } from "@/lib/instrumentParam";
 
 // AUDIT FIX (Beginner persona): this report's own section titles are
 // unavoidably jargon ("RSI / Moving Averages", "Pivot Points") with no
@@ -439,7 +440,19 @@ function ReportSection({ title, section, reportIsLive }) {
  * calculable for a given instrument/provider.
  */
 export default function AiTechnicalAnalysis() {
-  const [symbol, setSymbol] = useState(INSTRUMENT_OPTIONS[0].code);
+  // PHASE 3 ADDITION — Cross-Tool State Syncing via URL Parameters:
+  // if the page was reached with ?instrument=<code> already set (a
+  // link from the watchlist strip below, the Trading Calculator
+  // Suite, or anywhere else on the site using the same shared param —
+  // see lib/instrumentParam.js), start on that instrument instead of
+  // the default. A code with no technical-analysis equivalent (no
+  // entry in CANONICAL_TO_TECHNICAL — e.g. "US500") is ignored rather
+  // than crashing; the default instrument is used instead.
+  const [instrumentParam, setInstrumentParam] = useInstrumentParam();
+  const initialTechnicalCode =
+    (instrumentParam && CANONICAL_TO_TECHNICAL[instrumentParam]) || INSTRUMENT_OPTIONS[0].code;
+
+  const [symbol, setSymbolState] = useState(initialTechnicalCode);
   const [analysisType, setAnalysisType] = useState(ANALYSIS_TYPES[0].key);
   const [result, setResult] = useState(null);
   // AUDIT FIX: this used to start "idle" (an empty dashed placeholder
@@ -461,12 +474,53 @@ export default function AiTechnicalAnalysis() {
     runAnalysis();
   }, []);
 
-  async function runAnalysis() {
+  // PHASE 3 ADDITION — reacts to ?instrument= changing from OUTSIDE
+  // this component (e.g. clicking a different asset in
+  // WatchlistStrip, a sibling component on the same /market-analysis
+  // page — see lib/instrumentParam.js) and, when that genuinely
+  // differs from the symbol already selected here, switches to it and
+  // runs analysis immediately — no page reload. A manual pick from
+  // this component's own dropdown below also updates the same URL
+  // param (see handleSymbolSelect), but updates `symbol` state in the
+  // very same event handler, so by the time this effect runs,
+  // `symbol` already matches — no redundant auto-run, and manual
+  // picks keep requiring the explicit "Run Analysis" click exactly as
+  // before this addition.
+  useEffect(() => {
+    const nextTechnicalCode = instrumentParam && CANONICAL_TO_TECHNICAL[instrumentParam];
+    if (nextTechnicalCode && nextTechnicalCode !== symbol) {
+      setSymbolState(nextTechnicalCode);
+      runAnalysis(nextTechnicalCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instrumentParam]);
+
+  /** The dropdown's own onChange — keeps the existing "pick, then hit
+   * Run Analysis" UX unchanged, and additionally mirrors the pick
+   * into the shared `?instrument=` URL param when this instrument has
+   * a canonical cross-tool code (see lib/instrumentParam.js); a
+   * technical-analysis-only instrument with no canonical equivalent,
+   * e.g. SOL, just updates local state as it always did. */
+  function handleSymbolSelect(nextCode) {
+    setSymbolState(nextCode);
+    const canonical = TECHNICAL_TO_CANONICAL[nextCode];
+    if (canonical) setInstrumentParam(canonical);
+  }
+
+  // `symbolOverride` (PHASE 3 ADDITION): the external-instrument-param
+  // effect above calls runAnalysis(nextTechnicalCode) in the same tick
+  // as setSymbolState(nextTechnicalCode) — React state updates aren't
+  // synchronous, so without this override runAnalysis would still read
+  // the OLD `symbol` from this render's closure. Every other call site
+  // (the mount effect, the "Run Analysis" button) omits it and keeps
+  // using current `symbol` state exactly as before this addition.
+  async function runAnalysis(symbolOverride) {
+    const effectiveSymbol = INSTRUMENT_BY_CODE[symbolOverride] ? symbolOverride : symbol;
     setStatus("loading");
     setErrorMessage("");
     try {
       const res = await fetch(
-        `/api/market-ai?symbol=${encodeURIComponent(symbol)}&analysisType=${encodeURIComponent(
+        `/api/market-ai?symbol=${encodeURIComponent(effectiveSymbol)}&analysisType=${encodeURIComponent(
           analysisType
         )}`,
         { cache: "no-store" }
@@ -527,7 +581,7 @@ export default function AiTechnicalAnalysis() {
             <select
               id="ai-symbol-select"
               value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
+              onChange={(e) => handleSymbolSelect(e.target.value)}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm transition-colors focus:border-brand-500 focus:ring-1 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
               {INSTRUMENT_OPTIONS.map((i) => (
@@ -561,7 +615,7 @@ export default function AiTechnicalAnalysis() {
 
           <button
             type="button"
-            onClick={runAnalysis}
+            onClick={() => runAnalysis()}
             disabled={status === "loading"}
             className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-card transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >

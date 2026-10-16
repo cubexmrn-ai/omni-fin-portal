@@ -41,6 +41,23 @@
 //      Business Profit Margin, stacked as three sub-cards.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// Framework import, not a project-file import — allowed under this
+// file's zero-project-file-import rule (see header comment above).
+// Powers the Cross-Tool URL Param Sync below.
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+
+// PHASE 3 ADDITION: this page's Cross-Tool URL Param Sync (further
+// below) reads `?instrument=` via next/navigation's useSearchParams()
+// inside AllInOnePanel. Next.js 14 requires either a <Suspense>
+// boundary around any useSearchParams() call or opting the whole
+// route out of static generation — the same tradeoff
+// app/market-analysis/page.jsx already made (see its own `dynamic`
+// export) for the exact same hook. This page's content is 100% client
+// state anyway (every input is localStorage-persisted, nothing here
+// is meaningfully pre-renderable), so `force-dynamic` is the simpler,
+// zero-new-component fix — it just renders fresh per request instead
+// of attempting a build-time static shell.
+export const dynamic = "force-dynamic";
 
 // ---------------------------------------------------------------------------
 // Global Base Currency sync — WITHOUT an import.
@@ -89,6 +106,70 @@ const CALC_TERMS_BY_LANGUAGE = {
   id: { buy: "Beli", sell: "Jual", profit: "Potensi Untung", loss: "Potensi Rugi" },
   vi: { buy: "Mua", sell: "Bán", profit: "Lợi Nhuận Dự Kiến", loss: "Lỗ Dự Kiến" },
 };
+
+// ---------------------------------------------------------------------------
+// PHASE 3 — Cross-Tool URL Param Sync — WITHOUT an import.
+//
+// Mirrors lib/instrumentParam.js's shared `?instrument=` convention:
+// same param name, same canonical codes (this file's own
+// TRADABLE_PAIRS ids ARE that canonical space — "XAUUSD", "BTCUSD",
+// etc. — plus "DXY", which this page doesn't trade but passes through
+// unchanged so it round-trips if a person arrives from the Watchlist's
+// DXY row). Picking Gold here and then clicking through to
+// /market-analysis or /journal preserves XAUUSD as the active
+// instrument automatically, and vice-versa. Duplicated inline (not
+// imported) per this file's zero-project-file-import rule above — if
+// lib/instrumentParam.js's param name or alias list ever changes,
+// mirror the change here too.
+const INSTRUMENT_PARAM_NAME = "instrument";
+const INSTRUMENT_PARAM_ALIASES = {
+  GOLD: "XAUUSD", SILVER: "XAGUSD", BITCOIN: "BTCUSD", ETHEREUM: "ETHUSD",
+  OIL: "WTIUSD", CRUDE: "WTIUSD", XAU: "XAUUSD", XAG: "XAGUSD", BTC: "BTCUSD",
+  ETH: "ETHUSD", WTI: "WTIUSD",
+};
+function normalizeInstrumentParam(raw) {
+  if (!raw) return null;
+  const upper = String(raw).trim().toUpperCase();
+  return INSTRUMENT_PARAM_ALIASES[upper] || upper;
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 3 — One-Click Trade Journal Integration — WITHOUT an import.
+//
+// hooks/useTradingJournal.js persists entries to localStorage under
+// the key below as `{ version: 1, entries: [...] }`, each entry
+// shaped `{ id, category, createdAt, ...fields }`. The "forex-crypto"
+// category (lib/journalSchema.js) takes
+// `{ instrument, direction, size, entryPrice, exitPrice, openedAt,
+// closedAt, notes }`. Duplicated here (not imported) per this file's
+// zero-project-file-import rule — if that hook's storage key, id
+// format, or schema shape ever changes, mirror the change here too.
+const JOURNAL_STORAGE_KEY = "omnifin.journal.entries.v1";
+function makeJournalId() {
+  return `j_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+/** Appends one "forex-crypto" entry to the shared local Trade Journal.
+ * Returns true on success, false if localStorage couldn't be written
+ * to (private browsing, storage quota, etc.) — callers surface that
+ * honestly instead of claiming a save that didn't happen. */
+function appendToLocalJournal(fields) {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem(JOURNAL_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    const entries = parsed && Array.isArray(parsed.entries) ? parsed.entries : [];
+    const entry = {
+      id: makeJournalId(),
+      category: "forex-crypto",
+      createdAt: new Date().toISOString(),
+      ...fields,
+    };
+    window.localStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify({ version: 1, entries: [...entries, entry] }));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Inlined data: tradable instruments, contract sizes, pip sizes,
@@ -782,8 +863,38 @@ function AllInOnePanel() {
 
   const pair = getPair(pairId);
 
+  // PHASE 3 — Cross-Tool URL Param Sync (see the constants above).
+  // On first mount, `?instrument=` (if present and a pair this panel
+  // actually trades) wins over the persisted panel state — so landing
+  // here from the Watchlist, a Journal link, or any other page that
+  // picked an instrument lands on that same instrument. After that,
+  // picking a pair here keeps writing the param back (via
+  // handlePairChange below), so the next tool this person opens
+  // inherits it in turn.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const appliedUrlInstrumentRef = useRef(false);
+
+  useEffect(() => {
+    if (appliedUrlInstrumentRef.current) return;
+    appliedUrlInstrumentRef.current = true;
+    const paramCode = normalizeInstrumentParam(searchParams.get(INSTRUMENT_PARAM_NAME));
+    if (paramCode && paramCode !== pairId && TRADABLE_PAIRS.some((p) => p.id === paramCode)) {
+      update({ pairId: paramCode, pipSize: getDefaultPipSize(getPair(paramCode).instrumentType) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function writeInstrumentParam(nextId) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set(INSTRUMENT_PARAM_NAME, nextId);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   function handlePairChange(nextId) {
     update({ pairId: nextId, pipSize: getDefaultPipSize(getPair(nextId).instrumentType) });
+    writeInstrumentParam(nextId);
   }
 
   // Keeps Account Currency synced to the header's global Base
@@ -811,6 +922,83 @@ function AllInOnePanel() {
       }),
     [pair.id, lots, direction, entry, takeProfit, stopLoss, pipSize, rates, accountBalance, leverage, accountCurrency]
   );
+
+  // PHASE 3 — One-Click Trade Journal Integration + Quick Export.
+  const [journalNote, setJournalNote] = useState(null);
+  const [exportNote, setExportNote] = useState(null);
+
+  function handleLogToJournal() {
+    const ok = appendToLocalJournal({
+      instrument: pair.label,
+      direction: direction === "sell" ? "Short" : "Long",
+      size: lots,
+      entryPrice: entry,
+      exitPrice: "",
+      openedAt: new Date().toISOString().slice(0, 10),
+      closedAt: "",
+      notes: result
+        ? `Logged from Trading Calculator Suite — R:R ${result.ratioLabel}, leverage 1:${leverage}.`
+        : "Logged from Trading Calculator Suite.",
+    });
+    setJournalNote(
+      ok
+        ? "Saved to your local Trade Journal — open /journal to view it (if you're signed in, confirm it synced to the cloud)."
+        : "Couldn't save to this browser's local storage — try again or check your browser's privacy settings."
+    );
+  }
+
+  function buildExportRows() {
+    return [
+      ["Field", "Value"],
+      ["Instrument", pair.label],
+      ["Order Type", direction === "sell" ? terms.sell : terms.buy],
+      ["Lot Size", String(lots)],
+      ["Entry Price", String(entry)],
+      ["Take Profit", String(takeProfit)],
+      ["Stop Loss", String(stopLoss)],
+      ["Leverage", `1:${leverage}`],
+      ["Account Balance", `${accountBalance} USD`],
+      ["Account Currency", accountCurrency],
+      [terms.profit, result && Number.isFinite(result.profitUsd) ? `$${safeFormat(result.profitUsd)}` : "—"],
+      [terms.loss, result && Number.isFinite(result.lossUsd) ? `$${safeFormat(result.lossUsd)}` : "—"],
+      ["Risk : Reward", result ? result.ratioLabel : "—"],
+      ["Pip Value (USD)", result && Number.isFinite(result.pipValueUsd) ? `$${safeFormat(result.pipValueUsd)}` : "—"],
+      ["Required Margin", result && Number.isFinite(result.requiredMargin) ? `$${safeFormat(result.requiredMargin)}` : "—"],
+      ["Free Margin After Entry", result && Number.isFinite(result.freeMargin) ? `$${safeFormat(result.freeMargin)}` : "—"],
+    ];
+  }
+
+  async function handleCopyAsTable() {
+    const rows = buildExportRows();
+    const tsv = rows.map((r) => r.join("\t")).join("\n");
+    try {
+      await navigator.clipboard.writeText(tsv);
+      setExportNote("Copied — paste directly into Excel, Sheets, or Notion.");
+    } catch {
+      setExportNote("Couldn't access the clipboard — try the CSV download instead.");
+    }
+  }
+
+  function handleDownloadCsv() {
+    const rows = buildExportRows();
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    try {
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${pair.id}-trade-calculation.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setExportNote("CSV downloaded.");
+    } catch {
+      setExportNote("Couldn't generate the CSV in this browser — try Copy as Table instead.");
+    }
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
@@ -967,6 +1155,35 @@ function AllInOnePanel() {
           Margin is an estimate (notional ÷ leverage) — your broker&apos;s actual rules may vary.
           For informational purposes only, not financial advice.
         </p>
+
+        {/* PHASE 3 — One-Click Trade Journal Integration + Quick Export */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-blue-100 pt-4">
+          <button
+            type="button"
+            onClick={handleLogToJournal}
+            className="rounded-lg border border-blue-500 bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+            title="Saves this setup as an open position in your local Trade Journal (/journal)."
+          >
+            📓 Log to Journal
+          </button>
+          <button
+            type="button"
+            onClick={handleCopyAsTable}
+            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-400 hover:text-blue-600"
+          >
+            Copy as Table
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadCsv}
+            className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-400 hover:text-blue-600"
+          >
+            Download CSV
+          </button>
+          {(journalNote || exportNote) && (
+            <span className="text-xs text-slate-500">{journalNote || exportNote}</span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1490,6 +1707,83 @@ const MODES = [
 
 const MODE_IDS = MODES.map((m) => m.id);
 
+// ---------------------------------------------------------------------------
+// PHASE 3 — High-Impact Economic Calendar Banner — WITHOUT an import.
+//
+// Duplicates components/TradingViewEconomicCalendar.jsx's anonymous
+// script-injection pattern (same widget, same "no API key" embed:
+// https://www.tradingview.com/widget-docs/widgets/calendars/economic-calendar/)
+// at a compact banner height instead of that component's full 550px
+// calendar, and filtered to `importanceFilter: "1"` (TradingView's own
+// "high impact only" bucket — CPI, NFP, rate decisions, etc.) so it
+// fits inline above the calculator inputs without pushing them far
+// down the page. Not imported, per this file's zero-project-file-
+// import rule above — if the widget script URL or its JSON config
+// shape ever changes there, mirror the change here too.
+const ECONOMIC_BANNER_WIDGET_SRC = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
+const ECONOMIC_BANNER_HEIGHT = 240;
+
+function EconomicCalendarBanner() {
+  const containerRef = useRef(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    setLoaded(false);
+    container.innerHTML = "";
+
+    const widgetDiv = document.createElement("div");
+    widgetDiv.className = "tradingview-widget-container__widget";
+
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = ECONOMIC_BANNER_WIDGET_SRC;
+    script.async = true;
+    script.onload = () => setLoaded(true);
+    script.text = JSON.stringify({
+      colorTheme: "light",
+      isTransparent: false,
+      width: "100%",
+      height: String(ECONOMIC_BANNER_HEIGHT),
+      locale: "en",
+      importanceFilter: "1",
+      countryFilter: "us,eu,gb,jp,au,ca,ch,cn",
+    });
+
+    container.appendChild(widgetDiv);
+    container.appendChild(script);
+
+    return () => {
+      container.innerHTML = "";
+    };
+  }, []);
+
+  return (
+    <div className="mb-5 overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-2 border-b border-blue-100 px-4 py-2.5">
+        <h3 className="text-xs font-bold text-slate-900">High-Impact Events (CPI, NFP, Rate Decisions)</h3>
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Live — TradingView</span>
+      </div>
+      <div className="relative" style={{ minHeight: ECONOMIC_BANNER_HEIGHT }}>
+        {!loaded && (
+          <div className="absolute inset-0 space-y-2.5 p-3" aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="h-3 w-12 flex-shrink-0 animate-pulse rounded bg-slate-200" />
+                <span className="h-3 w-8 flex-shrink-0 animate-pulse rounded bg-slate-200" />
+                <span className="h-3 flex-1 animate-pulse rounded bg-slate-200" />
+              </div>
+            ))}
+          </div>
+        )}
+        <div ref={containerRef} className="tradingview-widget-container" />
+      </div>
+    </div>
+  );
+}
+
 export default function CalculatorsPage() {
   const [activeMode, setActiveMode] = useState("all-in-one");
 
@@ -1534,6 +1828,11 @@ export default function CalculatorsPage() {
           components above). */}
       <section className="bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+          {/* PHASE 3 — High-Impact Economic Calendar Banner, surfaced
+              once here above every mode so CPI/NFP/rate-decision risk
+              is visible no matter which calculator a trader opens. */}
+          <EconomicCalendarBanner />
+
           {/* Mode selector — dropdown on mobile, pill tabs on larger screens */}
           <div className="sm:hidden">
             <label className="block">
