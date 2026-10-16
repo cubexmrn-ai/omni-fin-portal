@@ -6,7 +6,6 @@ import MarketAnalysisFAQStructuredData from "@/components/market-analysis/Market
 import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
 import EconomicHeatmapDashboard from "@/components/market-analysis/EconomicHeatmapDashboard";
 import MarketInsightsBlogSection from "@/components/market-analysis/MarketInsightsBlogSection";
-import { getCachedYoutubeAutomationFeed } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
 import { getPublishedBlogPosts } from "@/lib/youtubeBlogPipeline";
 import { buildMetadata } from "@/lib/pageMetadata";
@@ -42,21 +41,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export default async function MarketAnalysisPage() {
-  // Calling the automation lib through lib/cachedData.js's cached
-  // wrapper (not lib/youtubeAutomation.js directly, and no self-fetch
-  // to /api/youtube-automation either) — see that file's header for
-  // why. Never throws, but guarded anyway so a truly unexpected error
-  // can't take the page down.
-  let videoPosts = [];
-  try {
-    const videoData = await getCachedYoutubeAutomationFeed();
-    videoPosts = (videoData.posts || []).filter(
-      (p) => p.category === "market-analysis"
-    );
-  } catch {
-    videoPosts = [];
-  }
-
   // Same getUnifiedRates() payload /ai-news and the homepage read from
   // — powers this page's own copy of the shared multi-instrument
   // sentiment bar (components/market-pulse/SentimentPulseBar.jsx) via
@@ -91,7 +75,9 @@ export default async function MarketAnalysisPage() {
           the page, now the very first thing a visitor interacts with,
           not buried at the bottom of MarketOverviewBoard); (2) the
           Macro Economic Heatmap & Impact Dial Dashboard directly below
-          it; (3) AI Video Insights + the sentiment pulse dial;
+          it; (3) the sentiment pulse dial (MarketAnalysisExplorer — the
+          old "AI Video Insights" grid it used to filter has been
+          deleted entirely, see that component's own header comment);
           (4) Market Insights & Economic Summaries — the admin-curated
           YouTube-to-blog cards (components/market-analysis/
           MarketInsightsBlogSection.jsx); (5) the live ticker strip +
@@ -122,13 +108,17 @@ export default async function MarketAnalysisPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-        <MarketAnalysisExplorer videoPosts={videoPosts} ratesData={ratesData} />
+        <MarketAnalysisExplorer ratesData={ratesData} />
       </section>
 
       {/* Market Insights & Economic Summaries — admin-curated YouTube-
           to-blog articles, placed directly above the live chart widget
-          (MarketOverviewBoard) per spec. Renders nothing when no
-          articles are published yet. */}
+          (MarketOverviewBoard) per spec. Always renders its header,
+          even with zero published posts — see
+          MarketInsightsBlogSection's own header comment for why a
+          quiet empty state replaces what used to silently render
+          nothing (and, before this fix, would have been the deleted
+          video grid). */}
       <MarketInsightsBlogSection posts={blogPosts} />
 
       <MarketOverviewBoard />

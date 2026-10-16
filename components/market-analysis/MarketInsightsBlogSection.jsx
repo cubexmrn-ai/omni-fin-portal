@@ -2,11 +2,15 @@
 
 // components/market-analysis/MarketInsightsBlogSection.jsx
 //
-// "Market Insights & Economic Summaries" — the public-facing half of
+// "Market Insights & Video Summaries" — the public-facing half of
 // the YouTube-to-Financial-Blog pipeline (see lib/youtubeBlogPipeline.js
 // and app/admin/youtube-importer/page.jsx for the admin side). Renders
 // 4-6 clean cards for the most recently published articles, each
-// opening a full-article reading drawer on click.
+// opening a full-article reading drawer on click — or, with zero
+// published articles, a quiet "check back soon" line in place of the
+// grid. The section header always renders either way (see the default
+// export below), never silently empty and never falling back to the
+// old video grid this replaced.
 //
 // `posts` is passed down from app/market-analysis/page.jsx, already
 // fetched server-side via getPublishedBlogPosts() — this component
@@ -165,22 +169,35 @@ function ArticleDrawer({ post, onClose }) {
 
 export default function MarketInsightsBlogSection({ posts }) {
   const [activePost, setActivePost] = useState(null);
+  const hasPosts = Array.isArray(posts) && posts.length > 0;
 
-  if (!Array.isArray(posts) || posts.length === 0) return null;
-
+  // AUDIT FIX: this section used to render nothing at all (`return
+  // null`) with zero published posts, which — now that the old "AI
+  // Video Insights" grid above it has been deleted entirely (see
+  // app/market-analysis/page.jsx) — would have left this whole stretch
+  // of the page silently empty with no explanation. The header now
+  // always renders, with a quiet one-line "nothing published yet"
+  // message standing in for the card grid rather than an unexplained
+  // gap, and never a fallback to the deleted video grid.
   return (
     <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <h2 className="text-sm font-bold text-slate-900">Market Insights &amp; Economic Summaries</h2>
+      <h2 className="text-sm font-bold text-slate-900">Market Insights &amp; Video Summaries</h2>
       <p className="mt-1 text-sm text-slate-500">
         Layman-friendly takeaways distilled from real finance YouTube videos — tap a card to read the
         full article.
       </p>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {posts.slice(0, 6).map((post) => (
-          <BlogCard key={post.id} post={post} onOpen={setActivePost} />
-        ))}
-      </div>
+      {hasPosts ? (
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {posts.slice(0, 6).map((post) => (
+            <BlogCard key={post.id} post={post} onOpen={setActivePost} />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-5 rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+          No market summaries published yet. Check back soon!
+        </p>
+      )}
 
       <ArticleDrawer post={activePost} onClose={() => setActivePost(null)} />
     </section>
