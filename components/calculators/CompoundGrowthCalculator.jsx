@@ -20,7 +20,12 @@
 // mechanics.
 
 import { useMemo, useState } from "react";
-import { calculateCompoundGrowth, calculateDividendGrowth } from "@/lib/personalCalculators";
+import {
+  calculateCompoundGrowth,
+  calculateDividendGrowth,
+  calculateRealPurchasingPower,
+  buildDripScenarioTakeaway,
+} from "@/lib/personalCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 // See lib/formatNumber.js's header comment for why this delegates
@@ -39,6 +44,13 @@ export default function CompoundGrowthCalculator() {
   const [dividendYield, setDividendYield] = useState(3);
   const [payoutFrequency, setPayoutFrequency] = useState("quarterly");
   const [reinvestDividends, setReinvestDividends] = useState(true);
+
+  // Phase 2 item 2: a disclosed, editable inflation-rate input (not a
+  // hidden assumption) feeding the new real-purchasing-power line
+  // below — defaults to a commonly-cited long-run US average (~3%),
+  // same "disclosed static default, visitor can change it" pattern as
+  // the Inflation & Purchasing Power calculator elsewhere on this page.
+  const [inflationRate, setInflationRate] = useState(3);
 
   const plainResult = useMemo(
     () =>
@@ -65,7 +77,62 @@ export default function CompoundGrowthCalculator() {
     [initialAmount, monthlyContribution, annualReturn, dividendYield, payoutFrequency, reinvestDividends, years]
   );
 
+  // Phase 2 item 2: the DRIP scenario-takeaway needs BOTH the
+  // reinvested and non-reinvested outcomes for the same inputs, not
+  // just whichever one the `reinvestDividends` toggle currently
+  // selects — these two extra calls are the deterministic second
+  // simulation the comparison in buildDripScenarioTakeaway() needs,
+  // not a new estimate.
+  const dripReinvestedResult = useMemo(
+    () =>
+      calculateDividendGrowth({
+        initialAmount,
+        monthlyContribution,
+        priceGrowthPercent: annualReturn,
+        dividendYieldPercent: dividendYield,
+        payoutFrequency,
+        reinvestDividends: true,
+        years,
+      }),
+    [initialAmount, monthlyContribution, annualReturn, dividendYield, payoutFrequency, years]
+  );
+
+  const dripNonReinvestedResult = useMemo(
+    () =>
+      calculateDividendGrowth({
+        initialAmount,
+        monthlyContribution,
+        priceGrowthPercent: annualReturn,
+        dividendYieldPercent: dividendYield,
+        payoutFrequency,
+        reinvestDividends: false,
+        years,
+      }),
+    [initialAmount, monthlyContribution, annualReturn, dividendYield, payoutFrequency, years]
+  );
+
+  const dripTakeaway = useMemo(
+    () =>
+      buildDripScenarioTakeaway({
+        reinvestedResult: dripReinvestedResult,
+        nonReinvestedResult: dripNonReinvestedResult,
+      }),
+    [dripReinvestedResult, dripNonReinvestedResult]
+  );
+
   const result = dripMode ? dripResult : plainResult;
+
+  const realPurchasingPower = useMemo(
+    () =>
+      result
+        ? calculateRealPurchasingPower({
+            nominalBalance: result.finalBalance,
+            years,
+            inflationRatePercent: inflationRate,
+          })
+        : null,
+    [result, years, inflationRate]
+  );
 
   // Years is capped at 40 purely so the rendered table (one row per
   // year) stays a reasonable, scrollable length rather than hundreds
@@ -131,7 +198,7 @@ export default function CompoundGrowthCalculator() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
         <label className="block">
           <span className="mb-1 block text-xs font-semibold text-slate-600">Starting Amount</span>
           <input
@@ -181,6 +248,20 @@ export default function CompoundGrowthCalculator() {
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
           />
         </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-slate-600">
+            Inflation Rate (% / yr, for real value below)
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={inflationRate}
+            onChange={(e) => setInflationRate(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+          />
+        </label>
       </div>
 
       {result ? (
@@ -214,6 +295,49 @@ export default function CompoundGrowthCalculator() {
               </div>
             )}
           </div>
+
+          {/* Phase 2 item 2: real purchasing power + DRIP takeaway —
+              the "so what?" lines that turn the stat tiles above into a
+              directly useful read, rather than leaving the visitor to
+              mentally discount the Final Balance for inflation
+              themselves. Both numbers come straight from the same
+              deterministic calculators, never a new estimate. */}
+          {realPurchasingPower && (
+            <div className="mx-4 mt-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                Real Purchasing Power (Inflation-Adjusted)
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-700">
+                In today&apos;s money, that ${formatNumber(result.finalBalance)} nominal balance is worth
+                roughly <span className="font-bold text-slate-900">${formatNumber(realPurchasingPower.realValue)}</span>{" "}
+                after {Number(years) || 0} years of {formatNumber(inflationRate, 1)}% assumed annual
+                inflation — a {formatNumber(realPurchasingPower.erosionPercent, 1)}% erosion in purchasing
+                power.
+              </p>
+            </div>
+          )}
+
+          {dripMode && dripTakeaway && (
+            <div className="mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-amber-700/80">
+                DRIP Scenario Takeaway
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-amber-900">
+                Reinvesting dividends (DRIP) over {Number(years) || 0} years ends with{" "}
+                <span className="font-bold">${formatNumber(dripTakeaway.reinvestedFinalBalance)}</span>{" "}
+                in the account, versus{" "}
+                <span className="font-bold">${formatNumber(dripTakeaway.nonReinvestedTotalWealth)}</span>{" "}
+                total wealth (account balance + dividend cash paid out) if dividends are taken as cash
+                instead —{" "}
+                {dripTakeaway.balanceDifference >= 0
+                  ? `a $${formatNumber(Math.abs(dripTakeaway.balanceDifference))} advantage for reinvesting`
+                  : `a $${formatNumber(Math.abs(dripTakeaway.balanceDifference))} disadvantage for reinvesting`}
+                {dripTakeaway.percentDifference !== null
+                  ? ` (${formatNumber(Math.abs(dripTakeaway.percentDifference), 1)}%).`
+                  : "."}
+              </p>
+            </div>
+          )}
 
           <div className="max-h-64 overflow-y-auto border-t border-slate-100 px-4 py-3">
             <table className="w-full text-left text-sm">

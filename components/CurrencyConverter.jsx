@@ -304,6 +304,122 @@ function TrendBadge({ fromClass, fromCode, toClass, toCode, pairRate }) {
 }
 
 /**
+ * Phase 2 item 3 — Expat & FX Decision Layer: a one-line actionable
+ * volatility note, independent of TrendBadge above (its own fetches
+ * to /api/rate-history for the 24h delta and the new
+ * /api/fx-volatility for real 30-day historical volatility), so
+ * TrendBadge's already-working logic is left untouched. Combines both
+ * real, fetched numbers into one plain-English read — never a new
+ * invented statistic.
+ *
+ * Deliberately rule-based (stable/near-resistance framing, not a
+ * trading signal): "stable + tight volatility" suggests normal
+ * day-to-day noise; "material move + wide volatility" suggests this
+ * is a genuinely active week for the pair, worth timing around rather
+ * than converting on autopilot.
+ */
+function FxDecisionNote({ fromClass, fromCode, toClass, toCode, pairRate }) {
+  const [trend, setTrend] = useState({ status: "loading", pct: null });
+  const [vol, setVol] = useState({ status: "loading", pct: null });
+
+  useEffect(() => {
+    if (!fromClass || !fromCode || !toClass || !toCode || !Number.isFinite(pairRate)) {
+      setTrend({ status: "unavailable", pct: null });
+      setVol({ status: "unavailable", pct: null });
+      return;
+    }
+
+    let cancelled = false;
+    setTrend({ status: "loading", pct: null });
+    setVol({ status: "loading", pct: null });
+
+    const params = new URLSearchParams({ fromClass, fromCode, toClass, toCode });
+
+    fetch(`/api/rate-history?${params.toString()}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (!data?.available || !Number.isFinite(data.pairRate) || data.pairRate === 0) {
+          setTrend({ status: "unavailable", pct: null });
+          return;
+        }
+        setTrend({ status: "ready", pct: ((pairRate - data.pairRate) / data.pairRate) * 100 });
+      })
+      .catch(() => {
+        if (!cancelled) setTrend({ status: "unavailable", pct: null });
+      });
+
+    fetch(`/api/fx-volatility?${params.toString()}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (!data?.available || !Number.isFinite(data.pairVolPct)) {
+          setVol({ status: "unavailable", pct: null });
+          return;
+        }
+        setVol({ status: "ready", pct: data.pairVolPct });
+      })
+      .catch(() => {
+        if (!cancelled) setVol({ status: "unavailable", pct: null });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fromClass, fromCode, toClass, toCode, pairRate]);
+
+  if (trend.status === "loading" || vol.status === "loading") {
+    return <p className="mt-2 text-xs text-slate-400">Loading volatility context…</p>;
+  }
+
+  if (trend.status === "unavailable" && vol.status === "unavailable") {
+    return (
+      <p
+        className="mt-2 text-xs text-slate-400"
+        title="A volatility read needs real historical data for both sides of this pair — not available yet for this combination (most often because one side is a precious metal, which has no free historical price source wired up)."
+      >
+        FX volatility context isn&apos;t available for this pair.
+      </p>
+    );
+  }
+
+  const trendPct = trend.pct;
+  const volPct = vol.pct;
+  const trendIsFlat = trendPct === null || Math.abs(trendPct) < 0.3;
+  // "Tight" vs "wide" 30-day daily volatility is a rough, disclosed
+  // read of the number itself (a day-over-day stdev above ~0.8% is a
+  // genuinely active pair for most fiat/crypto combinations), not a
+  // claim of statistical significance.
+  const volIsTight = volPct !== null && volPct < 0.8;
+
+  const trendClause =
+    trendPct === null
+      ? `${fromCode}/${toCode} has no 24h trend data available`
+      : `${fromCode}/${toCode} is ${trendIsFlat ? "stable" : trendPct > 0 ? "up" : "down"} over the last 24h (${
+          trendPct > 0 ? "+" : ""
+        }${trendPct.toFixed(2)}%)`;
+
+  const volClause =
+    volPct === null
+      ? "30-day volatility isn't available for this pair"
+      : `30-day historical volatility is ${volIsTight ? "tight" : "wide"} (~${volPct.toFixed(2)}%/day)`;
+
+  const recommendation =
+    volPct !== null && !volIsTight
+      ? "Recommended: consider timing a time-sensitive conversion rather than converting on autopilot."
+      : volPct !== null
+      ? "Recommended: a tight spread like this makes timing less critical for routine conversions."
+      : null;
+
+  return (
+    <p className="mt-2 text-xs leading-relaxed text-slate-500">
+      {trendClause}, but {volClause}
+      {recommendation ? `. ${recommendation}` : "."}
+    </p>
+  );
+}
+
+/**
  * Cross-asset converter: searchable From/To pickers spanning fiat
  * currencies, cryptocurrencies and precious metals, a swap button,
  * instant conversion against the unified /api/rates payload, and a
@@ -524,6 +640,13 @@ export default function CurrencyConverter({
                 </>
               )}
             </p>
+            <FxDecisionNote
+              fromClass={fromClass}
+              fromCode={fromCode}
+              toClass={toClass}
+              toCode={toCode}
+              pairRate={pairRate}
+            />
           </div>
 
           {/* Rate Matrix */}

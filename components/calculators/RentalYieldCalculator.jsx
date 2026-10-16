@@ -13,11 +13,40 @@
 // See lib/realEstateCalculators.js for the underlying math.
 
 import { useMemo, useState } from "react";
-import { calculateRentalYield, calculateMortgage } from "@/lib/realEstateCalculators";
+import {
+  calculateRentalYield,
+  calculateMortgage,
+  buildRentalCashFlowVerdict,
+} from "@/lib/realEstateCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 function formatNumber(value, decimals = 2) {
   return formatNumberSafe(value, { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
+}
+
+// Phase 2 item 2: rule-based Health & Cash-Flow Verdict card, shown
+// below the results regardless of which tab (Rental Yield vs.
+// Mortgage) is active — both yieldResult and mortgageResult are always
+// computed (see the two useMemos below), so the combined verdict is
+// always available too, and switching tabs doesn't make it disappear.
+function CashFlowVerdictCard({ verdict }) {
+  if (!verdict) return null;
+  const toneClass =
+    verdict.cashFlowStatus === "positive"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      : "border-amber-200 bg-amber-50 text-amber-800";
+  return (
+    <div className={`mt-3 rounded-lg border px-4 py-3 ${toneClass}`}>
+      <p className="text-[11px] font-bold uppercase tracking-wide opacity-70">
+        Health &amp; Cash-Flow Verdict
+      </p>
+      <p className="mt-1 text-sm leading-relaxed">{verdict.headline}</p>
+      <p className="mt-1.5 text-[11px] opacity-70">
+        Risk-free benchmark is an illustrative assumption (~{verdict.riskFreeRatePct.toFixed(1)}%
+        approximate recent US 10-year Treasury yield) — not live Treasury data.
+      </p>
+    </div>
+  );
 }
 
 export default function RentalYieldCalculator() {
@@ -41,6 +70,11 @@ export default function RentalYieldCalculator() {
   const mortgageResult = useMemo(
     () => calculateMortgage({ loanAmount, annualRatePercent: mortgageRate, years: loanYears }),
     [loanAmount, mortgageRate, loanYears]
+  );
+
+  const cashFlowVerdict = useMemo(
+    () => buildRentalCashFlowVerdict({ yieldResult, mortgageResult, annualRatePercent: mortgageRate }),
+    [yieldResult, mortgageResult, mortgageRate]
   );
 
   return (
@@ -260,6 +294,10 @@ export default function RentalYieldCalculator() {
           </div>
         </>
       )}
+
+      <div className="px-4 pb-4">
+        <CashFlowVerdictCard verdict={cashFlowVerdict} />
+      </div>
     </div>
   );
 }

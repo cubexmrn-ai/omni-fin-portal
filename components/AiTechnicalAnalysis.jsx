@@ -128,6 +128,38 @@ function InfoNote({ section }) {
   );
 }
 
+// Phase 2 item 1: the "so what?" Actionable Verdict — a plain-English
+// outlook + invalidation line computed rule-based in
+// lib/technicalAnalysis.js's buildActionableVerdict() (reusing the same
+// real support/resistance/RSI/sentiment numbers already shown lower in
+// the report, never a separately-invented claim). Rendered at the very
+// top of the report, above the Overall Sentiment terminal panel, since
+// it's the single most actionable line a visitor can read before
+// digging into any individual card.
+const VERDICT_TONE = {
+  "Oversold Bounce Potential": "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  "Bullish Continuation Bias": "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  "Overbought Pullback Risk": "border-rose-500/40 bg-rose-500/10 text-rose-300",
+  "Bearish Continuation / Distribution Phase": "border-rose-500/40 bg-rose-500/10 text-rose-300",
+  "Range-Bound — Awaiting Confirmation": "border-slate-600 bg-slate-800/60 text-slate-300",
+};
+
+function VerdictPanel({ verdict }) {
+  if (!verdict) return null;
+  const toneClass = VERDICT_TONE[verdict.outlook] || VERDICT_TONE["Range-Bound — Awaiting Confirmation"];
+  return (
+    <div className={`rounded-xl border p-4 ${toneClass}`}>
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="text-[11px] font-semibold uppercase tracking-widest opacity-80">
+          Actionable Verdict
+        </h4>
+        <span className="font-mono text-sm font-bold tracking-tight">{verdict.outlook}</span>
+      </div>
+      <p className="mt-2.5 text-sm leading-relaxed">{verdict.headline}</p>
+    </div>
+  );
+}
+
 const BIAS_TEXT_COLOR = {
   "Strong Buy": "text-emerald-700 dark:text-emerald-300",
   Buy: "text-emerald-600 dark:text-emerald-400",
@@ -454,6 +486,11 @@ export default function AiTechnicalAnalysis() {
                 </span>
               </div>
 
+              {/* Actionable Verdict — the "so what?" line, above even
+                  the Overall Sentiment panel since it's the most
+                  directly useful read in the whole report. */}
+              <VerdictPanel verdict={result.verdict} />
+
               {/* Overall meter — a dark, high-contrast "terminal" panel
                   regardless of site theme, so the headline read gets
                   the most visual weight on the page. */}
@@ -525,8 +562,19 @@ export default function AiTechnicalAnalysis() {
                 <ReportSection title={result.extra.label} section={result.extra} reportIsLive={reportIsLive} />
               )}
 
+              {/* UI CLEAN-UP (Phase 2 item 1): when live market data is
+                  loaded, the top badge + per-section tags already say
+                  so — repeating the full raw engineNote methodology
+                  string here too (the exact "this calculator
+                  intentionally never asks an AI model..." sentence)
+                  read as leftover developer disclosure cluttering the
+                  bottom of an otherwise clean live report. That fuller
+                  methodology text now only shows when the report is
+                  NOT live (i.e. still worth disclosing as an
+                  illustrative-data caveat); the live case gets a single
+                  short disclaimer line instead. */}
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                {result.engineNote} For informational purposes only — not financial advice.
+                {!reportIsLive && result.engineNote} For informational purposes only — not financial advice.
               </p>
             </div>
           )}
