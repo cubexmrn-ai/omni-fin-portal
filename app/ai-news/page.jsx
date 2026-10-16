@@ -31,9 +31,9 @@ export const metadata = {
 // tried to statically render it once at build time, then refresh in
 // the background every 15 minutes. That build-time prerender is what
 // started timing out once a real paid GEMINI_API_KEY made
-// getYoutubeAutomationFeed()/getAggregatedNews()'s headline
-// summarization actually perform their full AI calls instead of
-// short-circuiting to instant fallbacks — same root cause as
+// getAggregatedNews()'s headline summarization actually perform its
+// full AI calls instead of short-circuiting to instant fallbacks —
+// same root cause as
 // /market-analysis (see that page's own comment for the full
 // explanation). `force-dynamic` skips that build-time prerender
 // entirely; the 15-minute refresh cadence is preserved a layer deeper

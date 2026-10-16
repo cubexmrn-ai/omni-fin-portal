@@ -10,8 +10,8 @@
 // re-renders the failed segment via reset()) instead of a blank tab.
 //
 // This is deliberately a second line of defense, not the primary one —
-// every page's own data-fetching (getCachedYoutubeAutomationFeed(),
-// getCachedAggregatedNews(), getUnifiedRates(), etc.) is already
+// every page's own data-fetching (getCachedAggregatedNews(),
+// getUnifiedRates(), etc.) is already
 // wrapped in its own try/catch with a safe fallback value (see each
 // page.jsx's own comments), so this boundary should only ever fire on a
 // genuinely unexpected bug, not a routine upstream API failure.

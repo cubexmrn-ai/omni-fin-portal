@@ -1,9 +1,8 @@
 // app/market-analysis/loading.jsx
 //
 // FIX for the "Market Analysis link doesn't redirect" bug report: this
-// page's default export is an async server component that sequentially
-// awaits real data calls (getCachedYoutubeAutomationFeed,
-// getUnifiedRates) before it can
+// page's default export is an async server component that awaits a
+// real data call (getUnifiedRates) before it can
 // render anything — a side effect of converting this page to
 // `force-dynamic` earlier in this project to fix a *different* bug (the
 // Vercel build-time static-generation timeout; see page.jsx's own

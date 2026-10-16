@@ -5,9 +5,7 @@ import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysi
 import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
 import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
 import EconomicHeatmapDashboard from "@/components/market-analysis/EconomicHeatmapDashboard";
-import MarketInsightsBlogSection from "@/components/market-analysis/MarketInsightsBlogSection";
 import { getUnifiedRates } from "@/lib/marketData";
-import { getPublishedBlogPosts } from "@/lib/youtubeBlogPipeline";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = buildMetadata({
@@ -22,17 +20,17 @@ export const metadata = buildMetadata({
 // the background every 15 minutes. That build-time prerender is
 // exactly what started timing out ("Static page generation for
 // /market-analysis ... took more than 60 seconds") once a real paid
-// GEMINI_API_KEY made getYoutubeAutomationFeed()/
-// getSentimentEngineSnapshot() actually perform their full sequential
-// AI calls instead of short-circuiting to instant templated fallbacks.
+// GEMINI_API_KEY made getSentimentEngineSnapshot() actually perform
+// its full sequential AI calls instead of short-circuiting to instant
+// templated fallbacks.
 //
 // `force-dynamic` makes Next render this page fresh on every request
 // instead of attempting that build-time prerender at all — no more
 // build timeout. The 15-minute "refreshes periodically, not on every
 // single visitor" behavior ISR gave this page is preserved a layer
-// deeper instead: both AI functions are called through
-// lib/cachedData.js's unstable_cache()-wrapped versions, which cache
-// their real result in Next's Data Cache for the same 900s window,
+// deeper instead: the AI function is called through
+// lib/cachedData.js's unstable_cache()-wrapped version, which caches
+// its real result in Next's Data Cache for the same 900s window,
 // populated lazily on first request rather than blocking `next build`.
 // `maxDuration` gives a cold (cache-miss) request more time than the
 // platform default to finish that first real AI pipeline run — raise
@@ -52,18 +50,6 @@ export default async function MarketAnalysisPage() {
     ratesData = null;
   }
 
-  // Admin-curated YouTube-to-blog articles (lib/youtubeBlogPipeline.js)
-  // — called directly rather than self-fetching an API route, same
-  // reasoning as this page's other server-side data above. An empty
-  // array (no Supabase configured yet, or nothing published yet) just
-  // means MarketInsightsBlogSection renders nothing — never an error.
-  let blogPosts = [];
-  try {
-    blogPosts = await getPublishedBlogPosts(6);
-  } catch {
-    blogPosts = [];
-  }
-
   return (
     <>
       <MarketAnalysisFAQStructuredData />
@@ -78,12 +64,14 @@ export default async function MarketAnalysisPage() {
           it; (3) the sentiment pulse dial (MarketAnalysisExplorer — the
           old "AI Video Insights" grid it used to filter has been
           deleted entirely, see that component's own header comment);
-          (4) Market Insights & Economic Summaries — the admin-curated
-          YouTube-to-blog cards (components/market-analysis/
-          MarketInsightsBlogSection.jsx); (5) the live ticker strip +
-          full chart (MarketOverviewBoard, with its own
-          AiTechnicalAnalysis instance removed — see that component's
-          header comment); (6) the FAQ. */}
+          (4) the live ticker strip + full chart (MarketOverviewBoard,
+          with its own AiTechnicalAnalysis instance removed — see that
+          component's header comment); (5) the FAQ. The YouTube-to-blog
+          "Market Insights & Video Summaries" section that used to sit
+          between (3) and (4) has been removed entirely along with its
+          whole admin/ingestion pipeline — nothing stands in its place,
+          so the sentiment dial section flows straight into the live
+          chart. */}
       {/* `dark` activates AiTechnicalAnalysis's existing dark:-variant
           classes (already written throughout that component) so this
           hero slot gets the full high-contrast terminal look rather
@@ -110,16 +98,6 @@ export default async function MarketAnalysisPage() {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <MarketAnalysisExplorer ratesData={ratesData} />
       </section>
-
-      {/* Market Insights & Economic Summaries — admin-curated YouTube-
-          to-blog articles, placed directly above the live chart widget
-          (MarketOverviewBoard) per spec. Always renders its header,
-          even with zero published posts — see
-          MarketInsightsBlogSection's own header comment for why a
-          quiet empty state replaces what used to silently render
-          nothing (and, before this fix, would have been the deleted
-          video grid). */}
-      <MarketInsightsBlogSection posts={blogPosts} />
 
       <MarketOverviewBoard />
 

@@ -2,10 +2,10 @@
 //
 // Same fix, same root cause as app/market-analysis/loading.jsx's header
 // comment explains in full: this page's default export sequentially
-// awaits getCachedAggregatedNews(), getUnifiedRates(), and
-// getCachedYoutubeAutomationFeed() before rendering anything, now that
-// it's `force-dynamic` (see page.jsx's own comment for why that
-// conversion happened). With no loading.js, a cold/expired cache made
+// awaits getCachedAggregatedNews() and getUnifiedRates() before
+// rendering anything, now that it's `force-dynamic` (see page.jsx's
+// own comment for why that conversion happened). With no loading.js,
+// a cold/expired cache made
 // clicking the News nav link look like it did nothing for however long
 // those calls took (up to the page's 120s maxDuration) — this file
 // gives Next.js an instant skeleton to show the moment navigation
