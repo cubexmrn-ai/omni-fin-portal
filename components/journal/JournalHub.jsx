@@ -12,14 +12,20 @@
 // as components/dashboard/DashboardHub.jsx and components/academy/
 // AcademyHub.jsx.
 //
-// Everything here is read from and written to this browser's own
-// localStorage via hooks/useTradingJournal.js — there is no account
-// system on this site, so nothing syncs across devices today; the
-// "Cloud Sync" panel below says that plainly instead of hiding it or
-// faking a working toggle.
+// RETENTION UPGRADE: this used to be localStorage-only with no account
+// system at all — the "Cloud Sync" panel below was a plain, honest
+// "not available yet" notice. hooks/useTradingJournal.js now syncs to
+// Supabase when a Supabase project is configured AND the person is
+// signed in (components/auth/AuthModal.jsx); otherwise it still falls
+// back to the exact same browser-local behavior as before, and this
+// panel's wording reflects whichever of the three states actually
+// applies (not configured / guest / signed in) rather than claiming a
+// capability that isn't live for this visitor.
 
 import { useRef, useState } from "react";
 import { useTradingJournal } from "@/hooks/useTradingJournal";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import AuthModal from "@/components/auth/AuthModal";
 import { JOURNAL_CATEGORIES, getCategory, COLUMN_LABELS } from "@/lib/journalSchema";
 import {
   exportJournalAsJson,
@@ -223,8 +229,10 @@ function ExportImportBar({ allEntries, category, categoryEntries, onImport, impo
 
 export default function JournalHub() {
   const journal = useTradingJournal();
+  const { user, signOut } = useSupabaseAuth();
   const [activeCategory, setActiveCategory] = useState(JOURNAL_CATEGORIES[0].id);
   const [importMessage, setImportMessage] = useState("");
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const category = getCategory(activeCategory);
   const categoryEntries = journal.entriesByCategory(activeCategory);
@@ -274,16 +282,47 @@ export default function JournalHub() {
 
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
             <p className="text-sm font-semibold text-slate-700">Cloud Sync</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              OmniFin Portal doesn&apos;t have an account/sign-in system yet, so there&apos;s nothing
-              to sync this journal to across devices right now — everything above lives only in this
-              browser&apos;s local storage. Use <strong>Export All (JSON)</strong> to back up or move
-              your entries to another device in the meantime; cloud sync will land here once an
-              account system exists.
-            </p>
+            {!journal.cloudReady ? (
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                Cloud sync isn&apos;t configured for this deployment yet — everything above lives only
+                in this browser&apos;s local storage. Use <strong>Export All (JSON)</strong> to back up
+                or move your entries to another device in the meantime.
+              </p>
+            ) : journal.cloudActive ? (
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs leading-relaxed text-slate-500">
+                  Signed in as <strong>{user.email}</strong> — entries sync to your account across
+                  devices.
+                  {journal.syncError && <span className="ml-1 text-amber-600">{journal.syncError}</span>}
+                </p>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs leading-relaxed text-slate-500">
+                  Everything above lives only in this browser right now. Sign in to sync your journal
+                  across devices.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAuthModalOpen(true)}
+                  className="rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-brand-700"
+                >
+                  Sign In
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 }

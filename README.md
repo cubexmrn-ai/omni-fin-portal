@@ -273,6 +273,19 @@ cp .env.example .env.local
     always throws, so it safely falls through to the rule-based
     engine). Wire a real Claude API call in there to generate genuine
     AI-written technical analysis instead of the rule-based summary.
+- `TWELVE_DATA_API_KEY` / `ALPHA_VANTAGE_API_KEY` (both optional) — real
+  intraday OHLC candles for the AI Technical Analysis tool's RSI/EMA/SMA
+  and real (non-illustrative) Fibonacci retracement (`lib/candleData.js`).
+  Twelve Data is tried first, Alpha Vantage second; without either key,
+  or if neither resolves for a given instrument, those sections fall
+  back to exactly the same explicitly-labeled unavailable/illustrative
+  output as before — see `lib/technicalAnalysis.js`'s header comment.
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (both
+  optional, together) — cloud sync + accounts for the Trading Journal and
+  Community Forum (`lib/supabase.js`). Without them, both features work
+  exactly as they always did: `localStorage`-only, single browser, no
+  sign-in. See `SUPABASE_SETUP.md` for the full setup (SQL tables + Row
+  Level Security policies are required, not just these two env vars).
 
 ## Notes on number formatting safety
 

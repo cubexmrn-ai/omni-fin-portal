@@ -2,37 +2,44 @@
 
 // hooks/useTradingJournal.js
 //
-// localStorage-backed CRUD for the Trading & Asset Journal
-// (components/journal/JournalHub.jsx, app/journal/page.jsx). Same
-// hydration/versioning/best-effort-persistence pattern as every other
-// stateful feature on this site (hooks/useDashboardPresets.js,
-// hooks/useDemoTrading.js, hooks/useAcademyProgress.js).
+// CRUD for the Trading & Asset Journal (components/journal/JournalHub.jsx,
+// app/journal/page.jsx) — now with real cloud sync.
 //
-// WHY localStorage AND NOT IndexedDB: every other piece of per-browser
-// state on this site already lives in localStorage, and a personal
-// trade/asset journal — even a few thousand entries — is well within
-// its ~5MB-per-origin budget. Matching the existing pattern keeps one
-// persistence model across the whole app (and one place to reason
-// about "best-effort, never load-bearing" storage failures) rather
-// than introducing IndexedDB for just this one feature.
+// RETENTION UPGRADE (Multi-Persona UX & Retention Gap Audit's
+// structural roadmap item: "give the Journal... real accounts + cloud
+// sync"): this hook used to be localStorage-only by necessity — the
+// project had no accounts or backend at all (see the previous header
+// comment's note that there was "nothing real to wire into yet").
+// lib/supabase.js + hooks/useSupabaseAuth.js now provide both, so:
 //
-// CLOUD SYNC: this project has no account/sign-in system anywhere (see
-// components/dashboard/DashboardHub.jsx's own closing note — "no
-// separate account or sign-in... nothing here syncs across devices").
-// So there is nothing real to "wire into" for cloud sync yet — this
-// hook does not pretend otherwise. CSV/JSON export+import (below) is
-// the actual, working way to move entries to another device or back
-// them up today; components/journal/JournalHub.jsx shows cloud sync as
-// a clearly-labeled "coming soon" affordance rather than a working
-// button, so nothing here claims a capability that doesn't exist.
+//   - Signed in, Supabase configured: entries live in the
+//     `trading_journal` Postgres table (see SUPABASE_SETUP.md for the
+//     schema + required Row Level Security policies), synced across
+//     every device the person signs into.
+//   - Guest (not signed in), OR Supabase not configured for this
+//     deployment, OR a cloud call fails: falls back to the exact same
+//     localStorage behavior this hook always had — never a crash,
+//     never a blocked UI, never data silently dropped. A guest's
+//     localStorage entries are offered a one-time upload the first
+//     time they sign in (see `migrateLocalToCloud` below), so signing
+//     up doesn't orphan work already done as a guest.
 //
-// STORAGE SHAPE (v1):
+// STORAGE SHAPE (v1, unchanged for the localStorage path):
 // { version: 1, entries: Array<{ id, category, createdAt, ...fields }> }
+//
+// CLOUD TABLE SHAPE: one row per entry — id (text, client-generated,
+// so local and cloud ids are interchangeable), user_id (uuid), category
+// (text), created_at (timestamptz), fields (jsonb — every entry field
+// other than id/category/createdAt, since the field set varies per
+// category; see lib/journalSchema.js).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getCategory } from "@/lib/journalSchema";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 
 const STORAGE_KEY = "omnifin.journal.entries.v1";
+const TABLE = "trading_journal";
 
 function emptyState() {
   return { version: 1, entries: [] };
@@ -66,6 +73,15 @@ function writeStored(state) {
   }
 }
 
+/** Entry (flat, app-shape) <-> cloud row (id/user_id/category/created_at + fields jsonb). */
+function toRow(entry, userId) {
+  const { id, category, createdAt, ...fields } = entry;
+  return { id, user_id: userId, category, created_at: createdAt, fields };
+}
+function fromRow(row) {
+  return { id: row.id, category: row.category, createdAt: row.created_at, ...(row.fields || {}) };
+}
+
 /** Attaches each entry's schema-computed fields (P&L, cap rate, etc.)
  * without mutating the stored record itself — `derived` is always
  * recalculated from the raw fields, never persisted, so it can never
@@ -77,15 +93,78 @@ function withDerived(entry) {
 }
 
 export function useTradingJournal() {
+  const { user, authLoading } = useSupabaseAuth();
+  const cloudReady = isSupabaseConfigured();
+  const cloudActive = cloudReady && Boolean(user);
+
   const [state, setState] = useState(emptyState);
   const [hydrated, setHydrated] = useState(false);
+  const [syncError, setSyncError] = useState("");
+  const migratedForUser = useRef(null);
 
+  // Guest/local hydration — always runs, so there's a safe default even
+  // while auth is still resolving or cloud calls are in flight.
   useEffect(() => {
     setState(readStored());
     setHydrated(true);
   }, []);
 
-  const persist = useCallback((updater) => {
+  // Cloud hydration + one-time guest->cloud migration, whenever a user
+  // becomes available. Falls back to whatever's already in `state`
+  // (local) on any failure — never clears entries the person can see.
+  useEffect(() => {
+    if (!cloudActive || authLoading) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from(TABLE)
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        if (cancelled) return;
+
+        let cloudEntries = (data || []).map(fromRow);
+
+        // One-time migration: a guest who had local entries before
+        // signing in gets them uploaded once per session, deduped by
+        // id, so switching to an account never loses journal history.
+        if (migratedForUser.current !== user.id) {
+          migratedForUser.current = user.id;
+          const local = readStored().entries;
+          const cloudIds = new Set(cloudEntries.map((e) => e.id));
+          const toUpload = local.filter((e) => !cloudIds.has(e.id));
+          if (toUpload.length > 0) {
+            const { error: insertError } = await supabase
+              .from(TABLE)
+              .insert(toUpload.map((e) => toRow(e, user.id)));
+            if (!insertError) cloudEntries = [...cloudEntries, ...toUpload];
+          }
+        }
+
+        if (!cancelled) {
+          setState({ version: 1, entries: cloudEntries });
+          setSyncError("");
+        }
+      } catch (err) {
+        if (!cancelled) setSyncError(err.message || "Couldn't reach the cloud journal — showing this browser's local entries.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudActive, authLoading, user]);
+
+  // Local persistence — still runs even in cloud mode, so a signed-in
+  // person always has an up-to-date offline copy if a Supabase call
+  // ever fails mid-session.
+  const persistLocal = useCallback((updater) => {
     setState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       writeStored(next);
@@ -96,34 +175,84 @@ export function useTradingJournal() {
   const addEntry = useCallback(
     (category, fields) => {
       const entry = { id: makeId(), category, createdAt: new Date().toISOString(), ...fields };
-      persist((prev) => ({ ...prev, entries: [...prev.entries, entry] }));
+
+      if (cloudActive) {
+        persistLocal((prev) => ({ ...prev, entries: [...prev.entries, entry] }));
+        const supabase = getSupabaseClient();
+        supabase
+          ?.from(TABLE)
+          .insert(toRow(entry, user.id))
+          .then(({ error }) => {
+            if (error) setSyncError("Saved locally, but couldn't sync to the cloud right now.");
+          });
+      } else {
+        persistLocal((prev) => ({ ...prev, entries: [...prev.entries, entry] }));
+      }
       return entry.id;
     },
-    [persist]
+    [cloudActive, persistLocal, user]
   );
 
   const updateEntry = useCallback(
     (id, fields) => {
-      persist((prev) => ({
+      persistLocal((prev) => ({
         ...prev,
         entries: prev.entries.map((e) => (e.id === id ? { ...e, ...fields } : e)),
       }));
+
+      if (cloudActive) {
+        const supabase = getSupabaseClient();
+        const { category, createdAt, id: _id, ...restFields } = fields;
+        supabase
+          ?.from(TABLE)
+          .update({ fields: restFields })
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .then(({ error }) => {
+            if (error) setSyncError("Updated locally, but couldn't sync to the cloud right now.");
+          });
+      }
     },
-    [persist]
+    [cloudActive, persistLocal, user]
   );
 
   const deleteEntry = useCallback(
     (id) => {
-      persist((prev) => ({ ...prev, entries: prev.entries.filter((e) => e.id !== id) }));
+      persistLocal((prev) => ({ ...prev, entries: prev.entries.filter((e) => e.id !== id) }));
+
+      if (cloudActive) {
+        const supabase = getSupabaseClient();
+        supabase
+          ?.from(TABLE)
+          .delete()
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .then(({ error }) => {
+            if (error) setSyncError("Deleted locally, but couldn't sync to the cloud right now.");
+          });
+      }
     },
-    [persist]
+    [cloudActive, persistLocal, user]
   );
 
   const clearCategory = useCallback(
     (category) => {
-      persist((prev) => ({ ...prev, entries: prev.entries.filter((e) => e.category !== category) }));
+      const idsToRemove = state.entries.filter((e) => e.category === category).map((e) => e.id);
+      persistLocal((prev) => ({ ...prev, entries: prev.entries.filter((e) => e.category !== category) }));
+
+      if (cloudActive && idsToRemove.length > 0) {
+        const supabase = getSupabaseClient();
+        supabase
+          ?.from(TABLE)
+          .delete()
+          .in("id", idsToRemove)
+          .eq("user_id", user.id)
+          .then(({ error }) => {
+            if (error) setSyncError("Cleared locally, but couldn't sync to the cloud right now.");
+          });
+      }
     },
-    [persist]
+    [cloudActive, persistLocal, state.entries, user]
   );
 
   /**
@@ -137,20 +266,33 @@ export function useTradingJournal() {
   const importEntries = useCallback(
     (incoming) => {
       if (!Array.isArray(incoming) || incoming.length === 0) return 0;
-      persist((prev) => {
+      let uploaded = [];
+      persistLocal((prev) => {
         const existingIds = new Set(prev.entries.map((e) => e.id));
         const merged = [...prev.entries];
         for (const raw of incoming) {
           if (!raw || typeof raw !== "object" || !raw.category) continue;
           const id = raw.id && !existingIds.has(raw.id) ? raw.id : makeId();
           existingIds.add(id);
-          merged.push({ ...raw, id, createdAt: raw.createdAt || new Date().toISOString() });
+          const entry = { ...raw, id, createdAt: raw.createdAt || new Date().toISOString() };
+          merged.push(entry);
+          uploaded.push(entry);
         }
         return { ...prev, entries: merged };
       });
+
+      if (cloudActive && uploaded.length > 0) {
+        const supabase = getSupabaseClient();
+        supabase
+          ?.from(TABLE)
+          .insert(uploaded.map((e) => toRow(e, user.id)))
+          .then(({ error }) => {
+            if (error) setSyncError("Imported locally, but couldn't sync to the cloud right now.");
+          });
+      }
       return incoming.length;
     },
-    [persist]
+    [cloudActive, persistLocal, user]
   );
 
   const entriesByCategory = useCallback(
@@ -167,5 +309,10 @@ export function useTradingJournal() {
     deleteEntry,
     clearCategory,
     importEntries,
+    // New — cloud sync status, additive to the existing API above so
+    // every current call site keeps working unchanged.
+    cloudReady, // Supabase is configured for this deployment at all
+    cloudActive, // AND this person is actually signed in right now
+    syncError,
   };
 }

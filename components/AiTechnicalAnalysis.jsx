@@ -315,6 +315,22 @@ export default function AiTechnicalAnalysis() {
                 </span>
               </div>
 
+              {/* AUDIT FIX: real-candle transparency badge — distinct
+                  from the AI/rule-based badge above (which is about the
+                  WRITER of the analysis, not the data it's based on).
+                  Only appears when a real OHLC series actually resolved
+                  this request (lib/candleData.js); its absence is
+                  already covered by each section's own
+                  AvailabilityTag below, so no "no candles" badge is
+                  needed here. */}
+              {result.usingLiveCandles && (
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Real intraday candles via{" "}
+                  {result.candleSource === "twelvedata" ? "Twelve Data" : "Alpha Vantage"}
+                </div>
+              )}
+
               {/* Big overall meter */}
               {result.overallSentiment && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">

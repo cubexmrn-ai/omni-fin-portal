@@ -6,8 +6,9 @@
 // Renders: avatar + handle + relative time badge + asset tag(s),
 // a Long/Short direction badge with Entry/Target/Stop Loss (for posts
 // that have them), an illustrative chart-preview placeholder with an
-// "Expand Setup" modal, and Upvote/Downvote/Bullseye counters wired to
-// hooks/useCommunityPosts.js.
+// "Expand Setup" modal (which now also shows a real cloud comment
+// thread when Supabase is configured — see CommentsThread.jsx), and
+// Upvote/Downvote/Bullseye counters wired to hooks/useCommunityPosts.js.
 //
 // HONESTY NOTE: there is no real uploaded chart image anywhere in this
 // app, so the "preview" below is an explicitly-labeled illustrative
@@ -20,6 +21,8 @@
 import { useMemo, useState } from "react";
 import Modal from "@/components/community/Modal";
 import { getAssetTag, getCategory } from "@/lib/communityData";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import CommentsThread from "@/components/community/CommentsThread";
 
 // Small local seeded-hash utility (a standalone implementation rather
 // than importing a shared one — kept deliberately self-contained).
@@ -326,6 +329,7 @@ export default function TradePostCard({ post, counts, onVote, onToggleBullseye }
         <div className="mt-3">
           <ChartPreview post={post} large />
         </div>
+        {isSupabaseConfigured() && <CommentsThread postId={post.id} />}
       </Modal>
     </article>
   );

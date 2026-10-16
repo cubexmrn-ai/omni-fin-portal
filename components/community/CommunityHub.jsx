@@ -26,6 +26,8 @@ import CreatePostModal from "@/components/community/CreatePostModal";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import SentimentGaugeSection from "@/components/community/setup/SentimentGaugeSection";
 import SetupBoard from "@/components/community/setup/SetupBoard";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import AuthModal from "@/components/auth/AuthModal";
 
 function StatCard({ label, value, footnote }) {
   return (
@@ -41,12 +43,14 @@ function StatCard({ label, value, footnote }) {
 
 export default function CommunityHub() {
   const { t } = useLanguage();
-  const { hydrated, allPosts, addPost, setVote, toggleBullseye, getDisplayCounts } =
+  const { hydrated, allPosts, addPost, setVote, toggleBullseye, getDisplayCounts, cloudReady, cloudActive, syncError } =
     useCommunityPosts();
+  const { user, signOut } = useSupabaseAuth();
 
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeAssetTags, setActiveAssetTags] = useState([]);
   const [search, setSearch] = useState("");
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   function toggleAssetTag(tagId) {
     setActiveAssetTags((prev) =>
@@ -128,10 +132,52 @@ export default function CommunityHub() {
             />
           </div>
 
+          {/* RETENTION UPGRADE: these posts now reach a real
+              `community_posts` table (hooks/useCommunityPosts.js) once
+              Supabase is configured AND the person signs in — this bar
+              says plainly which of the three states applies rather
+              than letting CreatePostModal silently keep posting
+              browser-local-only like it always used to. */}
+          {cloudReady && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              {cloudActive ? (
+                <>
+                  <p className="text-xs text-slate-500">
+                    Signed in as <strong>{user.email}</strong> — your posts are visible to every
+                    visitor, not just this browser.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-500">
+                    Sign in to publish posts other real visitors can see, and to comment.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setAuthModalOpen(true)}
+                    className="rounded-full bg-brand-600 px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-brand-700"
+                  >
+                    Sign In
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+          {syncError && <p className="mt-2 text-xs text-amber-600">{syncError}</p>}
+
           <div className="mt-5">
             <CreatePostModal onSubmit={addPost} />
           </div>
         </header>
+
+        <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
         <div className="mt-6 flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
