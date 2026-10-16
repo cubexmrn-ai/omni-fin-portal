@@ -40,7 +40,7 @@
 //   5. Wealth & Personal Finance — Inflation, Compound Growth, and
 //      Business Profit Margin, stacked as three sub-cards.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Global Base Currency sync — WITHOUT an import.
@@ -633,6 +633,88 @@ function useCalcTerms() {
   return CALC_TERMS_BY_LANGUAGE[language] || CALC_TERMS_BY_LANGUAGE.en;
 }
 
+// ---------------------------------------------------------------------------
+// Session persistence (Pro Trader Quick Win) — localStorage, inline,
+// same zero-imports constraint as the rest of this file: a page reload
+// (or coming back later the same day) restores exactly what was last
+// entered in each mode — account balance, leverage, instrument, entry/
+// TP/SL prices, risk %, etc. — rather than resetting every panel back
+// to its hardcoded defaults. Each panel's inputs live under their own
+// key inside ONE shared JSON blob, so panels never clobber each other's
+// saved state. Best-effort only (wrapped in try/catch): a blocked or
+// full localStorage (private browsing, storage quota) silently falls
+// back to the in-memory defaults, same convention as
+// hooks/useDashboardPresets.js and hooks/useAcademyProgress.js.
+// ---------------------------------------------------------------------------
+
+const CALCULATORS_STORAGE_KEY = "omnifin.calculators.inputs.v1";
+
+function readStoredCalculatorInputs() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(CALCULATORS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredCalculatorPanel(panelKey, panelState) {
+  if (typeof window === "undefined") return;
+  try {
+    const all = readStoredCalculatorInputs();
+    window.localStorage.setItem(
+      CALCULATORS_STORAGE_KEY,
+      JSON.stringify({ ...all, [panelKey]: panelState })
+    );
+  } catch {
+    // Best-effort only — the panel keeps working from in-memory state
+    // for the rest of this session even if persistence silently fails.
+  }
+}
+
+/**
+ * Persists one panel's plain-object input state under `panelKey` inside
+ * the single shared localStorage blob above. Starts from `initial` on
+ * both the server render and the first client render (so there's never
+ * a hydration mismatch), then patches in whatever was saved for this
+ * panel right after mount. Returns `[state, update]`, where `update`
+ * works like a functional setState but always merges into the existing
+ * object rather than replacing it outright — so a single field's
+ * onChange (`update({ balance: e.target.value })`) never has to spread
+ * every other field back in by hand.
+ */
+function usePersistedPanelState(panelKey, initial) {
+  const [state, setState] = useState(initial);
+  const hydratedRef = useRef(false);
+
+  // Hydrate once, right after mount — never during SSR/first paint.
+  useEffect(() => {
+    const stored = readStoredCalculatorInputs()[panelKey];
+    if (stored && typeof stored === "object") {
+      setState((prev) => ({ ...prev, ...stored }));
+    }
+    hydratedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelKey]);
+
+  // Persist on every change AFTER hydration — guarded so the initial
+  // (pre-hydration) default values are never written over whatever was
+  // actually saved from a previous visit.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    writeStoredCalculatorPanel(panelKey, state);
+  }, [panelKey, state]);
+
+  const update = useCallback((patch) => {
+    setState((prev) => ({ ...prev, ...(typeof patch === "function" ? patch(prev) : patch) }));
+  }, []);
+
+  return [state, update];
+}
+
 /** "Account / Local Currency" dropdown shared by the panels that
  * display a secondary-currency figure (All-in-One, Pip Value) —
  * defaults to the header's global Base Currency, but a manual pick
@@ -665,33 +747,51 @@ function AccountCurrencySelect({ value, onChange, touched }) {
 // Mode 1 — All-in-One Trade Execution Suite
 // ---------------------------------------------------------------------------
 
+const ALL_IN_ONE_DEFAULTS = {
+  pairId: "EURUSD",
+  lots: 0.18,
+  direction: "buy",
+  accountBalance: 10000,
+  accountCurrency: "USD",
+  accountCurrencyTouched: false,
+  entry: 1.123,
+  takeProfit: 1.223,
+  stopLoss: 1.073,
+  leverage: 100,
+  pipSize: getDefaultPipSize("forex"),
+};
+
 function AllInOnePanel() {
   const { rates, status } = useLiveRates();
   const globalBaseCurrency = useGlobalBaseCurrency();
   const terms = useCalcTerms();
-  const [pairId, setPairId] = useState("EURUSD");
-  const [lots, setLots] = useState(0.18);
-  const [direction, setDirection] = useState("buy");
-  const [accountBalance, setAccountBalance] = useState(10000);
-  const [accountCurrency, setAccountCurrency] = useState(globalBaseCurrency);
-  const [accountCurrencyTouched, setAccountCurrencyTouched] = useState(false);
-  const [entry, setEntry] = useState(1.123);
-  const [takeProfit, setTakeProfit] = useState(1.223);
-  const [stopLoss, setStopLoss] = useState(1.073);
-  const [leverage, setLeverage] = useState(100);
-  const [pipSize, setPipSize] = useState(getDefaultPipSize("forex"));
+  const [inputs, update] = usePersistedPanelState("all-in-one", ALL_IN_ONE_DEFAULTS);
+  const {
+    pairId,
+    lots,
+    direction,
+    accountBalance,
+    accountCurrency,
+    accountCurrencyTouched,
+    entry,
+    takeProfit,
+    stopLoss,
+    leverage,
+    pipSize,
+  } = inputs;
 
   const pair = getPair(pairId);
 
   function handlePairChange(nextId) {
-    setPairId(nextId);
-    setPipSize(getDefaultPipSize(getPair(nextId).instrumentType));
+    update({ pairId: nextId, pipSize: getDefaultPipSize(getPair(nextId).instrumentType) });
   }
 
   // Keeps Account Currency synced to the header's global Base
-  // Currency until the person manually picks a different one here.
+  // Currency until the person manually picks a different one here (or
+  // until a previously SAVED manual pick is restored on reload).
   useEffect(() => {
-    if (!accountCurrencyTouched) setAccountCurrency(globalBaseCurrency);
+    if (!accountCurrencyTouched) update({ accountCurrency: globalBaseCurrency });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalBaseCurrency, accountCurrencyTouched]);
 
   const result = useMemo(
@@ -734,7 +834,7 @@ function AllInOnePanel() {
           <FieldLabel>
             Lot Size <span className="text-slate-500">(custom, e.g. 0.18)</span>
           </FieldLabel>
-          <TextInput min="0" step="0.01" value={lots} onChange={(e) => setLots(e.target.value)} />
+          <TextInput min="0" step="0.01" value={lots} onChange={(e) => update({ lots: e.target.value })} />
         </label>
 
         <label className="block">
@@ -742,7 +842,7 @@ function AllInOnePanel() {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setDirection("buy")}
+              onClick={() => update({ direction: "buy" })}
               aria-pressed={direction === "buy"}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 direction === "buy"
@@ -754,7 +854,7 @@ function AllInOnePanel() {
             </button>
             <button
               type="button"
-              onClick={() => setDirection("sell")}
+              onClick={() => update({ direction: "sell" })}
               aria-pressed={direction === "sell"}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                 direction === "sell"
@@ -769,41 +869,38 @@ function AllInOnePanel() {
 
         <label className="block">
           <FieldLabel>Account Balance (USD)</FieldLabel>
-          <TextInput min="0" value={accountBalance} onChange={(e) => setAccountBalance(e.target.value)} />
+          <TextInput min="0" value={accountBalance} onChange={(e) => update({ accountBalance: e.target.value })} />
         </label>
 
         <label className="block">
           <FieldLabel>Entry Price</FieldLabel>
-          <TextInput value={entry} onChange={(e) => setEntry(e.target.value)} />
+          <TextInput value={entry} onChange={(e) => update({ entry: e.target.value })} />
         </label>
 
         <label className="block">
           <FieldLabel>Take Profit Price</FieldLabel>
-          <TextInput value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} />
+          <TextInput value={takeProfit} onChange={(e) => update({ takeProfit: e.target.value })} />
         </label>
 
         <label className="block">
           <FieldLabel>Stop Loss Price</FieldLabel>
-          <TextInput value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} />
+          <TextInput value={stopLoss} onChange={(e) => update({ stopLoss: e.target.value })} />
         </label>
 
         <label className="block">
           <FieldLabel>Leverage</FieldLabel>
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-slate-600">1:</span>
-            <TextInput min="1" step="1" value={leverage} onChange={(e) => setLeverage(e.target.value)} />
+            <TextInput min="1" step="1" value={leverage} onChange={(e) => update({ leverage: e.target.value })} />
           </div>
         </label>
 
-        <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
+        <PipSizePicker pair={pair} pipSize={pipSize} onChange={(size) => update({ pipSize: size })} />
 
         <AccountCurrencySelect
           value={accountCurrency}
           touched={accountCurrencyTouched}
-          onChange={(code) => {
-            setAccountCurrencyTouched(true);
-            setAccountCurrency(code);
-          }}
+          onChange={(code) => update({ accountCurrencyTouched: true, accountCurrency: code })}
         />
       </div>
 
@@ -879,11 +976,11 @@ function AllInOnePanel() {
 // Mode 2 — Position & Lot Size Calculator
 // ---------------------------------------------------------------------------
 
+const LOT_SIZE_DEFAULTS = { balance: 10000, riskPercent: 1, stopPips: 20, pipValuePerLot: 10 };
+
 function LotSizePanel() {
-  const [balance, setBalance] = useState(10000);
-  const [riskPercent, setRiskPercent] = useState(1);
-  const [stopPips, setStopPips] = useState(20);
-  const [pipValuePerLot, setPipValuePerLot] = useState(10);
+  const [inputs, update] = usePersistedPanelState("lot-size", LOT_SIZE_DEFAULTS);
+  const { balance, riskPercent, stopPips, pipValuePerLot } = inputs;
 
   const result = useMemo(
     () =>
@@ -908,19 +1005,19 @@ function LotSizePanel() {
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
         <label className="block">
           <FieldLabel>Account Balance (USD)</FieldLabel>
-          <TextInput min="0" value={balance} onChange={(e) => setBalance(e.target.value)} />
+          <TextInput min="0" value={balance} onChange={(e) => update({ balance: e.target.value })} />
         </label>
         <label className="block">
           <FieldLabel>Risk per Trade (%)</FieldLabel>
-          <TextInput min="0" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)} />
+          <TextInput min="0" value={riskPercent} onChange={(e) => update({ riskPercent: e.target.value })} />
         </label>
         <label className="block">
           <FieldLabel>Stop-Loss Distance (pips)</FieldLabel>
-          <TextInput min="0" value={stopPips} onChange={(e) => setStopPips(e.target.value)} />
+          <TextInput min="0" value={stopPips} onChange={(e) => update({ stopPips: e.target.value })} />
         </label>
         <label className="block">
           <FieldLabel>Pip Value per Standard Lot (USD)</FieldLabel>
-          <TextInput min="0" value={pipValuePerLot} onChange={(e) => setPipValuePerLot(e.target.value)} />
+          <TextInput min="0" value={pipValuePerLot} onChange={(e) => update({ pipValuePerLot: e.target.value })} />
         </label>
       </div>
 
@@ -952,24 +1049,29 @@ function LotSizePanel() {
 // Mode 3 — Pip Value & Custom Math
 // ---------------------------------------------------------------------------
 
+const PIP_VALUE_DEFAULTS = {
+  pairId: "EURUSD",
+  lots: 0.18,
+  pipSize: getDefaultPipSize("forex"),
+  accountCurrency: "USD",
+  accountCurrencyTouched: false,
+};
+
 function PipValuePanel() {
   const { rates, status } = useLiveRates();
   const globalBaseCurrency = useGlobalBaseCurrency();
-  const [pairId, setPairId] = useState("EURUSD");
-  const [lots, setLots] = useState(0.18);
-  const [pipSize, setPipSize] = useState(getDefaultPipSize("forex"));
-  const [accountCurrency, setAccountCurrency] = useState(globalBaseCurrency);
-  const [accountCurrencyTouched, setAccountCurrencyTouched] = useState(false);
+  const [inputs, update] = usePersistedPanelState("pip-value", PIP_VALUE_DEFAULTS);
+  const { pairId, lots, pipSize, accountCurrency, accountCurrencyTouched } = inputs;
 
   const pair = getPair(pairId);
 
   function handlePairChange(nextId) {
-    setPairId(nextId);
-    setPipSize(getDefaultPipSize(getPair(nextId).instrumentType));
+    update({ pairId: nextId, pipSize: getDefaultPipSize(getPair(nextId).instrumentType) });
   }
 
   useEffect(() => {
-    if (!accountCurrencyTouched) setAccountCurrency(globalBaseCurrency);
+    if (!accountCurrencyTouched) update({ accountCurrency: globalBaseCurrency });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalBaseCurrency, accountCurrencyTouched]);
 
   const result = useMemo(
@@ -998,17 +1100,14 @@ function PipValuePanel() {
           <FieldLabel>
             Lot Size <span className="text-slate-500">(custom, e.g. 0.18)</span>
           </FieldLabel>
-          <TextInput min="0" step="0.01" value={lots} onChange={(e) => setLots(e.target.value)} />
+          <TextInput min="0" step="0.01" value={lots} onChange={(e) => update({ lots: e.target.value })} />
         </label>
-        <PipSizePicker pair={pair} pipSize={pipSize} onChange={setPipSize} />
+        <PipSizePicker pair={pair} pipSize={pipSize} onChange={(size) => update({ pipSize: size })} />
 
         <AccountCurrencySelect
           value={accountCurrency}
           touched={accountCurrencyTouched}
-          onChange={(code) => {
-            setAccountCurrencyTouched(true);
-            setAccountCurrency(code);
-          }}
+          onChange={(code) => update({ accountCurrencyTouched: true, accountCurrency: code })}
         />
       </div>
 
@@ -1048,10 +1147,11 @@ function PipValuePanel() {
 // Mode 4 — Margin & Leverage Calculator
 // ---------------------------------------------------------------------------
 
+const MARGIN_DEFAULTS = { balance: 1000, leverage: 100, positionSize: 50000 };
+
 function MarginPanel() {
-  const [balance, setBalance] = useState(1000);
-  const [leverage, setLeverage] = useState(100);
-  const [positionSize, setPositionSize] = useState(50000);
+  const [inputs, update] = usePersistedPanelState("margin", MARGIN_DEFAULTS);
+  const { balance, leverage, positionSize } = inputs;
 
   const result = useMemo(
     () => calcMargin({ accountBalance: balance, leverage, positionSizeUsd: positionSize }),
@@ -1068,17 +1168,17 @@ function MarginPanel() {
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
         <label className="block">
           <FieldLabel>Account Balance (USD)</FieldLabel>
-          <TextInput min="0" value={balance} onChange={(e) => setBalance(e.target.value)} />
+          <TextInput min="0" value={balance} onChange={(e) => update({ balance: e.target.value })} />
         </label>
         <label className="block">
           <FieldLabel>Position Size (USD notional)</FieldLabel>
-          <TextInput min="0" value={positionSize} onChange={(e) => setPositionSize(e.target.value)} />
+          <TextInput min="0" value={positionSize} onChange={(e) => update({ positionSize: e.target.value })} />
         </label>
         <label className="block sm:col-span-2">
           <FieldLabel>Leverage</FieldLabel>
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-slate-600">1:</span>
-            <TextInput min="1" step="1" value={leverage} onChange={(e) => setLeverage(e.target.value)} />
+            <TextInput min="1" step="1" value={leverage} onChange={(e) => update({ leverage: e.target.value })} />
           </div>
         </label>
       </div>
@@ -1313,12 +1413,24 @@ function CalculationGuide() {
           USD and then to your selected Account / Local Currency (defaults to the Base Currency
           set in the header) using the current exchange rate — exactly what Modes 1 and 3 compute
           live.
+          <a
+            href="/learn/apprentice/pips-and-lot-sizes"
+            className="mt-2 inline-block text-xs font-semibold text-brand-600 hover:underline"
+          >
+            Full lesson: Pips &amp; Lot Sizes →
+          </a>
         </AccordionItem>
         <AccordionItem title="Lot sizing formulas">
           Position size is solved backward from how much you&apos;re willing to lose: Risk
           Amount = Account Balance × Risk %. Standard Lots = Risk Amount ÷ (Stop-Loss Pips × Pip
           Value per Standard Lot). Mini lots are 10× that figure, micro lots 100×, since a
           standard lot is 100,000 base-currency units (10,000 mini, 1,000 micro) — see Mode 2.
+          <a
+            href="/learn/pro-trader/position-sizing-math"
+            className="mt-2 inline-block text-xs font-semibold text-brand-600 hover:underline"
+          >
+            Full lesson: Position-Sizing Math →
+          </a>
         </AccordionItem>
         <AccordionItem title="The 1–2% account risk rule">
           Most professional risk-management guidance caps the amount risked on any single trade
@@ -1326,6 +1438,12 @@ function CalculationGuide() {
           damage — e.g. on a $10,000 account, a 1% risk rule caps a single trade&apos;s potential
           loss at $100. Modes 1 and 2 both let you check your risk against this rule before you
           size a position.
+          <a
+            href="/learn/pro-trader/position-sizing-math"
+            className="mt-2 inline-block text-xs font-semibold text-brand-600 hover:underline"
+          >
+            Full lesson: Position-Sizing Math →
+          </a>
         </AccordionItem>
         <AccordionItem title="Risk:Reward and margin">
           Risk:Reward compares potential reward to potential risk in dollar terms (e.g. 1:2 means
@@ -1333,6 +1451,12 @@ function CalculationGuide() {
           position&apos;s notional value divided by your leverage ratio; Free Margin is what&apos;s
           left of your balance after that margin is set aside — a negative free margin means the
           position is too large for your account at that leverage. See Modes 1 and 4.
+          <a
+            href="/learn/pro-trader/risk-to-reward-ratio"
+            className="mt-2 inline-block text-xs font-semibold text-brand-600 hover:underline"
+          >
+            Full lesson: Risk:Reward Ratio →
+          </a>
         </AccordionItem>
         <AccordionItem title="Inflation, compounding, and margin — Mode 5">
           Inflation math projects a nominal amount forward at a compounding annual rate to show
@@ -1340,6 +1464,12 @@ function CalculationGuide() {
           growth does the reverse direction — projecting a starting balance plus regular monthly
           contributions forward at a compounding annual return. Both are long-horizon estimates,
           not guarantees.
+          <a
+            href="/tools/savings-inflation-calculator"
+            className="mt-2 inline-block text-xs font-semibold text-brand-600 hover:underline"
+          >
+            Try the plain-language Savings &amp; Inflation Calculator →
+          </a>
         </AccordionItem>
       </div>
     </div>
@@ -1358,8 +1488,26 @@ const MODES = [
   { id: "wealth", label: "Inflation & Wealth Growth" },
 ];
 
+const MODE_IDS = MODES.map((m) => m.id);
+
 export default function CalculatorsPage() {
   const [activeMode, setActiveMode] = useState("all-in-one");
+
+  // Restores the last-used mode on reload (e.g. a pro who always opens
+  // this page to check Margin & Leverage doesn't land back on Mode 1
+  // every time). Session persistence quick win — see
+  // usePersistedPanelState() above for the per-panel field storage.
+  useEffect(() => {
+    const stored = readStoredCalculatorInputs().activeMode;
+    if (typeof stored === "string" && MODE_IDS.includes(stored)) {
+      setActiveMode(stored);
+    }
+  }, []);
+
+  function handleModeChange(nextMode) {
+    setActiveMode(nextMode);
+    writeStoredCalculatorPanel("activeMode", nextMode);
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1392,7 +1540,7 @@ export default function CalculatorsPage() {
               <span className="sr-only">Select a calculator mode</span>
               <select
                 value={activeMode}
-                onChange={(e) => setActiveMode(e.target.value)}
+                onChange={(e) => handleModeChange(e.target.value)}
                 className="w-full rounded-lg border border-blue-500 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 {MODES.map((mode) => (
@@ -1413,7 +1561,7 @@ export default function CalculatorsPage() {
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setActiveMode(mode.id)}
+                  onClick={() => handleModeChange(mode.id)}
                   className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                     active
                       ? "border-blue-500 bg-blue-50 text-blue-700"

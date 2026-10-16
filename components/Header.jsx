@@ -19,6 +19,8 @@
 //       * Metals & Commodities Converter -> /#metals-calculator
 //       * Universal Currency Converter    -> /converters
 //       * Trading & Financial Calculators -> /calculators
+//       * Household Tools (gold making-charges, loan EMI/salary tax,
+//         zakat, savings & inflation) -> /tools
 //   - Market Analysis, News, Academy, Community, About — unchanged,
 //     ungrouped top-level links, exactly as before.
 //   - The top-right primary "Open Calculator" button is untouched and
@@ -71,6 +73,11 @@ const TOOLS_CALCULATORS_LINKS = [
     label: "Trading & Financial Calculators",
     description: "Position sizing, pip value, margin, and more.",
     href: "/calculators",
+  },
+  {
+    label: "Household Tools",
+    description: "Gold jewellery pricing, loan EMI, zakat, and savings vs. inflation.",
+    href: "/tools",
   },
 ];
 
@@ -381,8 +388,9 @@ export default function Header() {
       </div>
 
       {/* Mobile nav — flattened (no hover dropdown on touch): a small
-          "Tools & Calculators" group heading followed by its 3 links,
-          then the remaining top-level links. */}
+          "Tools & Calculators" group heading followed by its links
+          (TOOLS_CALCULATORS_LINKS, mapped dynamically), then the
+          remaining top-level links. */}
       {mobileOpen && (
         <nav className="border-t border-slate-100 px-4 py-3 md:hidden" aria-label="Primary mobile">
           <div className="flex flex-col gap-0.5">

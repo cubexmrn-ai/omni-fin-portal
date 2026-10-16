@@ -50,6 +50,11 @@ export default function sitemap() {
     { path: "/", changeFrequency: "daily", priority: 1.0 },
     { path: "/converters", changeFrequency: "daily", priority: 0.9 },
     { path: "/calculators", changeFrequency: "weekly", priority: 0.9 },
+    { path: "/tools", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/tools/gold-jewellery-calculator", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/tools/loan-emi-tax-calculator", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/tools/zakat-calculator", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/tools/savings-inflation-calculator", changeFrequency: "weekly", priority: 0.8 },
     { path: "/market-analysis", changeFrequency: "daily", priority: 0.9 },
     // NOT /market-analysis/ai-news — that route is a 308 permanent
     // redirect to /ai-news now (see app/market-analysis/ai-news/
