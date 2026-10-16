@@ -5,8 +5,10 @@ import MarketAnalysisFAQSection from "@/components/market-analysis/MarketAnalysi
 import MarketAnalysisFAQStructuredData from "@/components/market-analysis/MarketAnalysisFAQStructuredData";
 import MarketAnalysisExplorer from "@/components/market-analysis/MarketAnalysisExplorer";
 import EconomicHeatmapDashboard from "@/components/market-analysis/EconomicHeatmapDashboard";
+import MarketInsightsBlogSection from "@/components/market-analysis/MarketInsightsBlogSection";
 import { getCachedYoutubeAutomationFeed } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
+import { getPublishedBlogPosts } from "@/lib/youtubeBlogPipeline";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = buildMetadata({
@@ -66,6 +68,18 @@ export default async function MarketAnalysisPage() {
     ratesData = null;
   }
 
+  // Admin-curated YouTube-to-blog articles (lib/youtubeBlogPipeline.js)
+  // — called directly rather than self-fetching an API route, same
+  // reasoning as this page's other server-side data above. An empty
+  // array (no Supabase configured yet, or nothing published yet) just
+  // means MarketInsightsBlogSection renders nothing — never an error.
+  let blogPosts = [];
+  try {
+    blogPosts = await getPublishedBlogPosts(6);
+  } catch {
+    blogPosts = [];
+  }
+
   return (
     <>
       <MarketAnalysisFAQStructuredData />
@@ -78,9 +92,12 @@ export default async function MarketAnalysisPage() {
           not buried at the bottom of MarketOverviewBoard); (2) the
           Macro Economic Heatmap & Impact Dial Dashboard directly below
           it; (3) AI Video Insights + the sentiment pulse dial;
-          (4) the live ticker strip + full chart (MarketOverviewBoard,
-          with its own AiTechnicalAnalysis instance removed — see that
-          component's header comment); (5) the FAQ. */}
+          (4) Market Insights & Economic Summaries — the admin-curated
+          YouTube-to-blog cards (components/market-analysis/
+          MarketInsightsBlogSection.jsx); (5) the live ticker strip +
+          full chart (MarketOverviewBoard, with its own
+          AiTechnicalAnalysis instance removed — see that component's
+          header comment); (6) the FAQ. */}
       {/* `dark` activates AiTechnicalAnalysis's existing dark:-variant
           classes (already written throughout that component) so this
           hero slot gets the full high-contrast terminal look rather
@@ -107,6 +124,12 @@ export default async function MarketAnalysisPage() {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <MarketAnalysisExplorer videoPosts={videoPosts} ratesData={ratesData} />
       </section>
+
+      {/* Market Insights & Economic Summaries — admin-curated YouTube-
+          to-blog articles, placed directly above the live chart widget
+          (MarketOverviewBoard) per spec. Renders nothing when no
+          articles are published yet. */}
+      <MarketInsightsBlogSection posts={blogPosts} />
 
       <MarketOverviewBoard />
 

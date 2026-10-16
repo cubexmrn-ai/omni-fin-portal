@@ -115,6 +115,61 @@ That's it — `lib/supabase.js` picks these up automatically. With them unset
 features fall back to their original localStorage-only behavior rather than
 breaking the page — see `lib/supabase.js`'s header comment.
 
+## 5. YouTube-to-Financial-Blog pipeline (optional)
+
+The admin-only `/admin/youtube-importer` page and its `/market-analysis`
+"Market Insights & Economic Summaries" cards (see `lib/youtubeBlogPipeline.js`)
+use the same Supabase project. Without this table, published articles still
+work — they fall back to an in-memory/tmp-file store for the life of the
+current server process — but won't survive a redeploy or a cold serverless
+start, so setting this up is recommended for anything beyond local testing.
+
+```sql
+create table youtube_blog_posts (
+  id text primary key,
+  url text not null,
+  status text not null default 'pending',
+  failure_reason text,
+  video_id text,
+  video_title text,
+  channel_name text,
+  thumbnail_url text,
+  blog_title text,
+  excerpt text,
+  article_markdown text,
+  source_credit text,
+  tags jsonb not null default '[]'::jsonb,
+  submitted_at timestamptz not null default now(),
+  published_at timestamptz
+);
+
+create index youtube_blog_posts_status_idx on youtube_blog_posts(status);
+create index youtube_blog_posts_published_at_idx on youtube_blog_posts(published_at desc);
+
+alter table youtube_blog_posts enable row level security;
+
+-- Public read (anyone, including the anon key, needs to read published
+-- articles for the /market-analysis cards).
+create policy "youtube_blog_posts_select_all" on youtube_blog_posts
+  for select using (true);
+
+-- TRUST-BOUNDARY NOTE: unlike the Community Forum policies above, this
+-- table has NO per-row ownership concept (there's no Supabase-auth admin
+-- account) — the actual write gate is the passkey check in
+-- app/api/admin/youtube-importer/route.js, not Row Level Security. Anyone
+-- who has the anon key AND could call Supabase directly (not just through
+-- this app) could technically insert/update rows here. If that's not an
+-- acceptable trust boundary for your deployment, tighten this with a
+-- service-role key used only server-side instead of the anon key.
+create policy "youtube_blog_posts_write_anon" on youtube_blog_posts
+  for all using (true) with check (true);
+```
+
+Also set `ADMIN_YOUTUBE_IMPORTER_PASSKEY` in Vercel's Environment Variables
+(and `.env.local` for local use) — see `lib/youtubeBlogPipeline.js`'s
+`isValidAdminPasskey()` for the (deliberately simple, not real auth infra)
+check this gates.
+
 ## Scope notes (what this does *not* cover)
 
 - **Votes/Bullseye taps** on community posts stay per-browser (not synced to
