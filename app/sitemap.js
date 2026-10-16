@@ -32,7 +32,7 @@
 // apart — see that file's header comment for why a previous version
 // of getSiteUrl() could leak a preview deployment's hostname here.
 
-import { FEATURED_PAIRS } from "@/lib/pairSlugs";
+import { FEATURED_PAIRS, FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { getAllLessonsFlat } from "@/lib/academyData";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -90,6 +90,17 @@ export default function sitemap() {
     priority: 0.7,
   }));
 
+  // /converters/<base-code> — Phase 2 base-currency rate digest pages
+  // (e.g. /converters/pkr), same dynamic [pair] route as the pair
+  // pages below but resolved via parseBaseOnlySlug — see that
+  // function's header comment in lib/pairSlugs.js.
+  const baseCurrencyDigestRoutes = FEATURED_BASE_CURRENCIES.map((code) => ({
+    url: `${siteUrl}/converters/${code.toLowerCase()}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.7,
+  }));
+
   // /converters/unit/<unit-slug> — pure unit math, nothing time-sensitive.
   const unitConverterRoutes = FEATURED_UNIT_PAIRS.map((pair) => ({
     url: `${siteUrl}/converters/unit/${pair.slug}`,
@@ -109,6 +120,7 @@ export default function sitemap() {
   return [
     ...staticRoutes,
     ...converterPairRoutes,
+    ...baseCurrencyDigestRoutes,
     ...unitConverterRoutes,
     ...lessonRoutes,
   ];

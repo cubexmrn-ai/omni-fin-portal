@@ -76,6 +76,46 @@ export default function LoanEmiTaxCalculatorPage() {
 
       <section className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <LoanEmiTaxCalculator />
+
+        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">
+            Understanding your EMI — and what it leaves out
+          </h2>
+          <p className="mt-3">
+            Every fixed-rate loan — a home loan, a car loan, a personal loan — reduces to the same
+            formula: <strong>EMI = P × r × (1+r)ⁿ / ((1+r)ⁿ − 1)</strong>, where P is the principal
+            you borrow, r is the monthly interest rate (annual rate ÷ 12), and n is the total number
+            of monthly installments. The result is a single, unchanging monthly payment for the
+            full tenure — but what&apos;s inside that payment shifts dramatically over time.
+          </p>
+          <p className="mt-3">
+            In the first year of a long-tenure loan, most of each EMI goes toward interest, not
+            principal — the bank is paid first on the money it&apos;s still owed. As the outstanding
+            balance shrinks year over year, a growing share of the same fixed payment finally starts
+            paying down principal. That&apos;s why making extra payments early in a loan&apos;s life saves
+            far more total interest than the same extra payment made in year 10 — the earlier a
+            rupee of principal disappears, the more years of interest it was going to generate.
+          </p>
+          <p className="mt-3">
+            This calculator shows that full year-by-year split — the amortization schedule — so you
+            can see exactly how much of each year&apos;s payments is interest versus principal, and how
+            much you&apos;ll have paid the bank in total by the end of the tenure versus what you
+            actually borrowed. What it deliberately doesn&apos;t do is add a lender&apos;s processing fee,
+            mandatory insurance premium, or a floating/variable rate that changes mid-tenure — all
+            of which are common in real loan offers and all of which your actual lender, not this
+            calculator, sets.
+          </p>
+          <p className="mt-3">
+            The salary tax side uses Pakistan&apos;s FY2024-25 salaried-individual slab rates as a
+            quick, illustrative estimate of take-home pay — useful for sanity-checking whether a
+            loan&apos;s EMI fits comfortably inside your monthly income before you apply. It applies no
+            withholding adjustments, zakat, provident fund deductions, or non-salaried (business)
+            rates, and Pakistan&apos;s tax slabs are revised almost every fiscal year in the federal
+            budget — so treat the figure here as a planning estimate, not a filing number, and
+            confirm the current year&apos;s slabs with FBR or a tax professional before relying on it.
+          </p>
+        </div>
+
         <FAQAccordion
           title="Loan EMI &amp; Salary Tax — Guide &amp; FAQs"
           subtitle="How amortization works, and what the tax estimate does and doesn't cover."

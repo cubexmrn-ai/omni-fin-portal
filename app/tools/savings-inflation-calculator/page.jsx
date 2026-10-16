@@ -74,6 +74,47 @@ export default function SavingsInflationCalculatorPage() {
 
       <section className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <SavingsInflationVisualizer />
+
+        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">
+            Why idle cash quietly loses value
+          </h2>
+          <p className="mt-3">
+            The number in a savings account doesn&apos;t change just because prices go up — but what
+            that number can actually buy does. If prices rise 7% over a year, the same amount of
+            cash buys roughly 7% less than it did twelve months earlier, even though the figure on
+            the bank statement is identical. That gap between the number and what it&apos;s worth is
+            what this tool calls <strong>purchasing-power erosion</strong>, and it compounds: a
+            second year of 7% inflation doesn&apos;t just add another 7% loss, it takes 7% off an
+            already-shrunk base, the same way compound interest works in reverse.
+          </p>
+          <p className="mt-3">
+            Left as cash under a mattress or in a zero-interest account, money has no defense
+            against this at all — it simply erodes, year after year, for as long as it sits still.
+            The only way to counter it is to put that money somewhere it grows at a rate of its own.
+            If a savings or investment return rate is higher than the inflation rate, purchasing
+            power doesn&apos;t just stop shrinking — it actually grows in real terms, because the
+            money is now compounding faster than prices are rising.
+          </p>
+          <p className="mt-3">
+            This calculator runs both scenarios side by side from the same starting amount: one
+            path where the money sits idle and loses ground to inflation every year, and another
+            where it earns a return you choose — optionally topped up with a fixed amount every
+            month, the same way a standing savings-account deposit or investment contribution would
+            work. Comparing the two numbers after your chosen number of years makes the abstract
+            idea of &ldquo;inflation eating your savings&rdquo; into an actual figure: exactly how much
+            better off (or worse off) that money ends up, in today&apos;s purchasing power, depending
+            on where it sits.
+          </p>
+          <p className="mt-3">
+            Both the inflation rate and the return rate you enter are long-horizon assumptions you
+            choose yourself, held constant for the whole projection — real inflation and real
+            investment returns both vary year to year in practice, sometimes sharply. This tool is a
+            planning lens for understanding the mechanics of erosion versus growth, not a forecast
+            of what will actually happen to any specific currency or investment.
+          </p>
+        </div>
+
         <FAQAccordion
           title="Savings &amp; Inflation — Guide &amp; FAQs"
           subtitle="What erosion means, why a return rate helps, and what this isn't."

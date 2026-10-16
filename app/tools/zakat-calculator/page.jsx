@@ -76,6 +76,48 @@ export default function ZakatCalculatorPage() {
 
       <section className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <ZakatCalculator />
+
+        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">
+            How this calculator works out zakat
+          </h2>
+          <p className="mt-3">
+            Zakat is due once a Muslim&apos;s total qualifying wealth — gold, silver, cash, and
+            savings held for a full lunar (Hijri) year — sits above the <strong>nisab</strong>, a
+            minimum threshold below which zakat isn&apos;t owed at all. Nisab is set in weight, not
+            currency, which is exactly why this calculator leans on the same live gold and silver
+            rates used across the rest of OmniFin Portal: a fixed rupee or dollar nisab figure would
+            go stale the moment metal prices move, while a weight-based threshold stays accurate
+            indefinitely.
+          </p>
+          <p className="mt-3">
+            Two nisab standards are in common use, and this calculator lets you pick either one.
+            The <strong>gold standard</strong> — 87.48 grams of gold — gives a higher wealth
+            threshold, since gold is worth more per gram than silver. The{" "}
+            <strong>silver standard</strong> — 612.36 grams of silver — gives a lower threshold, and
+            is the standard many scholars recommend specifically for mixed cash-and-metal holdings,
+            since it means more lower-wealth individuals end up owing zakat (and therefore more
+            zakat reaches those who need it), which is consistent with zakat&apos;s purpose as a
+            redistributive obligation rather than a tax on only the very wealthy.
+          </p>
+          <p className="mt-3">
+            Once your total zakatable wealth clears whichever nisab you select, the rate applied is
+            fixed and universal: <strong>2.5%</strong> of the total, not just the portion above the
+            threshold — a distinction that trips up a lot of manual calculations. Add your gold and
+            silver (converted to today&apos;s value via the live rate), cash on hand, and savings
+            balances; this calculator totals them, checks the sum against your chosen nisab, and
+            multiplies by 2.5% if you clear it.
+          </p>
+          <p className="mt-3">
+            What it can&apos;t do for you is the judgment call on what actually counts as
+            &ldquo;zakatable&rdquo; in your specific situation — personal-use jewellery, your family
+            home, short-term debts you owe, and business inventory are all treated differently by
+            different scholarly opinions, and this calculator doesn&apos;t take a position on any of
+            that. It's a wealth-and-threshold calculator, not a religious ruling — for anything
+            beyond the arithmetic, a knowledgeable scholar is the right person to ask.
+          </p>
+        </div>
+
         <FAQAccordion
           title="Zakat — Guide &amp; FAQs"
           subtitle="Nisab standards, what counts as zakatable wealth, and the 2.5% rate."

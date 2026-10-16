@@ -4,6 +4,8 @@ import ConvertersHero from "@/components/ConvertersHero";
 import ConvertersFAQSection from "@/components/converters/ConvertersFAQSection";
 import ConvertersFAQStructuredData from "@/components/converters/ConvertersFAQStructuredData";
 import { buildMetadata } from "@/lib/pageMetadata";
+import { FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
+import { getCurrency } from "@/lib/currencies";
 
 export const metadata = buildMetadata({
   title: "Currency, Crypto, Metals & Commodities, Unit Converter | OmniFin Portal",
@@ -24,6 +26,34 @@ export default function ConvertersPage() {
       <ConvertersWorkspace />
 
       <ConvertersFAQSection />
+
+      {/* Phase 2 pSEO addition: cross-links into the base-currency
+          rate digest pages (/converters/<code>), each listing that
+          currency against all 144 supported currencies. */}
+      <section className="mx-auto max-w-5xl px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+          <h2 className="text-sm font-semibold text-slate-900">Browse by base currency</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            See one currency against every currency OmniFin Portal supports, in a single
+            sortable table.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {FEATURED_BASE_CURRENCIES.map((code) => {
+              const currency = getCurrency(code);
+              if (!currency) return null;
+              return (
+                <Link
+                  key={code}
+                  href={`/converters/${code.toLowerCase()}`}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                >
+                  {currency.flag} {code}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-12 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">

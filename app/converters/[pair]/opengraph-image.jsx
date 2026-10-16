@@ -19,7 +19,7 @@
 // visually consistent with the static /og-image.png used sitewide.
 
 import { ImageResponse } from "next/og";
-import { parsePairSlug, FEATURED_PAIRS } from "@/lib/pairSlugs";
+import { parsePairSlug, parseBaseOnlySlug, FEATURED_PAIRS, FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
 
@@ -27,7 +27,10 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export function generateStaticParams() {
-  return FEATURED_PAIRS.map((pair) => ({ pair: pair.slug }));
+  return [
+    ...FEATURED_PAIRS.map((pair) => ({ pair: pair.slug })),
+    ...FEATURED_BASE_CURRENCIES.map((code) => ({ pair: code.toLowerCase() })),
+  ];
 }
 
 const BRAND_600 = "#1b63f5";
@@ -40,6 +43,44 @@ function formatRate(rate) {
 }
 
 export default async function OgImage({ params }) {
+  // Phase 2: a bare base-currency slug (e.g. "pkr") gets its own
+  // simpler digest-page card instead of falling through to the
+  // pair-card's default USD → PKR placeholder below.
+  const baseOnly = parseBaseOnlySlug(params.pair);
+  if (baseOnly) {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "70px 80px",
+            background: `linear-gradient(135deg, ${BRAND_800} 0%, ${BRAND_600} 100%)`,
+            color: "#ffffff",
+            fontFamily: "sans-serif",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 30, fontWeight: 800 }}>
+            <span>OmniFin Portal</span>
+          </div>
+          <div style={{ display: "flex", fontSize: 92, fontWeight: 800, marginTop: 56 }}>
+            <span>{baseOnly.code}</span>
+          </div>
+          <div style={{ display: "flex", fontSize: 32, fontWeight: 500, marginTop: 14, opacity: 0.9 }}>
+            <span>{baseOnly.meta.name} — Exchange Rate Digest, All Currencies</span>
+          </div>
+          <div style={{ display: "flex", fontSize: 26, marginTop: "auto", opacity: 0.8 }}>
+            <span>omnifinportal.com/converters/{baseOnly.code.toLowerCase()}</span>
+          </div>
+        </div>
+      ),
+      { ...size }
+    );
+  }
+
   const parsed = parsePairSlug(params.pair);
 
   const fromCode = parsed?.fromCode || "USD";

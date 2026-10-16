@@ -31,15 +31,30 @@ import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
 import PopularPairs from "@/components/PopularPairs";
 import MiniCalculatorWidget from "@/components/calculators/MiniCalculatorWidget";
 import { getPairEducationalContent } from "@/components/converters/pairEducationalContent";
-import { parsePairSlug, buildPairSlug, FEATURED_PAIRS } from "@/lib/pairSlugs";
+import {
+  parsePairSlug,
+  parseBaseOnlySlug,
+  buildPairSlug,
+  FEATURED_PAIRS,
+  FEATURED_BASE_CURRENCIES,
+} from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { formatNumber } from "@/lib/formatNumber";
 import { buildMetadata } from "@/lib/pageMetadata";
+import { CURRENCIES } from "@/lib/currencies";
+import CurrencyDigestTable from "@/components/converters/CurrencyDigestTable";
 
 export function generateStaticParams() {
-  return FEATURED_PAIRS.map((pair) => ({ pair: pair.slug }));
+  // PHASE 2: both shapes this one dynamic [pair] segment now serves —
+  // real "<from>-to-<to>" pairs, plus bare single-code base-currency
+  // digest slugs (e.g. "pkr") — see parseBaseOnlySlug's header comment
+  // in lib/pairSlugs.js for why these live in the same route.
+  return [
+    ...FEATURED_PAIRS.map((pair) => ({ pair: pair.slug })),
+    ...FEATURED_BASE_CURRENCIES.map((code) => ({ pair: code.toLowerCase() })),
+  ];
 }
 
 const ASSET_CLASS_NOUN = {
@@ -49,6 +64,16 @@ const ASSET_CLASS_NOUN = {
 };
 
 export async function generateMetadata({ params }) {
+  const baseOnly = parseBaseOnlySlug(params.pair);
+  if (baseOnly) {
+    const { code, meta } = baseOnly;
+    return buildMetadata({
+      title: `${meta.name} (${code}) Exchange Rate Today — All Currencies | OmniFin Portal`,
+      description: `Live ${meta.name} (${code}) exchange rate against every currency OmniFin Portal supports — a sortable, searchable rate digest table, updated from the same live feed as the rest of the site.`,
+      path: `/converters/${code.toLowerCase()}`,
+    });
+  }
+
   const parsed = parsePairSlug(params.pair);
   if (!parsed) {
     return buildMetadata({
@@ -71,6 +96,9 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function CurrencyPairSeoPage({ params }) {
+  const baseOnly = parseBaseOnlySlug(params.pair);
+  if (baseOnly) return <BaseCurrencyDigestPage baseOnly={baseOnly} />;
+
   const parsed = parsePairSlug(params.pair);
   if (!parsed) notFound();
 
@@ -192,6 +220,119 @@ export default async function CurrencyPairSeoPage({ params }) {
             className="text-sm font-medium text-brand-600 hover:text-brand-700"
           >
             ← Browse all converters
+          </Link>
+        </div>
+      </section>
+    </>
+  );
+}
+
+// PHASE 2 ADDITION — "/converters/<base-code>" base-currency rate
+// digest page (e.g. /converters/pkr, /converters/usd, /converters/aed):
+// a sortable/searchable table of that one base currency against every
+// other fiat currency OmniFin Portal supports, computed from the same
+// single getUnifiedRates() server-side call every pair page already
+// uses (see this file's top-of-file ARCHITECTURAL NOTE) — zero new API
+// calls, zero new scraping, just a wider view of rates already fetched
+// for the site's other converter pages.
+async function BaseCurrencyDigestPage({ baseOnly }) {
+  const { code: baseCode, meta: baseMeta } = baseOnly;
+  const siteUrl = getSiteUrl();
+  const pageUrl = `${siteUrl}/converters/${baseCode.toLowerCase()}`;
+
+  let rows = [];
+  let fetchedAt = null;
+  try {
+    const ratesPayload = await getUnifiedRates();
+    fetchedAt = ratesPayload?.fetchedAt || null;
+    rows = CURRENCIES.filter((c) => c.code !== baseCode).map((c) => ({
+      code: c.code,
+      name: c.name,
+      rate: getPairRate({
+        fromClass: "fiat",
+        fromCode: baseCode,
+        toClass: "fiat",
+        toCode: c.code,
+        ratesPayload,
+      }),
+    }));
+  } catch {
+    // Leave rows empty — the table component's own "no currency
+    // matches" copy covers this gracefully rather than crashing the
+    // page if every rate provider is briefly unreachable.
+    rows = CURRENCIES.filter((c) => c.code !== baseCode).map((c) => ({
+      code: c.code,
+      name: c.name,
+      rate: null,
+    }));
+  }
+
+  // A handful of this base currency's own FEATURED_PAIRS entries, so
+  // the digest table's full long tail still links back up into the
+  // site's existing pair-page internal-linking graph both ways.
+  const relatedFeaturedPairs = FEATURED_PAIRS.filter(
+    (p) =>
+      (p.fromClass === "fiat" && p.fromCode === baseCode) ||
+      (p.toClass === "fiat" && p.toCode === baseCode)
+  ).slice(0, 8);
+
+  return (
+    <>
+      <BreadcrumbStructuredData
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Converters", href: "/converters" },
+          { name: `${baseCode} Rate Digest`, href: `/converters/${baseCode.toLowerCase()}` },
+        ]}
+      />
+
+      <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <nav className="text-xs text-slate-400">
+            <Link href="/converters" className="hover:text-brand-600">
+              Converters
+            </Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-slate-500">{baseCode} Rate Digest</span>
+          </nav>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            {baseMeta.name} ({baseCode}) Exchange Rate — All Currencies
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Live {baseMeta.name} rates against every currency OmniFin Portal supports — search,
+            sort, or jump straight into any pair&apos;s own live converter page below.
+          </p>
+          {fetchedAt && (
+            <p className="mt-2 text-xs text-slate-400">
+              Rates last updated {new Date(fetchedAt).toUTCString()}.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <CurrencyDigestTable baseCode={baseCode} rows={rows} />
+
+        {relatedFeaturedPairs.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            {relatedFeaturedPairs.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/converters/${p.slug}`}
+                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+              >
+                {p.title} →
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <Link href="/converters" className="font-medium text-brand-600 hover:text-brand-700">
+            ← Browse all converters
+          </Link>
+          <Link href="/tools" className="font-medium text-brand-600 hover:text-brand-700">
+            Household financial tools
           </Link>
         </div>
       </section>
