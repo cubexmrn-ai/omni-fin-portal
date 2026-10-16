@@ -22,9 +22,19 @@ const STATUS_STYLES = {
   failed: "bg-rose-50 text-rose-700 border-rose-200",
 };
 
+// Kept in sync with lib/youtubeBlogPipeline.js's own FAILURE_LABELS —
+// this client-side copy exists so the table can render a label
+// immediately from `row.failure_reason` without waiting on
+// `row.failure_label` from the API (both end up showing the same
+// text either way).
 const FAILURE_LABELS = {
   invalid_url: "Failed: Invalid URL",
   no_transcript: "Failed: No Transcript",
+  no_captions_available: "Failed: No Captions Available",
+  transcript_fetch_timeout: "Failed: Transcript Fetch Timed Out",
+  transcript_fetch_blocked: "Failed: Transcript Fetch Blocked",
+  transcript_too_short_or_garbled: "Failed: Captions Too Short/Garbled",
+  invalid_video_id: "Failed: Invalid Video ID",
   no_gemini_key: "Failed: No Gemini Key Configured",
   generation_failed: "Failed: AI Generation Error",
 };
