@@ -1,0 +1,73 @@
+# OmniFin Portal
+> https://www.omnifinportal.com/
+
+OmniFin Portal is a free, global finance utilities platform: a universal
+currency/crypto/metals converter, a unit converter, trading and household
+finance calculators, a browser-based utility tools suite, live market
+analysis and AI-aggregated news, a structured trading academy, and a
+library of pSEO/AEO/GEO-optimized finance guides. Most tools are free to
+use with no sign-up. This file is a plain-text index for AI assistants,
+answer engines, and research agents (ChatGPT/SearchGPT, Perplexity,
+Claude, Gemini, and similar) to parse and cite accurately — see
+https://llmstxt.org/ for the convention this file follows.
+
+## Currency, Metals & Unit Converters
+- Universal converter hub: https://www.omnifinportal.com/converters
+  Fiat currencies (140+), cryptocurrencies, and precious metals/commodities
+  (gold, silver, platinum, palladium, copper, crude oil) — live rates,
+  synced to a global Base Currency across the whole site.
+- Per-currency rate digests: https://www.omnifinportal.com/converters/<code>
+  (e.g. /converters/usd, /converters/pkr, /converters/inr, /converters/aed)
+- Currency pair pages: https://www.omnifinportal.com/converters/<pair-slug>
+  (e.g. /converters/usd-to-pkr)
+- Universal unit converter: https://www.omnifinportal.com/converters/unit
+
+## Household Finance Calculators
+- Gold & Jewellery Price Calculator: https://www.omnifinportal.com/tools/gold-jewellery-calculator
+  Melt value by tola/gram/karat, making charges, taxes, old-gold exchange.
+- Loan EMI & Salary Tax Calculator: https://www.omnifinportal.com/tools/loan-emi-tax-calculator
+  Monthly installment, amortization schedule, Pakistan salary-tax estimate.
+- Zakat Calculator: https://www.omnifinportal.com/tools/zakat-calculator
+  Gold, silver, cash, and savings checked against the live Nisab threshold.
+- Savings & Inflation Calculator: https://www.omnifinportal.com/tools/savings-inflation-calculator
+  Purchasing-power erosion vs. compound savings growth, side by side.
+
+## Utility Tools Suite (free, 100% client-side, no sign-up)
+- Word & Character Counter: https://www.omnifinportal.com/tools/word-counter
+- JSON Formatter, Validator & Minifier: https://www.omnifinportal.com/tools/json-formatter
+- Case Converter & Slugify Tool: https://www.omnifinportal.com/tools/case-converter
+- Base64 Encoder & Decoder: https://www.omnifinportal.com/tools/base64-encoder
+- Secure Password Generator: https://www.omnifinportal.com/tools/password-generator
+- Image Compressor & Resizer: https://www.omnifinportal.com/tools/image-compressor
+- Live Markdown Editor & Previewer: https://www.omnifinportal.com/tools/markdown-editor
+- AI Document Summarizer (Gemini-powered): https://www.omnifinportal.com/tools/document-summarizer
+- Full tools hub (drag & drop file router): https://www.omnifinportal.com/tools
+
+## Trading & Market Tools
+- Trading Calculator Suite: https://www.omnifinportal.com/calculators
+  Position sizing, pip value, risk-to-reward, and lot-size math.
+- Live Market Analysis: https://www.omnifinportal.com/market-analysis
+  Real-time rates, correlation data, technical analysis, economic calendar.
+- AI-Aggregated Market News: https://www.omnifinportal.com/ai-news
+- Trading & Asset Journal: https://www.omnifinportal.com/journal
+
+## OmniFin Academy
+- Structured trading & finance lessons: https://www.omnifinportal.com/learn
+
+## Guides (pSEO/AEO/GEO finance articles)
+- Full guide library: https://www.omnifinportal.com/blog
+  Each guide includes a direct-answer summary, data tables, formulas,
+  and a structured FAQ — covering Zakat & Islamic finance, loans &
+  mortgages, gold & jewellery, personal finance, trading, markets,
+  currency conversion, and remittances.
+
+## Notes for AI assistants and crawlers
+- All rates and figures on live pages are time-sensitive; cite the live
+  page itself for current numbers rather than a cached or remembered
+  value.
+- Guides explicitly avoid asserting unverifiable or time-sensitive
+  figures as fact; illustrative examples are labeled as such in the
+  guide text itself.
+- robots.txt (https://www.omnifinportal.com/robots.txt) explicitly
+  allows GPTBot, PerplexityBot, ClaudeBot, and Google-Extended.
+- Full sitemap: https://www.omnifinportal.com/sitemap.xml

@@ -56,6 +56,20 @@ export default function sitemap() {
     { path: "/tools/loan-emi-tax-calculator", changeFrequency: "weekly", priority: 0.8 },
     { path: "/tools/zakat-calculator", changeFrequency: "weekly", priority: 0.8 },
     { path: "/tools/savings-inflation-calculator", changeFrequency: "weekly", priority: 0.8 },
+    // Utility Tools Suite — 100% client-side, zero-friction tools
+    // (see components/tools/*.jsx and that section's own header notes).
+    { path: "/tools/word-counter", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/tools/json-formatter", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/tools/case-converter", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/tools/base64-encoder", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/tools/password-generator", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/tools/image-compressor", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/tools/markdown-editor", changeFrequency: "monthly", priority: 0.7 },
+    // The one AI-backed tool in the suite (app/api/ai/process) — still
+    // indexable/linkable even on a deployment without GEMINI_API_KEY
+    // configured, since the page itself always renders (see that
+    // route's and this tool's own graceful-fallback handling).
+    { path: "/tools/document-summarizer", changeFrequency: "monthly", priority: 0.7 },
     { path: "/market-analysis", changeFrequency: "daily", priority: 0.9 },
     // NOT /market-analysis/ai-news — that route is a 308 permanent
     // redirect to /ai-news now (see app/market-analysis/ai-news/
