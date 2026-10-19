@@ -35,6 +35,7 @@
 import { FEATURED_PAIRS, FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { getAllLessonsFlat } from "@/lib/academyData";
+import { BLOG_POSTS } from "@/lib/blogPosts";
 import { getSiteUrl } from "@/lib/siteUrl";
 
 export default function sitemap() {
@@ -69,6 +70,8 @@ export default function sitemap() {
     { path: "/community", changeFrequency: "daily", priority: 0.8 },
     { path: "/dashboard", changeFrequency: "weekly", priority: 0.5 },
     { path: "/journal", changeFrequency: "weekly", priority: 0.5 },
+    { path: "/blog", changeFrequency: "weekly", priority: 0.7 },
+    { path: "/contact", changeFrequency: "monthly", priority: 0.3 },
     { path: "/about", changeFrequency: "monthly", priority: 0.4 },
     { path: "/disclaimer", changeFrequency: "yearly", priority: 0.3 },
     { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
@@ -117,11 +120,26 @@ export default function sitemap() {
     priority: 0.6,
   }));
 
+  // /blog/<slug> — the pSEO/AEO/GEO/LLMO guide posts in lib/blogPosts.js,
+  // the same array app/blog/[slug]/page.jsx's generateStaticParams()
+  // reads, so this list can never drift out of sync with what's
+  // actually pre-rendered. Each post's own `updatedAt` becomes its
+  // `lastModified` here, rather than the shared build-time `now` every
+  // other route above uses — unlike those, a guide's content genuinely
+  // does have a real last-edited date (see lib/blogPosts.js).
+  const blogRoutes = BLOG_POSTS.map((post) => ({
+    url: `${siteUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updatedAt || post.publishedAt),
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
   return [
     ...staticRoutes,
     ...converterPairRoutes,
     ...baseCurrencyDigestRoutes,
     ...unitConverterRoutes,
     ...lessonRoutes,
+    ...blogRoutes,
   ];
 }

@@ -103,6 +103,7 @@ export const viewport = {
 };
 
 const FOOTER_LINKS = [
+  { label: "Guides", href: "/blog" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
   { label: "Privacy Policy", href: "/privacy" },
