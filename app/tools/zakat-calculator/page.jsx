@@ -113,7 +113,7 @@ export default function ZakatCalculatorPage() {
             &ldquo;zakatable&rdquo; in your specific situation — personal-use jewellery, your family
             home, short-term debts you owe, and business inventory are all treated differently by
             different scholarly opinions, and this calculator doesn&apos;t take a position on any of
-            that. It's a wealth-and-threshold calculator, not a religious ruling — for anything
+            that. It&apos;s a wealth-and-threshold calculator, not a religious ruling — for anything
             beyond the arithmetic, a knowledgeable scholar is the right person to ask.
           </p>
         </div>
