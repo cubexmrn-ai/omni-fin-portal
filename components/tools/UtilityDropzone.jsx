@@ -71,7 +71,7 @@ export default function UtilityDropzone() {
     >
       <p className="text-base font-bold text-slate-900">Drop a file here to open the right tool</p>
       <p className="mt-1 text-sm text-slate-500">
-        JSON, images, Markdown (.md), plain text (.txt), or PDF — we'll route you automatically.
+        JSON, images, Markdown (.md), plain text (.txt), or PDF — we&apos;ll route you automatically.
       </p>
       <input
         ref={fileInputRef}
@@ -81,7 +81,7 @@ export default function UtilityDropzone() {
       />
       {unmatched && (
         <p className="mt-3 text-sm font-medium text-amber-600">
-          We couldn't match that file type automatically — browse the tools below instead.
+          We couldn&apos;t match that file type automatically — browse the tools below instead.
         </p>
       )}
     </div>

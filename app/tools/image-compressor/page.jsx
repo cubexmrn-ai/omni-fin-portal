@@ -60,7 +60,7 @@ export default function ImageCompressorPage() {
             Image Compressor &amp; Resizer
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Shrink an image's file size and dimensions right in your browser — no upload, no wait.
+            Shrink an image&apos;s file size and dimensions right in your browser — no upload, no wait.
           </p>
         </div>
       </section>

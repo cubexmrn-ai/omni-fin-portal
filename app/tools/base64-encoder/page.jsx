@@ -74,7 +74,7 @@ export default function Base64EncoderPage() {
           <p className="mt-3">
             Base64 takes every 3 bytes of input data and represents them as 4 printable ASCII
             characters, using an alphabet of 64 characters (A–Z, a–z, 0–9, +, /) plus = for padding
-            when the input length isn't a multiple of 3 bytes. The result is roughly 33% larger than
+            when the input length isn&apos;t a multiple of 3 bytes. The result is roughly 33% larger than
             the original data, but is safe to transmit anywhere that only supports plain ASCII text.
           </p>
 
