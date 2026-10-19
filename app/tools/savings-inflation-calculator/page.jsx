@@ -113,6 +113,22 @@ export default function SavingsInflationCalculatorPage() {
             planning lens for understanding the mechanics of erosion versus growth, not a forecast
             of what will actually happen to any specific currency or investment.
           </p>
+
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">Formula used:</p>
+            <p className="mt-1 font-mono text-xs text-slate-700">
+              Idle cash (real value) = Starting Amount ÷ (1 + Inflation Rate) ^ Years
+            </p>
+            <p className="mt-1 font-mono text-xs text-slate-700">
+              Saved amount (future value) = [Starting Amount × (1 + Return Rate) ^ Years] +
+              compounded monthly top-ups
+            </p>
+            <p className="mt-4 text-sm font-semibold text-slate-900">Key terms:</p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600">
+              <li>Inflation rate and return rate: constant, user-chosen annual rates</li>
+              <li>Purchasing-power erosion: compounds the same way interest does, in reverse</li>
+            </ul>
+          </div>
         </div>
 
         <FAQAccordion

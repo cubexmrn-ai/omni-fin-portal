@@ -43,6 +43,20 @@ export default function SiteStructuredData() {
       "Currency, crypto, metals & commodities and unit converters, live market analysis, trading & financial calculators, and a free trading Academy.",
     publisher: { "@id": `${siteUrl}/#organization` },
     inLanguage: "en-US",
+    // AI/GEO citation booster (site-wide search target): lets search
+    // engines and AI retrieval bots offer a direct search box/action
+    // into this site's converter tool, per schema.org's standard
+    // WebSite + SearchAction pattern. {search_term_string} is the
+    // literal schema.org placeholder token a crawler substitutes with
+    // the user's query — it is not interpolated here.
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${siteUrl}/converters?search={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
   };
 
   const softwareApplication = {

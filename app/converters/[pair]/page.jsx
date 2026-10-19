@@ -203,7 +203,8 @@ export default async function CurrencyPairSeoPage({ params }) {
             About this pair
           </h2>
           <p className="mt-2">{pairIntro}</p>
-          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+          <p className="mt-3 text-xs font-semibold text-slate-900">Formula used:</p>
+          <p className="mt-1 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
             {formulaNote}
           </p>
         </div>

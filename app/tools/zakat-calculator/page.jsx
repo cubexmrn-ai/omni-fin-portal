@@ -116,6 +116,22 @@ export default function ZakatCalculatorPage() {
             that. It&apos;s a wealth-and-threshold calculator, not a religious ruling — for anything
             beyond the arithmetic, a knowledgeable scholar is the right person to ask.
           </p>
+
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">Formula used:</p>
+            <p className="mt-1 font-mono text-xs text-slate-700">
+              Zakat Due = 2.5% × Total Zakatable Wealth (if Total Zakatable Wealth ≥ Nisab)
+            </p>
+            <p className="mt-4 text-sm font-semibold text-slate-900">
+              Key rates &amp; nisab thresholds:
+            </p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600">
+              <li>Gold nisab standard: 87.48 grams of gold</li>
+              <li>Silver nisab standard: 612.36 grams of silver</li>
+              <li>Zakat rate: 2.5% of total qualifying wealth</li>
+              <li>Holding period: a full lunar (Hijri) year</li>
+            </ul>
+          </div>
         </div>
 
         <FAQAccordion

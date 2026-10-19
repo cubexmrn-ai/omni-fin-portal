@@ -30,7 +30,7 @@ export default function ToolStructuredData({ path, name, description, featureLis
     name,
     url,
     applicationCategory: "FinanceApplication",
-    operatingSystem: "Any (web-based)",
+    operatingSystem: "All",
     description,
     featureList,
     offers: {

@@ -126,6 +126,23 @@ export default function GoldJewelleryCalculatorPage() {
             set; it&apos;s here so you can walk in already knowing roughly what a fair number should
             look like.
           </p>
+
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">Formula used:</p>
+            <p className="mt-1 font-mono text-xs text-slate-700">
+              Final Price = (Gold Spot Price × Weight × Karat Purity) + Making Charges + Tax −
+              Old-Gold Exchange Credit
+            </p>
+            <p className="mt-4 text-sm font-semibold text-slate-900">Key rates:</p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600">
+              <li>24K gold purity: 99.9%</li>
+              <li>22K gold purity: 91.67%</li>
+              <li>21K gold purity: 87.5%</li>
+              <li>18K gold purity: 75%</li>
+              <li>Typical making charges: 8–25% of gold value</li>
+              <li>Typical old-gold buyback credit: 90–98% of fresh spot value</li>
+            </ul>
+          </div>
         </div>
 
         <FAQAccordion

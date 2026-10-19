@@ -114,6 +114,20 @@ export default function LoanEmiTaxCalculatorPage() {
             budget — so treat the figure here as a planning estimate, not a filing number, and
             confirm the current year&apos;s slabs with FBR or a tax professional before relying on it.
           </p>
+
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">Formula used:</p>
+            <p className="mt-1 font-mono text-xs text-slate-700">
+              EMI = P × r × (1 + r)ⁿ / ((1 + r)ⁿ − 1)
+            </p>
+            <p className="mt-4 text-sm font-semibold text-slate-900">Key terms:</p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-600">
+              <li>P = loan principal borrowed</li>
+              <li>r = monthly interest rate (annual rate ÷ 12)</li>
+              <li>n = total number of monthly installments (tenure)</li>
+              <li>Tax estimate basis: Pakistan FY2024-25 salaried-individual slabs</li>
+            </ul>
+          </div>
         </div>
 
         <FAQAccordion

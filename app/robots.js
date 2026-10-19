@@ -16,18 +16,37 @@
 // all), but disallowing the whole prefix costs nothing and means any
 // future admin page added under it is excluded from crawling/indexing
 // by default rather than by having to remember to add it here later.
+//
+// GEO / AI-citation booster: the wildcard "*" rule above already
+// allows every one of these bots implicitly (there's no narrower rule
+// anywhere that would override it), but they're also listed out by
+// name below so this allowance is explicit and easy to verify at a
+// glance, rather than relying on the absence of a block — GPTBot
+// (OpenAI/ChatGPT/SearchGPT), PerplexityBot (Perplexity), ClaudeBot
+// (Anthropic/Claude), and Google-Extended (Google's AI-training/
+// Gemini-grounding opt-in token, separate from the regular Googlebot
+// token, which the wildcard rule already covers).
+const AI_SEARCH_USER_AGENTS = ["GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended"];
 
 import { getSiteUrl } from "@/lib/siteUrl";
 
 export default function robots() {
   const siteUrl = getSiteUrl();
+  const disallow = ["/api/", "/_next/", "/admin/"];
 
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/api/", "/_next/", "/admin/"],
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow,
+      },
+      {
+        userAgent: AI_SEARCH_USER_AGENTS,
+        allow: "/",
+        disallow,
+      },
+    ],
     sitemap: `${siteUrl}/sitemap.xml`,
     host: siteUrl,
   };
