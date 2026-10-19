@@ -58,7 +58,11 @@ import { useBaseCurrency } from "@/lib/baseCurrencyContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LANGUAGES } from "@/lib/i18n/translations";
 
-const TOOLS_CALCULATORS_LINKS = [
+// FINANCIAL_TOOLS_LINKS — unchanged from before the Utility Tools Suite
+// launch (see ToolsCalculatorsDropdown's header note below for how
+// this and UTILITY_TOOLS_LINKS are rendered as two labeled groups
+// inside the same dropdown, rather than as one flat list).
+const FINANCIAL_TOOLS_LINKS = [
   {
     label: "Metals & Commodities Converter",
     description: "Live gold, silver, platinum, and commodity rates.",
@@ -78,6 +82,56 @@ const TOOLS_CALCULATORS_LINKS = [
     label: "Household Tools",
     description: "Gold jewellery pricing, loan EMI, zakat, and savings vs. inflation.",
     href: "/tools",
+  },
+];
+
+// UTILITY_TOOLS_LINKS — the 100%-client-side Utility Tools Suite
+// (see app/tools/page.jsx's own "Utility Tools" grid, the single
+// source of truth this list mirrors for nav purposes) plus the one
+// AI-backed tool (Document Summarizer). Kept as a separate array from
+// FINANCIAL_TOOLS_LINKS specifically so the dropdown/mobile nav can
+// render them as two distinct, labeled groups instead of one long
+// undifferentiated list.
+const UTILITY_TOOLS_LINKS = [
+  {
+    label: "Word Counter",
+    description: "Live word, character, sentence & paragraph counts.",
+    href: "/tools/word-counter",
+  },
+  {
+    label: "JSON Formatter",
+    description: "Format, validate, and minify JSON instantly.",
+    href: "/tools/json-formatter",
+  },
+  {
+    label: "Case Converter",
+    description: "UPPERCASE, Title Case, camelCase, slug, and more.",
+    href: "/tools/case-converter",
+  },
+  {
+    label: "Base64 Encoder/Decoder",
+    description: "Unicode-safe Base64 encoding and decoding.",
+    href: "/tools/base64-encoder",
+  },
+  {
+    label: "Password Generator",
+    description: "Cryptographically secure, adjustable-length passwords.",
+    href: "/tools/password-generator",
+  },
+  {
+    label: "Image Compressor",
+    description: "Resize and compress JPEG, WebP, or PNG images.",
+    href: "/tools/image-compressor",
+  },
+  {
+    label: "Markdown Editor",
+    description: "Live-preview Markdown editor with .md/.html export.",
+    href: "/tools/markdown-editor",
+  },
+  {
+    label: "Document Summarizer",
+    description: "AI-generated bullet-point summaries (Gemini).",
+    href: "/tools/document-summarizer",
   },
 ];
 
@@ -175,9 +229,30 @@ function ToolsCalculatorsDropdown() {
       {open && (
         <div
           role="menu"
-          className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl shadow-slate-900/10"
+          className="absolute left-0 top-full z-50 mt-1 w-80 max-h-[28rem] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl shadow-slate-900/10"
         >
-          {TOOLS_CALCULATORS_LINKS.map((item) => (
+          <p className="px-4 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            Financial Calculators
+          </p>
+          {FINANCIAL_TOOLS_LINKS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2.5 transition-colors hover:bg-slate-50"
+            >
+              <span className="block text-sm font-semibold text-slate-900">{item.label}</span>
+              <span className="mt-0.5 block text-xs text-slate-500">{item.description}</span>
+            </Link>
+          ))}
+
+          <div className="my-1.5 border-t border-slate-100" />
+
+          <p className="px-4 pb-1 pt-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            Utility Tools
+          </p>
+          {UTILITY_TOOLS_LINKS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -389,8 +464,9 @@ export default function Header() {
 
       {/* Mobile nav — flattened (no hover dropdown on touch): a small
           "Tools & Calculators" group heading followed by its links
-          (TOOLS_CALCULATORS_LINKS, mapped dynamically), then the
-          remaining top-level links. */}
+          (FINANCIAL_TOOLS_LINKS, mapped dynamically), then a second
+          "Utility Tools" group heading with its own links
+          (UTILITY_TOOLS_LINKS), then the remaining top-level links. */}
       {mobileOpen && (
         <nav className="border-t border-slate-100 px-4 py-3 md:hidden" aria-label="Primary mobile">
           <div className="flex flex-col gap-0.5">
@@ -426,7 +502,21 @@ export default function Header() {
             <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
               {t("toolsCalculators")}
             </p>
-            {TOOLS_CALCULATORS_LINKS.map((item) => (
+            {FINANCIAL_TOOLS_LINKS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              >
+                {item.label}
+              </Link>
+            ))}
+
+            <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Utility Tools
+            </p>
+            {UTILITY_TOOLS_LINKS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
