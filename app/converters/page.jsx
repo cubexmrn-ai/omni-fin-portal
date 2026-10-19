@@ -3,6 +3,7 @@ import ConvertersWorkspace from "@/components/ConvertersWorkspace";
 import ConvertersHero from "@/components/ConvertersHero";
 import ConvertersFAQSection from "@/components/converters/ConvertersFAQSection";
 import ConvertersFAQStructuredData from "@/components/converters/ConvertersFAQStructuredData";
+import BaseCurrencyPills from "@/components/converters/BaseCurrencyPills";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
 import { getCurrency } from "@/lib/currencies";
@@ -37,21 +38,11 @@ export default function ConvertersPage() {
             See one currency against every currency OmniFin Portal supports, in a single
             sortable table.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {FEATURED_BASE_CURRENCIES.map((code) => {
-              const currency = getCurrency(code);
-              if (!currency) return null;
-              return (
-                <Link
-                  key={code}
-                  href={`/converters/${code.toLowerCase()}`}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
-                >
-                  {currency.flag} {code}
-                </Link>
-              );
-            })}
-          </div>
+          <BaseCurrencyPills
+            currencies={FEATURED_BASE_CURRENCIES.map((code) => ({ code, currency: getCurrency(code) })).filter(
+              (c) => c.currency
+            )}
+          />
         </div>
       </section>
 

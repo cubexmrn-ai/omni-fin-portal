@@ -26,6 +26,7 @@
 import { useMemo, useState } from "react";
 import SentimentPulseBar from "@/components/market-pulse/SentimentPulseBar";
 import { getCompositeSentiment } from "@/lib/marketPulse";
+import { trackEvent } from "@/lib/gtag";
 
 const DEFAULT_GAUGE_INSTRUMENT = "XAU"; // Gold — see header comment.
 
@@ -35,11 +36,18 @@ export default function MarketAnalysisExplorer({ ratesData }) {
 
   const composite = useMemo(() => getCompositeSentiment(ratesData), [ratesData]);
 
+  // Analytics: clicking an instrument pill is an asset selection (it
+  // changes which instrument's sentiment score the gauge shows).
+  function handleSelectInstrument(code) {
+    trackEvent("select_instrument", { instrument: code, source: "sentiment_pulse_bar" });
+    setActiveInstrument(code);
+  }
+
   return (
     <SentimentPulseBar
       composite={composite}
       activeInstrument={displayInstrument}
-      onSelectInstrument={setActiveInstrument}
+      onSelectInstrument={handleSelectInstrument}
       gaugeStyle
     />
   );

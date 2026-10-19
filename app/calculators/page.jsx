@@ -46,6 +46,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // Powers the Cross-Tool URL Param Sync below.
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
+// Analytics: calls window.gtag directly rather than importing
+// lib/gtag.js, preserving this file's deliberate zero-project-file-
+// import rule (see header comment above) — same safe-guard every
+// other tracking call in this project uses: a no-op, never a thrown
+// error, if GA isn't configured or hasn't loaded (ad blocker, slow
+// network, local dev with no measurement ID).
+function trackEvent(name, params) {
+  if (typeof window === "undefined" || typeof window.gtag !== "function") return;
+  try {
+    window.gtag("event", name, params);
+  } catch {
+    // Swallow — a tracking call must never break the page it fires from.
+  }
+}
+
 // PHASE 3 ADDITION: this page's Cross-Tool URL Param Sync (further
 // below) reads `?instrument=` via next/navigation's useSearchParams()
 // inside AllInOnePanel. Next.js 14 requires either a <Suspense>
@@ -893,6 +908,7 @@ function AllInOnePanel() {
   }
 
   function handlePairChange(nextId) {
+    trackEvent("select_instrument", { instrument: nextId, source: "trade_execution_calculator" });
     update({ pairId: nextId, pipSize: getDefaultPipSize(getPair(nextId).instrumentType) });
     writeInstrumentParam(nextId);
   }
@@ -928,6 +944,11 @@ function AllInOnePanel() {
   const [exportNote, setExportNote] = useState(null);
 
   function handleLogToJournal() {
+    trackEvent("log_trade_journal", {
+      instrument: pair.label,
+      direction: direction === "sell" ? "short" : "long",
+      leverage,
+    });
     const ok = appendToLocalJournal({
       instrument: pair.label,
       direction: direction === "sell" ? "Short" : "Long",
@@ -1283,6 +1304,7 @@ function PipValuePanel() {
   const pair = getPair(pairId);
 
   function handlePairChange(nextId) {
+    trackEvent("select_instrument", { instrument: nextId, source: "pip_value_calculator" });
     update({ pairId: nextId, pipSize: getDefaultPipSize(getPair(nextId).instrumentType) });
   }
 

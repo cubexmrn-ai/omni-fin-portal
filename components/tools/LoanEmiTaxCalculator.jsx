@@ -11,6 +11,7 @@
 
 import { useMemo, useState } from "react";
 import { calculateLoanEmi, estimateSalaryTaxPK } from "@/lib/loanCalculators";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 function formatNumber(value, decimals = 2) {
@@ -31,6 +32,21 @@ export default function LoanEmiTaxCalculator() {
     [loanAmount, annualRate, tenureYears]
   );
   const taxResult = useMemo(() => estimateSalaryTaxPK({ annualIncome }), [annualIncome]);
+
+  // Analytics: one debounced `calculate_emi` GA4 event per settled
+  // result, for whichever mode (EMI or tax) is active (see
+  // hooks/useTrackCalculation.js).
+  useTrackCalculation(
+    "calculate_emi",
+    mode === "emi"
+      ? (emiResult ? `emi:${loanAmount}:${annualRate}:${tenureYears}` : null)
+      : (taxResult ? `tax:${annualIncome}` : null),
+    {
+      tool_name: "loan_emi_tax_calculator",
+      mode,
+      tenure_years: mode === "emi" ? tenureYears : null,
+    }
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">

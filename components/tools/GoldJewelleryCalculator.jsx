@@ -17,6 +17,7 @@ import { calculateJewelleryPrice } from "@/lib/jewelleryCalculators";
 import { WEIGHT_UNIT_LABELS, KARAT_PURITY } from "@/lib/conversionMath";
 import { useLiveMarketRates } from "@/hooks/useLiveMarketRates";
 import { useBaseCurrency } from "@/lib/baseCurrencyContext";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 import { CURRENCIES } from "@/lib/currencies";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
@@ -93,6 +94,20 @@ export default function GoldJewelleryCalculator() {
       oldGoldQuantity,
       buybackPercent,
     ]
+  );
+
+  // Analytics: one debounced `calculate_gold_making_charges` GA4
+  // event per settled result (see hooks/useTrackCalculation.js).
+  useTrackCalculation(
+    "calculate_gold_making_charges",
+    result ? `${weightUnit}:${karat}:${quantity}:${makingChargeMode}:${makingChargeValue}:${includeOldGold}` : null,
+    {
+      tool_name: "gold_jewellery_calculator",
+      karat,
+      weight_unit: weightUnit,
+      currency: effectiveCurrency,
+      includes_old_gold_exchange: includeOldGold,
+    }
   );
 
   return (

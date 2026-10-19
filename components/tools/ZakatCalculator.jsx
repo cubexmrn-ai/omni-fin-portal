@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { calculateZakat, NISAB_GOLD_GRAMS, NISAB_SILVER_GRAMS } from "@/lib/zakatCalculator";
 import { useLiveMarketRates } from "@/hooks/useLiveMarketRates";
 import { useBaseCurrency } from "@/lib/baseCurrencyContext";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 import { CURRENCIES } from "@/lib/currencies";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
@@ -75,6 +76,19 @@ export default function ZakatCalculator() {
       liabilities,
       nisabStandard,
     ]
+  );
+
+  // Analytics: one debounced `calculate_zakhat` GA4 event per settled
+  // result (see hooks/useTrackCalculation.js) — not on every keystroke.
+  useTrackCalculation(
+    "calculate_zakhat",
+    result ? `${result.meetsNisab ? "due" : "below"}:${nisabStandard}:${goldGrams}:${silverGrams}:${cashAndSavings}` : null,
+    {
+      tool_name: "zakat_calculator",
+      nisab_standard: nisabStandard,
+      currency: effectiveCurrency,
+      meets_nisab: result ? result.meetsNisab : null,
+    }
   );
 
   return (

@@ -19,6 +19,7 @@
 
 import { useInstrumentParam, TECHNICAL_TO_CANONICAL } from "@/lib/instrumentParam";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { trackEvent } from "@/lib/gtag";
 
 const BIAS_TONE = {
   Bullish: "text-emerald-600 bg-emerald-50 border-emerald-200",
@@ -62,7 +63,18 @@ export default function WatchlistStrip({ rows }) {
             <button
               key={row.code}
               type="button"
-              onClick={() => canonicalCode && setInstrument(canonicalCode)}
+              onClick={() => {
+                if (!canonicalCode) return;
+                // Analytics: a watchlist row click is both its own
+                // event and an asset-selection event, since it also
+                // re-points the AI Technical Analysis panel above.
+                trackEvent("watchlist_row_click", { instrument: row.code });
+                trackEvent("select_instrument", {
+                  instrument: canonicalCode,
+                  source: "watchlist",
+                });
+                setInstrument(canonicalCode);
+              }}
               disabled={!canonicalCode}
               className={`flex flex-col gap-1.5 rounded-lg border p-3 text-left transition-colors ${
                 isActive

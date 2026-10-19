@@ -9,6 +9,7 @@ import {
   buildUnifiedAssetList,
 } from "@/lib/assetConversion";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { trackEvent } from "@/lib/gtag";
 
 const MATRIX_MULTIPLIERS = [1, 10, 100, 1000];
 
@@ -90,6 +91,12 @@ function AssetSelect({ id, label, assetClass, code, onChange }) {
   }, [query]);
 
   function handleSelect(nextClass, nextCode) {
+    // Analytics: only counts as a "rate search" if the person actually
+    // typed something before picking a result — opening the dropdown
+    // and clicking the first/default entry isn't a search.
+    if (query.trim()) {
+      trackEvent("search_rate", { search_term: query.trim(), selected_asset: nextCode });
+    }
     onChange(nextClass, nextCode);
     setOpen(false);
     setQuery("");

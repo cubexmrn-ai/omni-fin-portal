@@ -20,6 +20,7 @@
 
 import { useMemo, useState } from "react";
 import { calculateInflation, calculateCompoundGrowth } from "@/lib/personalCalculators";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 
 function formatNumber(value, decimals = 0) {
@@ -69,6 +70,19 @@ export default function SavingsInflationVisualizer() {
         years,
       }),
     [amount, monthlyTopUp, investReturnRate, years]
+  );
+
+  // Analytics: one debounced `calculate_savings_inflation` GA4 event
+  // per settled result (see hooks/useTrackCalculation.js).
+  useTrackCalculation(
+    "calculate_savings_inflation",
+    inflationResult && growthResult ? `${amount}:${years}:${inflationRate}:${investReturnRate}:${monthlyTopUp}` : null,
+    {
+      tool_name: "savings_inflation_calculator",
+      years,
+      inflation_rate: inflationRate,
+      return_rate: investReturnRate,
+    }
   );
 
   const maxBarValue = Math.max(
