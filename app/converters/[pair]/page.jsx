@@ -30,6 +30,7 @@ import ConverterStructuredData from "@/components/ConverterStructuredData";
 import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
 import PopularPairs from "@/components/PopularPairs";
 import MiniCalculatorWidget from "@/components/calculators/MiniCalculatorWidget";
+import AdSlot from "@/components/AdSlot";
 import { getPairEducationalContent } from "@/components/converters/pairEducationalContent";
 import {
   parsePairSlug,
@@ -208,6 +209,11 @@ export default async function CurrencyPairSeoPage({ params }) {
             {formulaNote}
           </p>
         </div>
+
+        {/* AdSense & Monetization Readiness: between the static
+            explainer block above and the next content block below —
+            see components/AdSlot.jsx. */}
+        <AdSlot slot="" label="Advertisement" minHeight={100} className="mt-6" />
 
         <div className="mt-6">
           <MiniCalculatorWidget calculatorId={relatedCalculatorId} />

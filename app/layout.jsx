@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import SiteStructuredData from "@/components/SiteStructuredData";
+import AdSense from "@/components/AdSense";
 import { BaseCurrencyProvider } from "@/lib/baseCurrencyContext";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import TranslationDisclaimerModal from "@/components/TranslationDisclaimerModal";
@@ -103,6 +104,7 @@ export const viewport = {
 
 const FOOTER_LINKS = [
   { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms of Service", href: "/terms" },
   { label: "Financial Disclaimer", href: "/disclaimer" },
@@ -185,6 +187,9 @@ export default function RootLayout({ children }) {
             and why (it's a safe no-op if NEXT_PUBLIC_GA_MEASUREMENT_ID
             isn't configured in this environment). */}
         <GoogleAnalytics />
+        {/* Same no-op-if-unconfigured pattern as GoogleAnalytics above —
+            see components/AdSense.jsx's header comment. */}
+        <AdSense />
         <LanguageProvider>
           <BaseCurrencyProvider>
             <TranslationDisclaimerModal />

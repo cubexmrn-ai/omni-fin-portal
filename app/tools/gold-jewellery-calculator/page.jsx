@@ -2,6 +2,8 @@ import Link from "next/link";
 import GoldJewelleryCalculator from "@/components/tools/GoldJewelleryCalculator";
 import ToolStructuredData from "@/components/tools/ToolStructuredData";
 import FAQAccordion from "@/components/FAQAccordion";
+import AdSlot from "@/components/AdSlot";
+import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = {
@@ -82,6 +84,12 @@ export default function GoldJewelleryCalculatorPage() {
 
       <section className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <GoldJewelleryCalculator />
+
+        <FinancialDisclaimerNote className="mt-4" />
+
+        {/* AdSense & Monetization Readiness: below the main calculation
+            result, above the explainer content — see components/AdSlot.jsx. */}
+        <AdSlot slot="" label="Advertisement" minHeight={100} className="my-6" />
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
           <h2 className="text-base font-bold text-slate-900">

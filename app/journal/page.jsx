@@ -9,6 +9,7 @@
 
 import JournalHub from "@/components/journal/JournalHub";
 import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
+import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = buildMetadata({
@@ -32,6 +33,7 @@ export default function JournalPage() {
             place — with automatic profit/loss and cap-rate figures, and CSV/JSON export so your
             data is always yours to keep.
           </p>
+          <FinancialDisclaimerNote className="mt-4 max-w-2xl" />
         </div>
       </section>
       <JournalHub />
