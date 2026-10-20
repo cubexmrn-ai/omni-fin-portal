@@ -365,9 +365,70 @@ function LanguageSelect({ className = "" }) {
   );
 }
 
+/** A single collapsible group inside the mobile nav drawer — closed by
+ * default, expands/collapses smoothly via a CSS grid-rows transition
+ * (no JS height measurement needed: animating 0fr -> 1fr on a grid
+ * track animates its rendered height smoothly, and the inner
+ * `overflow-hidden` wrapper clips the content while collapsed). Used
+ * for "Financial Calculators" and "Utility Tools" so the drawer opens
+ * short by default instead of dumping both full sub-lists on screen
+ * immediately. */
+function MobileNavAccordionSection({ title, items, onLinkClick }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+      >
+        {title}
+        <span className={`text-sm transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      <div
+        className={`grid transition-all duration-200 ease-in-out ${
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onLinkClick}
+              className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Header() {
   const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Scroll lock: while the mobile drawer is open, the background page
+  // must not scroll underneath it — otherwise a touch-scroll starting
+  // on the drawer's own content can "bleed through" once the drawer's
+  // scroll reaches its end. Restored on close and on unmount so a
+  // navigation away (or a hot-reload) never leaves the body stuck
+  // locked.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileOpen]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -462,13 +523,22 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile nav — flattened (no hover dropdown on touch): a small
-          "Tools & Calculators" group heading followed by its links
-          (FINANCIAL_TOOLS_LINKS, mapped dynamically), then a second
-          "Utility Tools" group heading with its own links
-          (UTILITY_TOOLS_LINKS), then the remaining top-level links. */}
+      {/* Mobile nav — flattened (no hover dropdown on touch), closed
+          short by default: "Financial Calculators" and "Utility
+          Tools" are collapsible accordions (MobileNavAccordionSection,
+          closed until tapped) rather than two always-expanded
+          sub-lists, so opening the drawer doesn't immediately dump 12
+          extra links on screen. The drawer itself is height-capped
+          with its own scroll (max-h-[calc(100vh-4rem)] overflow-y-auto
+          — 4rem matches the h-16 header above it) so every link below
+          the fold (News, Journal, Community, About, etc.) is reachable
+          by scrolling the drawer, not the background page — which is
+          itself scroll-locked while open (see the useEffect above). */}
       {mobileOpen && (
-        <nav className="border-t border-slate-100 px-4 py-3 md:hidden" aria-label="Primary mobile">
+        <nav
+          className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-slate-100 px-4 py-3 md:hidden"
+          aria-label="Primary mobile"
+        >
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center justify-between gap-3 px-3 py-1.5 sm:hidden">
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -499,33 +569,17 @@ export default function Header() {
               My Dashboard
             </Link>
 
-            <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {t("toolsCalculators")}
-            </p>
-            {FINANCIAL_TOOLS_LINKS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              >
-                {item.label}
-              </Link>
-            ))}
+            <MobileNavAccordionSection
+              title={t("toolsCalculators")}
+              items={FINANCIAL_TOOLS_LINKS}
+              onLinkClick={() => setMobileOpen(false)}
+            />
 
-            <p className="mt-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Utility Tools
-            </p>
-            {UTILITY_TOOLS_LINKS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              >
-                {item.label}
-              </Link>
-            ))}
+            <MobileNavAccordionSection
+              title="Utility Tools"
+              items={UTILITY_TOOLS_LINKS}
+              onLinkClick={() => setMobileOpen(false)}
+            />
 
             <div className="mt-2 border-t border-slate-100 pt-2">
               {OTHER_NAV_LINKS.map((link) => (
