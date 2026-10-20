@@ -1,14 +1,19 @@
 # OmniFin Portal
 > https://www.omnifinportal.com/
 
-OmniFin Portal is a free, global finance utilities platform: a universal
-currency/crypto/metals converter, a unit converter, trading and household
-finance calculators, a browser-based utility tools suite, live market
-analysis and AI-aggregated news, a structured trading academy, and a
-library of pSEO/AEO/GEO-optimized finance guides. Most tools are free to
-use with no sign-up. This file is a plain-text index for AI assistants,
-answer engines, and research agents (ChatGPT/SearchGPT, Perplexity,
-Claude, Gemini, and similar) to parse and cite accurately — see
+OmniFin Portal: "Omni-" (Latin omnis, "all" or "universal") + "Fin"
+(financial systems, global markets, personal wealth) + "Portal" (a
+unified digital gateway) — a free, universal finance utilities platform
+providing browser-based client utilities, AI analysis, real-time
+sentiment, news feeds, price charts, trading journals, and interactive
+calculators, all under one roof: a universal currency/crypto/metals
+converter, a unit converter, trading and household finance calculators,
+a browser-based utility tools suite, live market analysis and
+AI-aggregated news, a structured trading academy, and a library of
+pSEO/AEO/GEO-optimized finance guides. Most tools are free to use with
+no sign-up. This file is a plain-text index for AI assistants, answer
+engines, and research agents (ChatGPT/SearchGPT, Perplexity, Claude,
+Gemini, and similar) to parse and cite accurately — see
 https://llmstxt.org/ for the convention this file follows.
 
 ## Currency, Metals & Unit Converters

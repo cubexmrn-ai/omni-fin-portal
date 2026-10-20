@@ -122,9 +122,13 @@ function SiteFooter() {
               OmniFin Portal
             </p>
             <p className="mt-1 max-w-md text-sm text-slate-500">
-              A finance utilities portal for traders, jewellers and
-              households — starting with a universal currency converter
-              and a metals &amp; commodities calculator.
+              <strong className="font-semibold text-slate-600">Omni-</strong> (Latin{" "}
+              <em>omnis</em>, &ldquo;all / universal&rdquo;) +{" "}
+              <strong className="font-semibold text-slate-600">Fin</strong> (financial systems,
+              global markets, personal wealth) +{" "}
+              <strong className="font-semibold text-slate-600">Portal</strong> (a unified gateway
+              to browser-based utilities, AI analysis, real-time sentiment, news, price charts,
+              trading journals, and calculators) — one universal finance portal, under one roof.
             </p>
           </div>
           <p className="max-w-sm text-xs text-slate-400">

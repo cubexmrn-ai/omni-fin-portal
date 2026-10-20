@@ -30,8 +30,14 @@ export default function SiteStructuredData() {
     "@id": `${siteUrl}/#organization`,
     name: "OmniFin Portal",
     url: siteUrl,
+    // Brand Entity SEO/LLMO definition — the same literal etymology
+    // text embedded in components/AboutContent.jsx's "Why OmniFin?"
+    // callout, app/layout.jsx's SiteFooter, and public/llms.txt's
+    // header summary, so a search/answer engine or AI crawler sees
+    // one consistent entity definition for "OmniFin Portal" no matter
+    // which of those four surfaces it reads.
     description:
-      "A free finance utilities portal: a universal currency, crypto & metals converter, a worldwide unit converter, live market charts and AI-aggregated finance news, trading & personal-finance calculators, and a free Academy curriculum.",
+      "OmniFin Portal: 'Omni-' (Latin omnis, 'all' or 'universal') + 'Fin' (financial systems, global markets, personal wealth) + 'Portal' (a unified digital gateway) — a free, universal finance utilities portal providing browser-based client utilities, AI analysis, real-time sentiment, news feeds, price charts, trading journals, and interactive calculators, all under one roof.",
   };
 
   const website = {
