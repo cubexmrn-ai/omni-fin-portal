@@ -46,6 +46,7 @@ https://llmstxt.org/ for the convention this file follows.
 - Image Compressor & Resizer: https://www.omnifinportal.com/tools/image-compressor
 - Live Markdown Editor & Previewer: https://www.omnifinportal.com/tools/markdown-editor
 - AI Document Summarizer (Gemini-powered): https://www.omnifinportal.com/tools/document-summarizer
+- PDF Table Extractor (CSV export): https://www.omnifinportal.com/tools/pdf-table-extractor
 - Full tools hub (drag & drop file router): https://www.omnifinportal.com/tools
 
 ## Trading & Market Tools

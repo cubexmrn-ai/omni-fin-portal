@@ -52,6 +52,7 @@ import Link from "next/link";
 import { fetchRates } from "@/lib/fetchRates";
 import { getPairRate } from "@/lib/assetConversion";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { trackEvent } from "@/lib/gtag";
 
 const TickerAcademyContent = dynamic(
   () => import("@/components/academy/TickerAcademyContent"),
@@ -197,6 +198,14 @@ export default function StickyBottomTicker() {
   if (!active || !hydrated || mode === "closed") return null;
 
   function persist(next) {
+    // Lightweight GA4 engagement ping — a toggle (expand/minimize/close)
+    // is a genuine interaction with the live ticker widget, separate
+    // from it just sitting on the page passively streaming prices.
+    trackEvent("widget_interaction", {
+      widget: "market_ticker",
+      action: next,
+      ticker_context: isAcademyPage ? "academy" : "market",
+    });
     setMode(next);
     try {
       window.localStorage.setItem(STATE_STORAGE_KEY, next);

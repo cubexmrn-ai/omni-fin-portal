@@ -70,6 +70,7 @@ export default function sitemap() {
     // configured, since the page itself always renders (see that
     // route's and this tool's own graceful-fallback handling).
     { path: "/tools/document-summarizer", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/tools/pdf-table-extractor", changeFrequency: "monthly", priority: 0.7 },
     { path: "/market-analysis", changeFrequency: "daily", priority: 0.9 },
     // NOT /market-analysis/ai-news — that route is a 308 permanent
     // redirect to /ai-news now (see app/market-analysis/ai-news/

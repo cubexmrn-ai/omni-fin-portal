@@ -69,11 +69,19 @@ function DocumentSummarizerIcon(props) {
     </svg>
   );
 }
+function PdfTableExtractorIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M6 3h9l3 3v15H6z" />
+      <path d="M8.5 12h7M8.5 15h7M8.5 18h4M12 9v9" />
+    </svg>
+  );
+}
 
 export const metadata = buildMetadata({
   title: "Free Online Tools — Household Finance & Utility Tools | OmniFin Portal",
   description:
-    "Free household finance calculators (gold & jewellery, loan EMI, zakat, savings & inflation) plus a full utility tools suite — word counter, JSON formatter, case converter, Base64 encoder, password generator, image compressor, and a Markdown editor. All run instantly in your browser.",
+    "Free household finance calculators (gold & jewellery, loan EMI, zakat, savings & inflation) plus a full utility tools suite — word counter, JSON formatter, case converter, Base64 encoder, password generator, image compressor, PDF table extractor, and a Markdown editor. All run instantly in your browser.",
   path: "/tools",
 });
 
@@ -125,6 +133,12 @@ const UTILITY_TOOLS = [
     title: "AI Document Summarizer",
     description: "Summarize long text into key points using Gemini AI.",
     Icon: DocumentSummarizerIcon,
+  },
+  {
+    href: "/tools/pdf-table-extractor",
+    title: "PDF Table Extractor",
+    description: "Pull tabular data out of a PDF and export it as a CSV file, right in your browser.",
+    Icon: PdfTableExtractorIcon,
   },
 ];
 

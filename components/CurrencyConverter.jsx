@@ -97,6 +97,13 @@ function AssetSelect({ id, label, assetClass, code, onChange }) {
     if (query.trim()) {
       trackEvent("search_rate", { search_term: query.trim(), selected_asset: nextCode });
     }
+    // Lightweight engagement signal: fires on every dropdown selection,
+    // searched or not, so GA4 registers a widget interaction as soon as
+    // someone touches the converter — not just on a typed search. Kept
+    // separate from search_rate above rather than folded into it, since
+    // this is meant to be a cheap, always-on "did they engage" ping,
+    // not a search-quality metric.
+    trackEvent("widget_interaction", { widget: "currency_converter", selected_asset: nextCode });
     onChange(nextClass, nextCode);
     setOpen(false);
     setQuery("");

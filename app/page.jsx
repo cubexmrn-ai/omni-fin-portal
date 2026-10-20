@@ -3,6 +3,7 @@ import EconomicNewsStrip from "@/components/EconomicNewsStrip";
 import HomeMarketTicker from "@/components/HomeMarketTicker";
 import {
   Hero,
+  PopularToolsSection,
   UnifiedSuiteSection,
   AcademyRoadmapSection,
   MarketCommunitySection,
@@ -157,6 +158,7 @@ export default async function HomePage() {
         </div>
       </div>
       <EcosystemStructuredData />
+      <PopularToolsSection />
       <UnifiedSuiteSection />
       <AcademyRoadmapSection />
       <MarketCommunitySection />

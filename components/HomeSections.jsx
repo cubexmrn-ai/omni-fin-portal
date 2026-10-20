@@ -88,6 +88,35 @@ export function Hero({ marketPulse }) {
               {t("heroCtaRates")}
             </a>
           </div>
+
+          {/* Quick-action row: the 3 highest-intent destinations on the
+              site, surfaced directly in the hero so a first-time visitor
+              never has to find them in nav. Visually secondary to the
+              2 CTAs above (smaller, pill-shaped, icon-led) so they read
+              as shortcuts rather than competing with the primary asks. */}
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            <Link
+              href="/tools"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+            >
+              <ToolsQuickIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("heroCtaTools")}
+            </Link>
+            <Link
+              href="/tools/zakat-calculator"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+            >
+              <ZakatQuickIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("heroCtaZakat")}
+            </Link>
+            <Link
+              href="/market-analysis"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+            >
+              <MarketsQuickIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("heroCtaMarkets")}
+            </Link>
+          </div>
         </div>
 
         {hasLivePulse ? (
@@ -162,6 +191,32 @@ export function Hero({ marketPulse }) {
   );
 }
 
+// Small inline-SVG icons for the hero's quick-action pills — same
+// hand-drawn outline convention as the Utility Tools grid icons in
+// app/tools/page.jsx, kept local here since these 3 are only used once.
+function ToolsQuickIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2z" />
+    </svg>
+  );
+}
+function ZakatQuickIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7v10M9.5 9.3c0-1.3 1.1-2.3 2.5-2.3s2.5 1 2.5 2c0 2.3-5 1.7-5 4 0 1 1.1 2 2.5 2s2.5-1 2.5-2.3" />
+    </svg>
+  );
+}
+function MarketsQuickIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M4 19h16M6 16l4-5 3 3 5-7" />
+    </svg>
+  );
+}
+
 /** Small reusable "open this tool" arrow, used across all 3 ecosystem
  * sections below so the CTA styling stays identical everywhere. */
 function CtaArrow() {
@@ -182,6 +237,109 @@ function CtaArrow() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+// Icons for the 6 Popular Tools cards below — same hand-drawn outline
+// convention as app/tools/page.jsx's Utility Tools grid (that file's
+// icon components aren't exported, so these are small local redraws
+// rather than a cross-file import, matching how this file already
+// keeps its own CtaArrow/quick-pill icons self-contained).
+function PopularDocSummarizerIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M6 3h9l3 3v15H6z" />
+      <path d="M9 11h6M9 14h6M9 17h3" />
+      <path d="M18 2.5 19 4l1.5 1-1.5 1-1 1.5-1-1.5-1.5-1 1.5-1z" />
+    </svg>
+  );
+}
+function PopularPdfTableIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M6 3h9l3 3v15H6z" />
+      <path d="M8.5 12h7M8.5 15h7M8.5 18h4M12 9v9" />
+    </svg>
+  );
+}
+function PopularImageCompressorIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="3.5" y="5" width="17" height="14" rx="2" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="M4.5 17.5 9 13l2.5 2.5L15 12l4.5 5" />
+    </svg>
+  );
+}
+function PopularJsonFormatterIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M8 4c-2 0-3 1-3 3v2c0 1-.5 2-2 2.5 1.5.5 2 1.5 2 2.5v2c0 2 1 3 3 3M16 4c2 0 3 1 3 3v2c0 1 .5 2 2 2.5-1.5.5-2 1.5-2 2.5v2c0 2-1 3-3 3" />
+    </svg>
+  );
+}
+function PopularPasswordIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="8" cy="15" r="4" />
+      <path d="M11 12l9-9M17 6l2 2M14 9l2 2" />
+    </svg>
+  );
+}
+function PopularZakatGoldIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7v10M9.5 9.3c0-1.3 1.1-2.3 2.5-2.3s2.5 1 2.5 2c0 2.3-5 1.7-5 4 0 1 1.1 2 2.5 2s2.5-1 2.5-2.3" />
+    </svg>
+  );
+}
+
+const POPULAR_TOOLS = [
+  { href: "/tools/document-summarizer", titleKey: "popularTool1Title", descKey: "popularTool1Desc", Icon: PopularDocSummarizerIcon },
+  { href: "/tools/pdf-table-extractor", titleKey: "popularTool2Title", descKey: "popularTool2Desc", Icon: PopularPdfTableIcon },
+  { href: "/tools/image-compressor", titleKey: "popularTool3Title", descKey: "popularTool3Desc", Icon: PopularImageCompressorIcon },
+  { href: "/tools/json-formatter", titleKey: "popularTool4Title", descKey: "popularTool4Desc", Icon: PopularJsonFormatterIcon },
+  { href: "/tools/password-generator", titleKey: "popularTool5Title", descKey: "popularTool5Desc", Icon: PopularPasswordIcon },
+  { href: "/tools/zakat-calculator", titleKey: "popularTool6Title", descKey: "popularTool6Desc", Icon: PopularZakatGoldIcon },
+];
+
+/** Homepage-only "Popular Tools & Utilities" showcase — 6 of the most
+ * useful client-side tools, surfaced directly on the homepage (rather
+ * than requiring a click through to /tools) to pull engaged visitors
+ * into a tool before they bounce. Cards share the same hover-lift
+ * treatment as the rest of the homepage's dark ecosystem cards. */
+export function PopularToolsSection() {
+  const { t } = useLanguage();
+  return (
+    <section
+      aria-labelledby="popular-tools-heading"
+      className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
+    >
+      <h2 id="popular-tools-heading" className="text-lg font-bold text-slate-900">
+        {t("popularToolsTitle")}
+      </h2>
+      <p className="mt-1 max-w-2xl text-sm text-slate-500">{t("popularToolsDesc")}</p>
+
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {POPULAR_TOOLS.map((tool) => (
+          <Link
+            key={tool.href}
+            href={tool.href}
+            className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-card-hover"
+          >
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-600 group-hover:text-white">
+              <tool.Icon className="h-5 w-5" />
+            </span>
+            <h3 className="mt-3 text-base font-bold text-slate-900">{t(tool.titleKey)}</h3>
+            <p className="mt-1.5 text-sm text-slate-600">{t(tool.descKey)}</p>
+            <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600">
+              {t("popularToolsCta")} <CtaArrow />
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
