@@ -45,6 +45,7 @@ export default function Base64EncoderPage() {
         description="Free client-side Base64 encoder/decoder with full Unicode (UTF-8) support."
         featureList={["Encode text to Base64", "Decode Base64 to text", "Full Unicode support", "100% client-side"]}
         faqs={FAQS}
+        applicationCategory="DeveloperApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

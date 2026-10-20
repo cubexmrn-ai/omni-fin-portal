@@ -45,6 +45,7 @@ export default function WordCounterPage() {
         description="Free client-side word, character, sentence, and paragraph counter with reading-time estimate."
         featureList={["Live word & character count", "Sentence & paragraph count", "Reading-time estimate", "100% client-side, no upload"]}
         faqs={FAQS}
+        applicationCategory="UtilitiesApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

@@ -40,6 +40,7 @@ export default function MarkdownEditorPage() {
         description="Free client-side Markdown editor with live preview, exporting to .md or standalone .html."
         featureList={["Live side-by-side preview", "Headings, lists, links, code blocks, blockquotes", "Export as .md or .html", "100% client-side"]}
         faqs={FAQS}
+        applicationCategory="ProductivityApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

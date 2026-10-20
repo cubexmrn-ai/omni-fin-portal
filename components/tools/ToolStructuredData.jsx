@@ -18,9 +18,25 @@ import { getSiteUrl } from "@/lib/siteUrl";
  *   description: string,
  *   featureList: string[],
  *   faqs: { question: string, answer: string }[],
+ *   applicationCategory?: string, // schema.org SoftwareApplication category
+ *                                  // — defaults to "FinanceApplication" since
+ *                                  // this component's first 4 callers (the
+ *                                  // Household Tools) are all genuinely
+ *                                  // finance calculators; the 8 Utility
+ *                                  // Tools Suite pages (word counter, JSON
+ *                                  // formatter, etc.) explicitly pass their
+ *                                  // own accurate category instead, since
+ *                                  // none of those are finance apps.
  * }} props
  */
-export default function ToolStructuredData({ path, name, description, featureList, faqs }) {
+export default function ToolStructuredData({
+  path,
+  name,
+  description,
+  featureList,
+  faqs,
+  applicationCategory = "FinanceApplication",
+}) {
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}${path}`;
 
@@ -29,7 +45,7 @@ export default function ToolStructuredData({ path, name, description, featureLis
     "@id": `${url}#webapp`,
     name,
     url,
-    applicationCategory: "FinanceApplication",
+    applicationCategory,
     operatingSystem: "All",
     description,
     featureList,

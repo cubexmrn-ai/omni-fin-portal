@@ -4,6 +4,7 @@ import ToolStructuredData from "@/components/tools/ToolStructuredData";
 import FAQAccordion from "@/components/FAQAccordion";
 import AdSlot from "@/components/AdSlot";
 import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
+import AeoCallout from "@/components/blog/AeoCallout";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = {
@@ -151,6 +152,10 @@ export default function GoldJewelleryCalculatorPage() {
               <li>Typical old-gold buyback credit: 90–98% of fresh spot value</li>
             </ul>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <AeoCallout answer="A gold jewellery price calculator values a piece from its metal weight and karat purity (e.g. 22K gold is 91.6% pure, 18K is 75%), then adds the jeweller's making charges (typically 8–25% of gold value) and applicable taxes — this tool does that live against current gold spot rates and also estimates an old-gold exchange credit, usually 90–98% of fresh spot value." />
         </div>
 
         <FAQAccordion

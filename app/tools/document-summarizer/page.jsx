@@ -45,6 +45,7 @@ export default function DocumentSummarizerPage() {
         description="Summarize long documents into concise bullet points using Gemini AI."
         featureList={["AI-generated 4-6 bullet-point summary", "No sign-up required", "Graceful fallback if AI isn't configured"]}
         faqs={FAQS}
+        applicationCategory="ProductivityApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

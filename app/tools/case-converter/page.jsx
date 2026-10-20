@@ -40,6 +40,7 @@ export default function CaseConverterPage() {
         description="Free client-side text case converter: uppercase, lowercase, title case, sentence case, camelCase, PascalCase, snake_case, and slug."
         featureList={["8 case conversion formats", "URL-safe slug generator", "One-click copy", "100% client-side"]}
         faqs={FAQS}
+        applicationCategory="UtilitiesApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

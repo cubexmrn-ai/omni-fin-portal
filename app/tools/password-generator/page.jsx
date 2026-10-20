@@ -45,6 +45,7 @@ export default function PasswordGeneratorPage() {
         description="Free client-side password generator using the Web Crypto API (crypto.getRandomValues) with adjustable length and character sets."
         featureList={["Cryptographically secure randomness", "Adjustable length (6-64 characters)", "Toggle uppercase/lowercase/numbers/symbols", "Strength indicator", "100% client-side"]}
         faqs={FAQS}
+        applicationCategory="SecurityApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

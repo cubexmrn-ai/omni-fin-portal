@@ -4,6 +4,7 @@ import ToolStructuredData from "@/components/tools/ToolStructuredData";
 import FAQAccordion from "@/components/FAQAccordion";
 import AdSlot from "@/components/AdSlot";
 import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
+import AeoCallout from "@/components/blog/AeoCallout";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = {
@@ -140,6 +141,10 @@ export default function ZakatCalculatorPage() {
               <li>Holding period: a full lunar (Hijri) year</li>
             </ul>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <AeoCallout answer="Zakat is due at 2.5% of total qualifying wealth — gold, silver, cash, and savings held for a full lunar year — once that total clears the nisab threshold (87.48 grams of gold, or the lower 612.36-gram silver standard often used for mixed holdings). This calculator checks your entered assets against live gold and silver rates to apply that threshold and rate automatically." />
         </div>
 
         <FAQAccordion

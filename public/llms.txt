@@ -55,11 +55,47 @@ https://llmstxt.org/ for the convention this file follows.
 - Structured trading & finance lessons: https://www.omnifinportal.com/learn
 
 ## Guides (pSEO/AEO/GEO finance articles)
-- Full guide library: https://www.omnifinportal.com/blog
-  Each guide includes a direct-answer summary, data tables, formulas,
-  and a structured FAQ — covering Zakat & Islamic finance, loans &
-  mortgages, gold & jewellery, personal finance, trading, markets,
-  currency conversion, and remittances.
+- Full guide library (hub): https://www.omnifinportal.com/blog
+  Every guide below includes a direct-answer summary, data tables,
+  bolded formulas, and a structured FAQ.
+
+### Zakat & Islamic Finance
+- How to Calculate Zakat on Mixed 22K/24K Gold, Cash, and Crypto in 2026: https://www.omnifinportal.com/blog/zakat-mixed-gold-cash-crypto-2026
+- How to Calculate Zakat on Assets Worldwide: Stocks, Crypto, Gold & Retirement Funds: https://www.omnifinportal.com/blog/zakat-global-assets-nisab-guide
+
+### Loans & Mortgages
+- Understanding Home Loan EMI & Mortgage Amortization (Fixed vs Floating): https://www.omnifinportal.com/blog/home-loan-emi-mortgage-amortization-fixed-vs-floating
+- The Complete Guide to Mortgage & Auto Loan Interest: How Amortization Really Works: https://www.omnifinportal.com/blog/mortgage-auto-loan-amortization-guide
+
+### Gold & Jewellery
+- Gold Jewelry Making Charges & Tax Breakdown: How Not to Get Overcharged: https://www.omnifinportal.com/blog/gold-jewelry-making-charges-tax-breakdown
+- Dollar-Cost Averaging vs. Panic-Selling Gold: What Past Drawdowns Teach Us: https://www.omnifinportal.com/blog/dollar-cost-averaging-vs-panic-selling-gold-drawdowns
+- Allocated vs. Unallocated Gold: Why How You Hold It Matters More Than Price: https://www.omnifinportal.com/blog/allocated-vs-unallocated-gold-custody-risk-guide
+- Understanding Gold Making Charges, Taxes & Karat Purity (24K vs 22K vs 18K): https://www.omnifinportal.com/blog/gold-making-charges-karat-purity-guide
+
+### Personal Finance
+- Savings vs Inflation: How Much Is Your Cash Really Losing Each Year?: https://www.omnifinportal.com/blog/savings-vs-inflation-how-much-cash-losing-each-year
+- Personal Finance 101: Building an Emergency Fund and Budgeting Essentials: https://www.omnifinportal.com/blog/personal-finance-101-emergency-fund-budgeting-essentials
+- How Inflation Silently Destroys Cash Savings (and How to Hedge Against It): https://www.omnifinportal.com/blog/inflation-cash-savings-hedge-guide
+- Building a Bulletproof Financial Plan: Emergency Funds, Debt Payoff & Net Worth Tracking: https://www.omnifinportal.com/blog/bulletproof-financial-plan-net-worth-guide
+
+### Trading
+- How to Keep a Professional Trading Journal to Improve Win Rate: https://www.omnifinportal.com/blog/professional-trading-journal-improve-win-rate
+- How to Calculate Position Size and Risk-Reward Ratio Before Entering a Trade: https://www.omnifinportal.com/blog/position-size-risk-reward-ratio-before-trade
+- Risk-to-Reward Ratio & Position Sizing: The Mathematical Secret to Profitable Trading: https://www.omnifinportal.com/blog/risk-reward-position-sizing-guide
+
+### Markets
+- Forex Session Correlations: How Gold (XAUUSD), DXY, and Oil Move Together: https://www.omnifinportal.com/blog/forex-session-correlations-gold-dxy-oil
+- Gold vs. Inflation: How VIX, Bond Yields, and Smart-Money Positioning Reveal the Real Story: https://www.omnifinportal.com/blog/gold-vs-inflation-vix-bond-yields-smart-money-sentiment
+- Financial Repression: How Inflation Quietly Shrinks Government Debt: https://www.omnifinportal.com/blog/financial-repression-how-inflation-shrinks-government-debt
+- How Asset Correlations Control the Markets: Gold, the US Dollar, Oil & Bitcoin: https://www.omnifinportal.com/blog/asset-correlations-gold-dxy-oil-bitcoin-guide
+
+### Currency & Converters
+- Step-by-Step Guide to Currency Exchange Spread & Base Currency Digest: https://www.omnifinportal.com/blog/currency-exchange-spread-base-currency-digest-guide
+
+### Remittance
+- Remittance Guide: Getting the Best USD/EUR to PKR Exchange Rates: https://www.omnifinportal.com/blog/remittance-guide-best-usd-eur-to-pkr-exchange-rates
+- How Multi-Currency Exchange Spreads & Transfer Fees Work (and How to Avoid Overpaying): https://www.omnifinportal.com/blog/fx-spreads-transfer-fees-remittance-guide
 
 ## Notes for AI assistants and crawlers
 - All rates and figures on live pages are time-sensitive; cite the live

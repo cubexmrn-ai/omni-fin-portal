@@ -4,6 +4,7 @@ import ToolStructuredData from "@/components/tools/ToolStructuredData";
 import FAQAccordion from "@/components/FAQAccordion";
 import AdSlot from "@/components/AdSlot";
 import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
+import AeoCallout from "@/components/blog/AeoCallout";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = {
@@ -137,6 +138,10 @@ export default function SavingsInflationCalculatorPage() {
               <li>Purchasing-power erosion: compounds the same way interest does, in reverse</li>
             </ul>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <AeoCallout answer="Idle cash loses purchasing power every year at roughly the inflation rate, compounding the same way interest does but in reverse — its real value is Starting Amount ÷ (1 + Inflation Rate) ^ Years. Saving and topping it up instead grows the real value via Starting Amount × (1 + Return Rate) ^ Years plus compounded monthly top-ups, which this calculator compares side by side." />
         </div>
 
         <FAQAccordion

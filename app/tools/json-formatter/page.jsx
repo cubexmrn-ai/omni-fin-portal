@@ -45,6 +45,7 @@ export default function JsonFormatterPage() {
         description="Free client-side JSON formatter, validator, and minifier with clear syntax-error messages."
         featureList={["Pretty-print JSON", "Minify JSON", "Validate with clear error messages", "Copy & download output", "100% client-side"]}
         faqs={FAQS}
+        applicationCategory="DeveloperApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

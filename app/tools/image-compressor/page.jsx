@@ -45,6 +45,7 @@ export default function ImageCompressorPage() {
         description="Free client-side image compressor and resizer (JPEG, WebP, PNG) using the Canvas API — no server upload."
         featureList={["Resize to a max width", "Adjustable compression quality", "JPEG, WebP, and PNG output", "Before/after file size comparison", "100% client-side"]}
         faqs={FAQS}
+        applicationCategory="MultimediaApplication"
       />
 
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">

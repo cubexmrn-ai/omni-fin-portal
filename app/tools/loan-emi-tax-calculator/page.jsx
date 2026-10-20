@@ -4,6 +4,7 @@ import ToolStructuredData from "@/components/tools/ToolStructuredData";
 import FAQAccordion from "@/components/FAQAccordion";
 import AdSlot from "@/components/AdSlot";
 import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
+import AeoCallout from "@/components/blog/AeoCallout";
 import { buildMetadata } from "@/lib/pageMetadata";
 
 export const metadata = {
@@ -136,6 +137,10 @@ export default function LoanEmiTaxCalculatorPage() {
               <li>Tax estimate basis: Pakistan FY2024-25 salaried-individual slabs</li>
             </ul>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <AeoCallout answer="A loan EMI is calculated as EMI = P × r × (1 + r)ⁿ / ((1 + r)ⁿ − 1), where P is the principal borrowed, r is the monthly interest rate (annual rate ÷ 12), and n is the total number of monthly installments — this fixed payment covers both interest and principal so the loan is fully paid off by the end of its tenure. This tool also estimates Pakistan salaried-individual income tax using the FY2024-25 slab rates." />
         </div>
 
         <FAQAccordion
