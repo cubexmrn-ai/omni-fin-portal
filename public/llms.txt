@@ -25,6 +25,8 @@ https://llmstxt.org/ for the convention this file follows.
   (e.g. /converters/usd, /converters/pkr, /converters/inr, /converters/aed)
 - Currency pair pages: https://www.omnifinportal.com/converters/<pair-slug>
   (e.g. /converters/usd-to-pkr)
+- Amount-specific conversion pages: https://www.omnifinportal.com/converters/<amount-pair-slug>
+  (e.g. /converters/2000-aed-to-pkr, /converters/100-usd-to-pkr)
 - Universal unit converter: https://www.omnifinportal.com/converters/unit
 
 ## Household Finance Calculators

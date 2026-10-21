@@ -32,12 +32,18 @@ import PopularPairs from "@/components/PopularPairs";
 import MiniCalculatorWidget from "@/components/calculators/MiniCalculatorWidget";
 import AdSlot from "@/components/AdSlot";
 import { getPairEducationalContent } from "@/components/converters/pairEducationalContent";
+import AmountConversionCard from "@/components/converters/AmountConversionCard";
+import AmountConverterStructuredData from "@/components/converters/AmountConverterStructuredData";
+import FAQAccordion from "@/components/FAQAccordion";
 import {
   parsePairSlug,
   parseBaseOnlySlug,
+  parseAmountPairSlug,
   buildPairSlug,
+  buildAmountPairSlug,
   FEATURED_PAIRS,
   FEATURED_BASE_CURRENCIES,
+  FEATURED_AMOUNT_PAIRS,
 } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
@@ -48,13 +54,16 @@ import { CURRENCIES } from "@/lib/currencies";
 import CurrencyDigestTable from "@/components/converters/CurrencyDigestTable";
 
 export function generateStaticParams() {
-  // PHASE 2: both shapes this one dynamic [pair] segment now serves —
-  // real "<from>-to-<to>" pairs, plus bare single-code base-currency
-  // digest slugs (e.g. "pkr") — see parseBaseOnlySlug's header comment
-  // in lib/pairSlugs.js for why these live in the same route.
+  // PHASE 2/3: all three shapes this one dynamic [pair] segment now
+  // serves — real "<from>-to-<to>" pairs, bare single-code
+  // base-currency digest slugs (e.g. "pkr"), and PHASE 3's
+  // "<amount>-<from>-to-<to>" pSEO pages (e.g. "2000-aed-to-pkr") — see
+  // parseBaseOnlySlug's and parseAmountPairSlug's header comments in
+  // lib/pairSlugs.js for why all three live in the same route.
   return [
     ...FEATURED_PAIRS.map((pair) => ({ pair: pair.slug })),
     ...FEATURED_BASE_CURRENCIES.map((code) => ({ pair: code.toLowerCase() })),
+    ...FEATURED_AMOUNT_PAIRS.map((entry) => ({ pair: entry.slug })),
   ];
 }
 
@@ -65,6 +74,22 @@ const ASSET_CLASS_NOUN = {
 };
 
 export async function generateMetadata({ params }) {
+  // Checked first since parsePairSlug/parseBaseOnlySlug both naturally
+  // reject an amount-prefixed slug on their own (see
+  // parseAmountPairSlug's header comment in lib/pairSlugs.js) — this
+  // ordering is for clarity/efficiency, not correctness.
+  const amountParsed = parseAmountPairSlug(params.pair);
+  if (amountParsed) {
+    const { amount, from, to } = amountParsed;
+    const title = `${amount} ${from.code} to ${to.code} — ${amount} ${from.name} to ${to.name} | OmniFin Portal`;
+    const description = `${amount} ${from.name} (${from.code}) converted to ${to.name} (${to.code}) at today's live exchange rate, with a quick breakdown table and alternative amounts.`;
+    return buildMetadata({
+      title,
+      description,
+      path: `/converters/${buildAmountPairSlug(amount, amountParsed.fromCode, amountParsed.toCode)}`,
+    });
+  }
+
   const baseOnly = parseBaseOnlySlug(params.pair);
   if (baseOnly) {
     const { code, meta } = baseOnly;
@@ -97,6 +122,9 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function CurrencyPairSeoPage({ params }) {
+  const amountParsed = parseAmountPairSlug(params.pair);
+  if (amountParsed) return <AmountPairSeoPage amountParsed={amountParsed} />;
+
   const baseOnly = parseBaseOnlySlug(params.pair);
   if (baseOnly) return <BaseCurrencyDigestPage baseOnly={baseOnly} />;
 
@@ -227,6 +255,177 @@ export default async function CurrencyPairSeoPage({ params }) {
             className="text-sm font-medium text-brand-600 hover:text-brand-700"
           >
             ← Browse all converters
+          </Link>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/** Parametric FAQ copy for an amount-specific pSEO page — kept local
+ * to this file (rather than a shared helper) since every answer here
+ * is built directly from the page's own amount/from/to/rate values,
+ * not reusable educational content like getPairEducationalContent's. */
+function buildAmountFaqs({ amount, from, to, rate, fetchedAt }) {
+  const hasRate = Number.isFinite(rate);
+  const convertedAmount = hasRate ? amount * rate : null;
+
+  const faqs = [
+    {
+      question: `How much is ${amount} ${from.code} in ${to.code}?`,
+      answer: hasRate
+        ? `${amount} ${from.name} (${from.code}) is approximately ${formatNumber(convertedAmount, { maximumFractionDigits: 2 })} ${to.name} (${to.code}) at the current live exchange rate of 1 ${from.code} = ${formatNumber(rate, { maximumFractionDigits: 6 })} ${to.code}.`
+        : `Live rates for this pair are temporarily unavailable — try the full converter on this page, which fetches rates independently.`,
+    },
+    {
+      question: `What is the ${from.code} to ${to.code} exchange rate today?`,
+      answer: hasRate
+        ? `As of the last update, 1 ${from.code} equals ${formatNumber(rate, { maximumFractionDigits: 6 })} ${to.code}. This rate updates automatically and is not fixed — use the converter above for the current figure whenever you check.`
+        : `Rates for this pair couldn't be loaded just now. The interactive converter further down this page fetches rates independently and will usually still work even if this figure didn't load.`,
+    },
+    {
+      question: "Does this rate update in real time?",
+      answer: `Yes — this page pulls from the same live rate feed used across OmniFin Portal, refreshed hourly.${fetchedAt ? ` The figure above was last refreshed ${new Date(fetchedAt).toUTCString()}.` : ""} It's not a fixed or delayed rate.`,
+    },
+    {
+      question: "Is this rate the same one I'd get sending money through a bank or exchange?",
+      answer:
+        "This is the live mid-market exchange rate, not a quote from any specific bank, exchange house, or money-transfer service — those typically add their own markup or fee on top. Use this figure as a reference point to compare against what any provider actually offers you.",
+    },
+  ];
+
+  return faqs;
+}
+
+/** PHASE 3 — amount-specific pSEO page, e.g. /converters/2000-aed-to-pkr
+ * (targets the literal search query "2000 AED to PKR"). Shares the
+ * same live-rate lookup, educational content, mini-calculator
+ * cross-sell, and Popular Pairs block as the bare pair page above, but
+ * leads with the dark AmountConversionCard widget instead of the plain
+ * rate line, and adds amount-specific FAQ + structured data. */
+async function AmountPairSeoPage({ amountParsed }) {
+  const { amount, fromClass, fromCode, from, toClass, toCode, to } = amountParsed;
+  const slug = buildAmountPairSlug(amount, fromCode, toCode);
+  const siteUrl = getSiteUrl();
+  const pageUrl = `${siteUrl}/converters/${slug}`;
+
+  let rate = null;
+  let fetchedAt = null;
+  try {
+    const ratesPayload = await getUnifiedRates();
+    rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
+    fetchedAt = ratesPayload?.fetchedAt || null;
+  } catch {
+    // Leave rate/fetchedAt null — AmountConversionCard and the FAQ copy
+    // below both render an honest "unavailable" state rather than a
+    // fabricated number, and the interactive CurrencyConverter further
+    // down the page fetches its own rates independently regardless.
+  }
+
+  const fromNoun = ASSET_CLASS_NOUN[fromClass] || "asset";
+  const toNoun = ASSET_CLASS_NOUN[toClass] || "asset";
+  const breadcrumbCrumbLabel = fromClass === toClass ? fromNoun : `${fromNoun} / ${toNoun}`;
+
+  const isForexPair = fromClass === "fiat" || toClass === "fiat";
+  const relatedCalculatorId = isForexPair ? "pip-value" : "margin";
+
+  const { intro: pairIntro, formulaNote } = getPairEducationalContent({
+    fromClass,
+    toClass,
+    from,
+    to,
+  });
+
+  const faqs = buildAmountFaqs({ amount, from, to, rate, fetchedAt });
+
+  return (
+    <>
+      <AmountConverterStructuredData
+        amount={amount}
+        from={from}
+        fromClass={fromClass}
+        to={to}
+        toClass={toClass}
+        rate={rate}
+        fetchedAt={fetchedAt}
+        pageUrl={pageUrl}
+        siteUrl={siteUrl}
+        faqs={faqs}
+      />
+      <BreadcrumbStructuredData
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Converters", href: "/converters" },
+          { name: `${amount} ${from.code} to ${to.code}`, href: `/converters/${slug}` },
+        ]}
+      />
+
+      <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <nav className="text-xs text-slate-400">
+            <Link href="/converters" className="hover:text-brand-600">
+              Converters
+            </Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-slate-500 capitalize">{breadcrumbCrumbLabel}</span>
+          </nav>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            {amount} {from.code} to {to.code} — {amount} {from.name} to {to.name}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Live conversion of {amount} {from.name} to {to.name}, with alternative amounts and a
+            quick breakdown table below.
+          </p>
+        </div>
+      </section>
+
+      <AmountConversionCard amount={amount} from={from} to={to} rate={rate} fetchedAt={fetchedAt} />
+
+      <section className="mx-auto max-w-5xl px-4 pb-14 pt-10 sm:px-6 lg:px-8">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-card">
+          <h2 className="text-sm font-semibold text-slate-900">About this pair</h2>
+          <p className="mt-2">{pairIntro}</p>
+          <p className="mt-3 text-xs font-semibold text-slate-900">Formula used:</p>
+          <p className="mt-1 rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+            {formulaNote}
+          </p>
+        </div>
+
+        <AdSlot slot="" label="Advertisement" minHeight={100} className="mt-6" />
+
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Need a different amount or pair?
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Use the full converter below to try any amount, or any currency, crypto, or metal.
+          </p>
+        </div>
+
+        <CurrencyConverter
+          initialFromClass={fromClass}
+          initialFromCode={fromCode}
+          initialToClass={toClass}
+          initialToCode={toCode}
+        />
+
+        <div className="mt-6">
+          <MiniCalculatorWidget calculatorId={relatedCalculatorId} />
+        </div>
+
+        <FAQAccordion title={`${from.code} to ${to.code} — FAQs`} items={faqs} />
+
+        <PopularPairs pairs={FEATURED_PAIRS} currentSlug={slug} />
+
+        <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <Link href="/converters" className="font-medium text-brand-600 hover:text-brand-700">
+            ← Browse all converters
+          </Link>
+          <Link href="/tools" className="font-medium text-brand-600 hover:text-brand-700">
+            Household financial tools
+          </Link>
+          <Link href="/market-analysis" className="font-medium text-brand-600 hover:text-brand-700">
+            Live market analysis
           </Link>
         </div>
       </section>

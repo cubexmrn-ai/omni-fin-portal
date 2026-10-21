@@ -32,7 +32,7 @@
 // apart — see that file's header comment for why a previous version
 // of getSiteUrl() could leak a preview deployment's hostname here.
 
-import { FEATURED_PAIRS, FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
+import { FEATURED_PAIRS, FEATURED_BASE_CURRENCIES, FEATURED_AMOUNT_PAIRS } from "@/lib/pairSlugs";
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { getAllLessonsFlat } from "@/lib/academyData";
 import { BLOG_POSTS } from "@/lib/blogPosts";
@@ -119,6 +119,19 @@ export default function sitemap() {
     priority: 0.7,
   }));
 
+  // /converters/<amount-pair-slug> — Phase 3 amount-specific pSEO
+  // pages (e.g. /converters/2000-aed-to-pkr), same dynamic [pair]
+  // route resolved via parseAmountPairSlug — targets the literal
+  // high-volume search query ("2000 AED to PKR") rather than the bare
+  // pair, so it gets the same daily refresh cadence as the pair pages
+  // above.
+  const converterAmountRoutes = FEATURED_AMOUNT_PAIRS.map((entry) => ({
+    url: `${siteUrl}/converters/${entry.slug}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.7,
+  }));
+
   // /converters/unit/<unit-slug> — pure unit math, nothing time-sensitive.
   const unitConverterRoutes = FEATURED_UNIT_PAIRS.map((pair) => ({
     url: `${siteUrl}/converters/unit/${pair.slug}`,
@@ -152,6 +165,7 @@ export default function sitemap() {
   return [
     ...staticRoutes,
     ...converterPairRoutes,
+    ...converterAmountRoutes,
     ...baseCurrencyDigestRoutes,
     ...unitConverterRoutes,
     ...lessonRoutes,

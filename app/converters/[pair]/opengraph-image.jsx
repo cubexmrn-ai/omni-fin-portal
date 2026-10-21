@@ -19,7 +19,14 @@
 // visually consistent with the static /og-image.png used sitewide.
 
 import { ImageResponse } from "next/og";
-import { parsePairSlug, parseBaseOnlySlug, FEATURED_PAIRS, FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
+import {
+  parsePairSlug,
+  parseBaseOnlySlug,
+  parseAmountPairSlug,
+  FEATURED_PAIRS,
+  FEATURED_BASE_CURRENCIES,
+  FEATURED_AMOUNT_PAIRS,
+} from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
 
@@ -30,6 +37,7 @@ export function generateStaticParams() {
   return [
     ...FEATURED_PAIRS.map((pair) => ({ pair: pair.slug })),
     ...FEATURED_BASE_CURRENCIES.map((code) => ({ pair: code.toLowerCase() })),
+    ...FEATURED_AMOUNT_PAIRS.map((entry) => ({ pair: entry.slug })),
   ];
 }
 
@@ -74,6 +82,67 @@ export default async function OgImage({ params }) {
           </div>
           <div style={{ display: "flex", fontSize: 26, marginTop: "auto", opacity: 0.8 }}>
             <span>omnifinportal.com/converters/{baseOnly.code.toLowerCase()}</span>
+          </div>
+        </div>
+      ),
+      { ...size }
+    );
+  }
+
+  // PHASE 3: an amount-prefixed slug (e.g. "2000-aed-to-pkr") gets its
+  // own card showing the actual amount and converted figure, instead
+  // of silently falling through to the pair-card's generic USD → PKR
+  // placeholder below (parsePairSlug on its own rejects this slug
+  // shape and would otherwise show the wrong pair's OG image entirely
+  // — see parseAmountPairSlug's header comment in lib/pairSlugs.js).
+  const amountParsed = parseAmountPairSlug(params.pair);
+  if (amountParsed) {
+    const { amount, from, to, fromClass, fromCode: aFromCode, toClass, toCode: aToCode } = amountParsed;
+    let convertedDisplay = null;
+    try {
+      const ratesPayload = await getUnifiedRates();
+      const rate = getPairRate({ fromClass, fromCode: aFromCode, toClass, toCode: aToCode, ratesPayload });
+      convertedDisplay = Number.isFinite(rate) ? formatRate(amount * rate) : null;
+    } catch {
+      convertedDisplay = null;
+    }
+
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "70px 80px",
+            background: `linear-gradient(135deg, ${BRAND_800} 0%, ${BRAND_600} 100%)`,
+            color: "#ffffff",
+            fontFamily: "sans-serif",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 30, fontWeight: 800 }}>
+            <span>OmniFin Portal</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 20, marginTop: 56 }}>
+            <span style={{ fontSize: 76, fontWeight: 800 }}>
+              {amount} {from.code}
+            </span>
+            <span style={{ fontSize: 48, fontWeight: 600, opacity: 0.75 }}>=</span>
+            <span style={{ fontSize: 76, fontWeight: 800 }}>
+              {convertedDisplay || "—"} {to.code}
+            </span>
+          </div>
+          <div style={{ display: "flex", fontSize: 32, fontWeight: 500, marginTop: 14, opacity: 0.9 }}>
+            <span>
+              {from.name} to {to.name} — Live Conversion
+            </span>
+          </div>
+          <div style={{ display: "flex", fontSize: 26, marginTop: "auto", opacity: 0.8 }}>
+            <span>
+              omnifinportal.com/converters/{amount}-{from.code.toLowerCase()}-to-{to.code.toLowerCase()}
+            </span>
           </div>
         </div>
       ),
