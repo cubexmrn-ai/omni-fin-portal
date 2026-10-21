@@ -4,36 +4,63 @@
 //
 // Universal natural-language smart search bar for the homepage hero
 // (components/HomeSections.jsx's <Hero/>) — a single input that
-// recognizes three kinds of real queries people actually type and
-// shows an instant, actionable result panel, without a server round
-// trip for the parsing itself:
+// recognizes real queries people actually type, in several languages,
+// and shows an instant, actionable result panel, without a server
+// round trip for the parsing itself:
 //
 //   1. Currency/amount queries ("2000 AED to PKR", "100 usd in pkr")
 //      -> live converted estimate + a button straight to that exact
 //      pSEO page (/converters/<amount>-<from>-to-<to>, see
 //      lib/pairSlugs.js's parseAmountPairSlug/buildAmountPairSlug).
-//   2. Zakat/gold queries ("Zakat on 10 Tola Gold")
-//      -> a live gold-nisab quick reference + a button to that exact
-//      Zakat Gold pSEO page (/converters/zakat-on-<N>-tola-gold).
-//   3. Tool-intent queries ("compress image", "json formatter")
+//   2. Metal spot-price queries ("1 tola gold in pkr today",
+//      "1 tola sona kitne ka hai") -> a live gold/silver value (in the
+//      stated currency, defaulting to PKR when none is given) + a
+//      button to the matching bare pair page (/converters/xau-to-pkr).
+//   3. Zakat/gold queries ("Zakat on 10 Tola Gold", "zakat 10 tola
+//      sona", "زکوۃ") -> a live gold-nisab quick reference + a button
+//      to that exact Zakat Gold pSEO page
+//      (/converters/zakat-on-<N>-tola-gold). Takes priority over #2
+//      whenever a zakat keyword is present, in any supported language.
+//   4. Tool-intent queries ("compress image", "json formatter")
 //      -> fuzzy keyword match against every /tools/* page, shown as
 //      launcher buttons.
+//   5. No match -> 3 clickable quick-suggestion pills instead of a
+//      dead end, so there's always a next step.
+//
+// MULTI-LINGUAL NORMALIZATION: real visitors type in English, Roman
+// Urdu, Urdu script, Arabic script, and Spanish — often mixed with the
+// actual numbers/codes in Latin script even when the rest of the query
+// isn't (e.g. "1 tola sona PKR me kitne ka hai"). Rather than one
+// giant regex per language, the query is:
+//   (a) tokenized on whitespace (NOT JS regex `\b` word-boundary
+//       substitution — `\b` is defined in terms of the ASCII `\w`
+//       class, so it does not behave correctly around Urdu/Arabic
+//       script, which is also written right-to-left),
+//   (b) each token rewritten through ALIAS maps (gold/silver, weight
+//       units, currency identifiers) into a single canonical token,
+//   (c) stop-words removed (per-language filler words that carry no
+//       intent signal — "today", "price", "ka", "میں", "de", …),
+//   (d) the cleaned, re-joined string is matched by the same small,
+//       readable regexes as before, now operating on canonical tokens
+//       (ASCII only past this point) instead of raw multi-script text.
+// This keeps every matcher a plain ASCII regex while still accepting
+// "sona", "سونا", "oro", or "ذهب" as the same input.
 //
 // RATES: fetched once on mount via the exact same lib/fetchRates.js +
 // lib/assetConversion.js pattern components/CurrencyConverter.jsx
-// already uses (ZERO new data source) — every currency estimate here
-// is `convertBetweenAssets()` against that one payload, never a
+// already uses (ZERO new data source) — every estimate here is
+// `convertBetweenAssets()` against that one payload, never a
 // fabricated or hardcoded number. If the fetch hasn't resolved yet (or
-// failed), the currency result panel still shows the parsed intent and
-// the direct link to the full pSEO page — it just omits the live
-// estimate rather than showing a wrong one.
+// failed), the result panel still shows the parsed intent and the
+// direct link to the full pSEO page — it just omits the live estimate
+// rather than showing a wrong one.
 //
 // INTENT PARSING: deliberately a handful of small, readable regexes
 // rather than a fuzzy NLP library (there's no npm registry access in
 // this project's sandbox — see app/converters/[pair]/opengraph-image.jsx's
 // header comment for the same constraint hitting next/og) — this
-// covers the three query shapes the person actually asked for without
-// a new dependency.
+// covers the query shapes people actually type without a new
+// dependency.
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -42,7 +69,7 @@ import { convertBetweenAssets, getAssetMeta } from "@/lib/assetConversion";
 import { CURRENCY_CODES } from "@/lib/currencies";
 import { CRYPTO_CODES } from "@/lib/crypto";
 import { METAL_CODES } from "@/lib/metals";
-import { buildAmountPairSlug, buildZakatGoldSlug } from "@/lib/pairSlugs";
+import { buildAmountPairSlug, buildZakatGoldSlug, buildPairSlug } from "@/lib/pairSlugs";
 import { formatNumber } from "@/lib/formatNumber";
 import { calculateZakat, NISAB_GOLD_GRAMS } from "@/lib/zakatCalculator";
 import { WEIGHT_UNITS } from "@/lib/conversionMath";
@@ -57,6 +84,114 @@ function resolveAssetClass(code) {
   if (CRYPTO_SET.has(code)) return "crypto";
   if (METAL_SET.has(code)) return "metals";
   return null;
+}
+
+// ---------------------------------------------------------------------
+// MULTI-LINGUAL ALIAS MAPS
+//
+// Each map rewrites a raw token (already lowercased for Latin script —
+// Urdu/Arabic script has no case) to one canonical token the regex
+// matchers below understand. Keys are the literal words/scripts a
+// visitor would actually type; values are the single canonical form.
+// ---------------------------------------------------------------------
+
+// Gold / silver / metals (English, Roman Urdu, Urdu, Spanish, Arabic).
+const METAL_ALIASES = {
+  gold: "gold",
+  sona: "gold",
+  سونا: "gold",
+  oro: "gold",
+  ذهب: "gold",
+  silver: "silver",
+  chandi: "silver",
+  چاندی: "silver",
+  plata: "silver",
+};
+
+// Units & amounts (English, Roman Urdu, Urdu).
+const UNIT_ALIASES = {
+  tola: "tola",
+  tolas: "tola",
+  تولہ: "tola",
+  gram: "gram",
+  grams: "gram",
+  g: "gram",
+  oz: "troyoz",
+  troy: "troyoz",
+};
+
+// Currency identifiers (English, Roman Urdu, Arabic-script names).
+const CURRENCY_ALIASES = {
+  pkr: "PKR",
+  rupees: "PKR",
+  rupee: "PKR",
+  rs: "PKR",
+  usd: "USD",
+  dollar: "USD",
+  dollars: "USD",
+  aed: "AED",
+  dirham: "AED",
+  sar: "SAR",
+  riyal: "SAR",
+  riyals: "SAR",
+};
+
+// Zakat keywords, in every supported language — matched as whole
+// tokens (not substituted to a canonical form, just detected) so
+// "زکوۃ" is recognized without needing transliteration.
+const ZAKAT_KEYWORDS = new Set(["zakat", "zakaat", "زکوۃ", "زكاة"]);
+
+// Cross-language stop-words: conversational filler stripped before
+// parsing, exactly as specified — these never carry intent signal on
+// their own, and removing them lets "1 tola gold in pkr today" and
+// "1 tola sona PKR me aaj ka bhav" normalize to the same tokens.
+const STOP_WORDS = new Set([
+  // English
+  "in", "today", "price", "rate", "current", "value", "now",
+  // Roman Urdu
+  "me", "ka", "ki", "kitne", "kitna", "aaj", "paisa", "bhav",
+  // Urdu
+  "میں", "کا", "کی", "قیمت", "آج",
+  // Spanish
+  "de", "en", "el", "precio", "hoy",
+]);
+
+/**
+ * Tokenizes on whitespace (not regex `\b` boundaries — those don't
+ * behave correctly for Urdu/Arabic script), rewrites each token
+ * through the alias maps above, then drops stop-words. Numbers and
+ * already-canonical tokens (currency codes, "to"/"in" for the
+ * currency matcher, tool keywords) pass through untouched.
+ */
+function normalizeMultilingualQuery(raw) {
+  const tokens = raw
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const canonical = [];
+  for (const token of tokens) {
+    if (STOP_WORDS.has(token)) continue;
+    if (METAL_ALIASES[token]) {
+      canonical.push(METAL_ALIASES[token]);
+      continue;
+    }
+    if (UNIT_ALIASES[token]) {
+      canonical.push(UNIT_ALIASES[token]);
+      continue;
+    }
+    if (CURRENCY_ALIASES[token]) {
+      canonical.push(CURRENCY_ALIASES[token]);
+      continue;
+    }
+    if (ZAKAT_KEYWORDS.has(token)) {
+      canonical.push("zakat");
+      continue;
+    }
+    canonical.push(token);
+  }
+  return canonical.join(" ");
 }
 
 // Tool-intent catalog — one entry per /tools/* page, with the phrases
@@ -79,9 +214,17 @@ const TOOL_INTENTS = [
   { href: "/tools/zakat-calculator", label: "Zakat Calculator", keywords: ["zakat calculator", "nisab calculator"] },
 ];
 
-/** Currency/amount intent: "<amount> <code> to|in <code>" */
+// Fallback quick-suggestion pills, shown when nothing matches — each
+// one is a real query the parsers below resolve, so clicking a pill
+// re-runs the exact same pipeline as typing it would.
+const FALLBACK_SUGGESTIONS = ["2000 AED to PKR", "1 Tola Gold in PKR", "Zakat on 10 Tola Gold"];
+
+/** Currency/amount intent: "<amount> <code> to|in <code>". The "to|in"
+ * connector is optional because normalizeMultilingualQuery() strips
+ * "in" as an English stop-word before this ever runs (per spec) — so
+ * "100 usd in pkr" arrives here as "100 USD PKR" and must still match. */
 function matchCurrency(normalized) {
-  const match = normalized.match(/^(\d+(?:\.\d+)?)\s*([a-z]{2,6})\s+(?:to|in)\s+([a-z]{2,6})$/i);
+  const match = normalized.match(/^(\d+(?:\.\d+)?)\s*([a-z]{2,6})\s+(?:(?:to|in)\s+)?([a-z]{2,6})$/i);
   if (!match) return null;
 
   const amount = Number(match[1]);
@@ -101,12 +244,14 @@ function matchCurrency(normalized) {
 }
 
 /** Zakat/gold intent: a tola/gram amount somewhere near "gold", with
- * "zakat" appearing anywhere in the query (so "zakat on 10 tola gold",
- * "10 tola gold zakat", and "zakat 10 tola gold" all match). */
+ * a zakat keyword appearing anywhere in the (already-canonicalized)
+ * query (so "zakat on 10 tola gold", "10 tola gold zakat", and
+ * "zakat 10 tola gold" all match, in any supported language). Takes
+ * priority over the plain metal-price intent below. */
 function matchZakatGold(normalized) {
-  if (!/zakat/.test(normalized)) return null;
+  if (!/\bzakat\b/.test(normalized)) return null;
 
-  const match = normalized.match(/(\d+(?:\.\d+)?)\s*(tola|tolas|gram|grams|g)\b.*gold|gold.*?(\d+(?:\.\d+)?)\s*(tola|tolas|gram|grams|g)\b/i);
+  const match = normalized.match(/(\d+(?:\.\d+)?)\s*(tola|gram)\b.*gold|gold.*?(\d+(?:\.\d+)?)\s*(tola|gram)\b/i);
   if (!match) return null;
 
   const amountStr = match[1] || match[3];
@@ -114,11 +259,52 @@ function matchZakatGold(normalized) {
   const amount = Number(amountStr);
   if (!Number.isFinite(amount) || amount <= 0) return null;
 
-  const isTola = unit.startsWith("tola");
+  const isTola = unit === "tola";
   const tolaAmount = isTola ? amount : amount / WEIGHT_UNITS.tola;
   const grams = isTola ? amount * WEIGHT_UNITS.tola : amount;
 
   return { kind: "zakat", tolaAmount, grams };
+}
+
+/** Plain metal spot-price intent (NOT zakat): "<amount> <unit> gold|silver
+ * [<currency>]", or the reversed word order, e.g. "1 tola gold",
+ * "1 tola gold in pkr today" (after normalization: "1 tola gold PKR"),
+ * "gold 10 gram". Caller already ruled out a zakat keyword being
+ * present. Defaults the target currency to PKR when none is named
+ * anywhere in the query, per spec. */
+function matchMetalPrice(normalized) {
+  const match = normalized.match(
+    /(\d+(?:\.\d+)?)\s*(tola|gram|troyoz)\s+(gold|silver)|(gold|silver)\s+(\d+(?:\.\d+)?)\s*(tola|gram|troyoz)/i
+  );
+  if (!match) return null;
+
+  const amountStr = match[1] || match[5];
+  const unit = (match[2] || match[6] || "").toLowerCase();
+  const metal = (match[3] || match[4] || "").toLowerCase();
+  const amount = Number(amountStr);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const metalCode = metal === "gold" ? "XAU" : "XAG";
+  const grams = amount * (WEIGHT_UNITS[unit === "troyoz" ? "troy_ounce" : unit] || 1);
+  const troyOunces = grams / WEIGHT_UNITS.troy_ounce;
+
+  const currencyMatch = normalized.match(/\b(PKR|USD|AED|SAR)\b/);
+  const toCode = currencyMatch ? currencyMatch[1] : "PKR";
+  const toClass = resolveAssetClass(toCode);
+  const to = toClass ? getAssetMeta(toClass, toCode) : null;
+  if (!to) return null;
+
+  return {
+    kind: "metal",
+    metalCode,
+    metalLabel: metal === "gold" ? "Gold" : "Silver",
+    amount,
+    unit,
+    grams,
+    troyOunces,
+    toCode,
+    to,
+  };
 }
 
 /** Tool intent: substring match against TOOL_INTENTS' keyword lists,
@@ -161,12 +347,14 @@ export default function UniversalSmartSearch() {
     };
   }, []);
 
-  const normalized = query.trim().toLowerCase();
+  const normalized = useMemo(() => normalizeMultilingualQuery(query), [query]);
 
   const result = useMemo(() => {
     if (!normalized) return null;
     const zakat = matchZakatGold(normalized);
     if (zakat) return zakat;
+    const metal = matchMetalPrice(normalized);
+    if (metal) return metal;
     const currency = matchCurrency(normalized);
     if (currency) return currency;
     const tools = matchTools(normalized);
@@ -205,7 +393,7 @@ export default function UniversalSmartSearch() {
           onChange={(e) => {
             setQuery(e.target.value);
           }}
-          placeholder='Try "2000 AED to PKR", "Zakat on 10 Tola Gold", or "compress image"'
+          placeholder='Try "2000 AED to PKR", "1 Tola Gold in PKR", or "compress image"'
           autoComplete="off"
           className="w-full rounded-xl border border-white/10 bg-ink py-3.5 pl-11 pr-4 text-sm font-medium text-white placeholder:text-slate-500 shadow-card focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
         />
@@ -216,6 +404,11 @@ export default function UniversalSmartSearch() {
           {result.kind === "currency" && (
             <SmartSearchResult onShown={() => handleResultShown("currency")}>
               <CurrencyResult result={result} ratesPayload={ratesPayload} />
+            </SmartSearchResult>
+          )}
+          {result.kind === "metal" && (
+            <SmartSearchResult onShown={() => handleResultShown("metal")}>
+              <MetalResult result={result} ratesPayload={ratesPayload} />
             </SmartSearchResult>
           )}
           {result.kind === "zakat" && (
@@ -229,15 +422,7 @@ export default function UniversalSmartSearch() {
             </SmartSearchResult>
           )}
           {result.kind === "none" && (
-            <div className="p-4 text-sm text-slate-400">
-              No instant match yet — try an amount + currency (
-              <span className="text-slate-300">2000 AED to PKR</span>), a zakat/gold query, or a
-              tool name. Or browse{" "}
-              <Link href="/tools" className="font-semibold text-brand-300 hover:text-brand-200">
-                all tools
-              </Link>
-              .
-            </div>
+            <FallbackResult onSuggestionClick={(suggestion) => setQuery(suggestion)} />
           )}
         </div>
       )}
@@ -284,6 +469,53 @@ function CurrencyResult({ result, ratesPayload }) {
         className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
       >
         Open full conversion →
+      </Link>
+    </div>
+  );
+}
+
+/** Pure spot-price result for a gold/silver query with no zakat intent
+ * — converts the stated weight to a troy-ounce-equivalent amount (the
+ * unit lib/assetConversion.js's metals normalize to) and reuses the
+ * same conversion engine as CurrencyResult, rather than any nisab
+ * math. Links to the matching bare pair page (e.g. /converters/xau-to-pkr),
+ * which is already a featured, indexed page for every metal/currency
+ * combination this matcher can produce — a tola-denominated amount
+ * would make for an ungainly amount-pair slug, whereas the bare pair
+ * page lets the visitor convert any amount themselves. */
+function MetalResult({ result, ratesPayload }) {
+  const { metalCode, metalLabel, amount, unit, grams, troyOunces, toCode, to } = result;
+  const converted = ratesPayload
+    ? convertBetweenAssets({
+        amount: troyOunces,
+        fromClass: "metals",
+        fromCode: metalCode,
+        toClass: "fiat",
+        toCode,
+        ratesPayload,
+      })
+    : null;
+  const href = `/converters/${buildPairSlug(metalCode, toCode)}`;
+  const unitLabel = unit === "troyoz" ? "troy oz" : unit;
+
+  return (
+    <div className="p-4 sm:p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {metalLabel} Spot Price
+      </p>
+      <p className="mt-1.5 text-sm text-slate-300">
+        {formatNumber(amount, { maximumFractionDigits: 2 })} {unitLabel} ({formatNumber(grams, { maximumFractionDigits: 2 })}g) of {metalLabel.toLowerCase()}
+      </p>
+      <p className="mt-1 font-mono text-2xl font-extrabold text-white">
+        {Number.isFinite(converted)
+          ? `${formatNumber(converted, { maximumFractionDigits: 2 })} ${to.code}`
+          : "Fetching live rate…"}
+      </p>
+      <Link
+        href={href}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+      >
+        Open full {metalLabel.toLowerCase()} converter →
       </Link>
     </div>
   );
@@ -350,6 +582,37 @@ function ToolsResult({ matches }) {
           >
             {tool.label} →
           </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** No-match fallback: instead of a dead end, offers 3 clickable
+ * quick-suggestion pills pre-populated with real example queries —
+ * clicking one sets the search input's own value, so it re-runs
+ * through the exact same intent pipeline as if typed. */
+function FallbackResult({ onSuggestionClick }) {
+  return (
+    <div className="p-4 sm:p-5">
+      <p className="text-sm text-slate-400">
+        No instant match yet — try an amount + currency, a gold/zakat query, or a tool
+        name. Or browse{" "}
+        <Link href="/tools" className="font-semibold text-brand-300 hover:text-brand-200">
+          all tools
+        </Link>
+        .
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {FALLBACK_SUGGESTIONS.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => onSuggestionClick(suggestion)}
+            className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 hover:border-brand-400 hover:text-white"
+          >
+            {suggestion}
+          </button>
         ))}
       </div>
     </div>
