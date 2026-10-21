@@ -27,6 +27,8 @@ https://llmstxt.org/ for the convention this file follows.
   (e.g. /converters/usd-to-pkr)
 - Amount-specific conversion pages: https://www.omnifinportal.com/converters/<amount-pair-slug>
   (e.g. /converters/2000-aed-to-pkr, /converters/100-usd-to-pkr)
+- Zakat on gold reference pages: https://www.omnifinportal.com/converters/zakat-on-<N>-tola-gold
+  (e.g. /converters/zakat-on-10-tola-gold)
 - Universal unit converter: https://www.omnifinportal.com/converters/unit
 
 ## Household Finance Calculators

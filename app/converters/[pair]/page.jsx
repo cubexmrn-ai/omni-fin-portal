@@ -34,16 +34,21 @@ import AdSlot from "@/components/AdSlot";
 import { getPairEducationalContent } from "@/components/converters/pairEducationalContent";
 import AmountConversionCard from "@/components/converters/AmountConversionCard";
 import AmountConverterStructuredData from "@/components/converters/AmountConverterStructuredData";
+import ZakatGoldStructuredData from "@/components/converters/ZakatGoldStructuredData";
+import ZakatCalculator from "@/components/tools/ZakatCalculator";
 import FAQAccordion from "@/components/FAQAccordion";
 import {
   parsePairSlug,
   parseBaseOnlySlug,
   parseAmountPairSlug,
+  parseZakatGoldSlug,
   buildPairSlug,
   buildAmountPairSlug,
+  buildZakatGoldSlug,
   FEATURED_PAIRS,
   FEATURED_BASE_CURRENCIES,
   FEATURED_AMOUNT_PAIRS,
+  FEATURED_ZAKAT_GOLD_AMOUNTS,
 } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
@@ -51,6 +56,8 @@ import { getSiteUrl } from "@/lib/siteUrl";
 import { formatNumber } from "@/lib/formatNumber";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { CURRENCIES } from "@/lib/currencies";
+import { WEIGHT_UNITS } from "@/lib/conversionMath";
+import { calculateZakat } from "@/lib/zakatCalculator";
 import CurrencyDigestTable from "@/components/converters/CurrencyDigestTable";
 
 export function generateStaticParams() {
@@ -64,6 +71,7 @@ export function generateStaticParams() {
     ...FEATURED_PAIRS.map((pair) => ({ pair: pair.slug })),
     ...FEATURED_BASE_CURRENCIES.map((code) => ({ pair: code.toLowerCase() })),
     ...FEATURED_AMOUNT_PAIRS.map((entry) => ({ pair: entry.slug })),
+    ...FEATURED_ZAKAT_GOLD_AMOUNTS.map((entry) => ({ pair: entry.slug })),
   ];
 }
 
@@ -74,6 +82,20 @@ const ASSET_CLASS_NOUN = {
 };
 
 export async function generateMetadata({ params }) {
+  // PHASE 4: checked before every other parser — "zakat-on-10-tola-gold"
+  // doesn't collide with any of the other three slug shapes (no
+  // "-to-", doesn't start with a bare digit, isn't a single currency
+  // code), so this ordering is for clarity, not correctness.
+  const zakatParsed = parseZakatGoldSlug(params.pair);
+  if (zakatParsed) {
+    const { tolaAmount } = zakatParsed;
+    return buildMetadata({
+      title: `Zakat on ${tolaAmount} Tola Gold — Live Calculator | OmniFin Portal`,
+      description: `How much zakat is due on ${tolaAmount} tola of gold, checked against the live nisab threshold at today's gold rate — with a full interactive calculator for silver, cash, and other assets.`,
+      path: `/converters/${buildZakatGoldSlug(tolaAmount)}`,
+    });
+  }
+
   // Checked first since parsePairSlug/parseBaseOnlySlug both naturally
   // reject an amount-prefixed slug on their own (see
   // parseAmountPairSlug's header comment in lib/pairSlugs.js) — this
@@ -122,6 +144,9 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function CurrencyPairSeoPage({ params }) {
+  const zakatParsed = parseZakatGoldSlug(params.pair);
+  if (zakatParsed) return <ZakatGoldSeoPage tolaAmount={zakatParsed.tolaAmount} />;
+
   const amountParsed = parseAmountPairSlug(params.pair);
   if (amountParsed) return <AmountPairSeoPage amountParsed={amountParsed} />;
 
@@ -426,6 +451,199 @@ async function AmountPairSeoPage({ amountParsed }) {
           </Link>
           <Link href="/market-analysis" className="font-medium text-brand-600 hover:text-brand-700">
             Live market analysis
+          </Link>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/** Parametric FAQ copy for a Zakat Gold pSEO page, same local-helper
+ * pattern as buildAmountFaqs above. */
+function buildZakatGoldFaqs({ tolaAmount, grams, zakatResult }) {
+  const hasResult = Boolean(zakatResult);
+
+  return [
+    {
+      question: `How much zakat is due on ${tolaAmount} tola of gold?`,
+      answer: hasResult
+        ? zakatResult.meetsNisab
+          ? `At today's gold rate, ${tolaAmount} tola (${grams.toFixed(2)}g) of gold is worth approximately ${formatNumber(zakatResult.goldValue, { maximumFractionDigits: 0 })} PKR — above the gold nisab threshold, so zakat of 2.5% would be approximately ${formatNumber(zakatResult.zakatDue, { maximumFractionDigits: 0 })} PKR, assuming this gold is your only zakatable asset.`
+          : `At today's gold rate, ${tolaAmount} tola (${grams.toFixed(2)}g) of gold is worth approximately ${formatNumber(zakatResult.goldValue, { maximumFractionDigits: 0 })} PKR — below the gold nisab threshold (87.48g), so no zakat would be due on this gold alone. Use the calculator below to add any other cash, savings, or assets you hold.`
+        : "Live gold rates are temporarily unavailable — use the interactive calculator below, which fetches rates independently.",
+    },
+    {
+      question: "What is the gold nisab threshold?",
+      answer:
+        "The commonly-cited gold nisab threshold is 87.48 grams (about 7.5 tola) of gold. If your total zakatable wealth is at or above the value of this much gold, zakat becomes due at 2.5% of your total zakatable wealth — not just the gold portion.",
+    },
+    {
+      question: "Does this use the gold or silver nisab standard?",
+      answer:
+        "This reference page uses the gold standard, since it's specifically about a gold holding. If you also hold cash, savings, or silver, the silver standard (a lower, more inclusive threshold) is often recommended for mixed holdings — the full calculator below lets you switch between both and add every asset you hold.",
+    },
+    {
+      question: "Is this a religious ruling on my own zakat obligation?",
+      answer:
+        "No — nisab thresholds and the exact zakat rate are matters of Islamic jurisprudence (fiqh), and different scholars hold different views, most notably on which nisab standard applies to mixed holdings. This is a general reference using commonly-cited figures, not a fatwa — consult a scholar for guidance on your own specific situation.",
+    },
+  ];
+}
+
+/** PHASE 4 — Zakat Gold pSEO page, e.g.
+ * /converters/zakat-on-10-tola-gold (targets the literal search query
+ * "Zakat on 10 Tola Gold"). Computes a live, gold-nisab-standard quick
+ * reference (via the same lib/zakatCalculator.js math the interactive
+ * tool uses) assuming this gold is the visitor's only zakatable asset,
+ * then hands off to the full <ZakatCalculator/> — pre-filled with this
+ * page's gram equivalent — for anyone who also holds cash, savings, or
+ * silver. */
+async function ZakatGoldSeoPage({ tolaAmount }) {
+  const slug = buildZakatGoldSlug(tolaAmount);
+  const siteUrl = getSiteUrl();
+  const pageUrl = `${siteUrl}/converters/${slug}`;
+  const grams = tolaAmount * WEIGHT_UNITS.tola;
+
+  let zakatResult = null;
+  try {
+    const ratesPayload = await getUnifiedRates();
+    zakatResult = calculateZakat({
+      xauUsdRate: ratesPayload?.metals?.XAU,
+      xagUsdRate: ratesPayload?.metals?.XAG,
+      usdToLocalFx: ratesPayload?.fiat?.PKR,
+      goldGrams: grams,
+      nisabStandard: "gold",
+    });
+  } catch {
+    // Leave zakatResult null — the page's copy and FAQ both render an
+    // honest "unavailable" state, and the interactive ZakatCalculator
+    // further down the page fetches its own rates independently.
+  }
+
+  const faqs = buildZakatGoldFaqs({ tolaAmount, grams, zakatResult });
+
+  return (
+    <>
+      <ZakatGoldStructuredData
+        tolaAmount={tolaAmount}
+        grams={grams}
+        zakatResult={zakatResult}
+        pageUrl={pageUrl}
+        siteUrl={siteUrl}
+        faqs={faqs}
+      />
+      <BreadcrumbStructuredData
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Converters", href: "/converters" },
+          { name: `Zakat on ${tolaAmount} Tola Gold`, href: `/converters/${slug}` },
+        ]}
+      />
+
+      <section className="border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <nav className="text-xs text-slate-400">
+            <Link href="/converters" className="hover:text-brand-600">
+              Converters
+            </Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-slate-500">Zakat on {tolaAmount} Tola Gold</span>
+          </nav>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            Zakat on {tolaAmount} Tola Gold
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            {tolaAmount} tola ({grams.toFixed(2)} grams) of gold, checked against the live gold
+            nisab threshold — with a full calculator below for silver, cash, and other assets.
+          </p>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-800 bg-slate-900">
+        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-2xl border border-white/10 bg-ink p-6 text-white shadow-card sm:p-8">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-400/30 bg-brand-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-300">
+              Live Gold-Standard Reference
+            </span>
+
+            {zakatResult ? (
+              <>
+                <p className="mt-5 text-sm font-medium text-slate-400">
+                  {tolaAmount} tola ({grams.toFixed(2)}g) of gold is worth approximately
+                </p>
+                <p className="mt-1 font-mono text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+                  {formatNumber(zakatResult.goldValue, { maximumFractionDigits: 0 })}{" "}
+                  <span className="text-2xl font-bold text-slate-300 sm:text-3xl">PKR</span>
+                </p>
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      Gold Nisab Threshold (87.48g)
+                    </p>
+                    <p className="mt-1 font-mono text-lg font-bold text-white">
+                      {formatNumber(zakatResult.nisabThresholdValue, { maximumFractionDigits: 0 })}{" "}
+                      PKR
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      {zakatResult.meetsNisab ? "Zakat Due (2.5%)" : "Zakat Due"}
+                    </p>
+                    <p className="mt-1 font-mono text-lg font-bold text-white">
+                      {zakatResult.meetsNisab
+                        ? `${formatNumber(zakatResult.zakatDue, { maximumFractionDigits: 0 })} PKR`
+                        : "None — below nisab"}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-slate-400">
+                  Assumes this gold is your only zakatable asset, using the gold nisab standard.
+                  Add cash, savings, or silver in the calculator below for your full picture.
+                </p>
+              </>
+            ) : (
+              <p className="mt-4 text-sm text-amber-300">
+                Live gold rate temporarily unavailable — use the calculator below, which fetches
+                rates independently.
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              <Link href="/tools/zakat-calculator" className="font-semibold text-brand-300 hover:text-brand-200">
+                Open Full Zakat Calculator →
+              </Link>
+              <Link href="/market-analysis" className="font-semibold text-brand-300 hover:text-brand-200">
+                Live Market Charts →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 pb-14 pt-10 sm:px-6 lg:px-8">
+        <h2 className="text-sm font-semibold text-slate-900">
+          Adjust for silver, cash, or other assets
+        </h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Pre-filled with {grams.toFixed(2)}g of gold — add anything else you hold below.
+        </p>
+        <div className="mt-3">
+          <ZakatCalculator initialGoldGrams={Number(grams.toFixed(2))} />
+        </div>
+
+        <AdSlot slot="" label="Advertisement" minHeight={100} className="mt-6" />
+
+        <FAQAccordion title="Zakat on Gold — FAQs" items={faqs} />
+
+        <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <Link href="/converters" className="font-medium text-brand-600 hover:text-brand-700">
+            ← Browse all converters
+          </Link>
+          <Link href="/tools" className="font-medium text-brand-600 hover:text-brand-700">
+            Household financial tools
+          </Link>
+          <Link href="/tools/gold-jewellery-calculator" className="font-medium text-brand-600 hover:text-brand-700">
+            Gold &amp; Jewellery Calculator
           </Link>
         </div>
       </section>

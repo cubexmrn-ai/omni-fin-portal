@@ -35,14 +35,22 @@ function LiveRateBadge({ status }) {
   );
 }
 
-export default function ZakatCalculator() {
+/**
+ * @param {{ initialGoldGrams?: number }} [props] — optional pre-filled
+ * gold amount in grams, so a pSEO page (e.g.
+ * /converters/zakat-on-10-tola-gold) can land the visitor with their
+ * searched-for amount already entered, instead of an empty 0. Purely
+ * an initial value for useState — still fully editable afterward, and
+ * every other field (silver, cash, nisab standard) is untouched by it.
+ */
+export default function ZakatCalculator({ initialGoldGrams = 0 }) {
   const { metalRates, fiatRates, status } = useLiveMarketRates();
   const { baseCurrency } = useBaseCurrency();
 
   const [currencyCode, setCurrencyCode] = useState(baseCurrency);
   const [currencyTouched, setCurrencyTouched] = useState(false);
 
-  const [goldGrams, setGoldGrams] = useState(0);
+  const [goldGrams, setGoldGrams] = useState(initialGoldGrams);
   const [silverGrams, setSilverGrams] = useState(0);
   const [cashAndSavings, setCashAndSavings] = useState(0);
   const [otherAssets, setOtherAssets] = useState(0);

@@ -23,12 +23,16 @@ import {
   parsePairSlug,
   parseBaseOnlySlug,
   parseAmountPairSlug,
+  parseZakatGoldSlug,
   FEATURED_PAIRS,
   FEATURED_BASE_CURRENCIES,
   FEATURED_AMOUNT_PAIRS,
+  FEATURED_ZAKAT_GOLD_AMOUNTS,
 } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
 import { getUnifiedRates } from "@/lib/marketData";
+import { WEIGHT_UNITS } from "@/lib/conversionMath";
+import { calculateZakat } from "@/lib/zakatCalculator";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -38,6 +42,7 @@ export function generateStaticParams() {
     ...FEATURED_PAIRS.map((pair) => ({ pair: pair.slug })),
     ...FEATURED_BASE_CURRENCIES.map((code) => ({ pair: code.toLowerCase() })),
     ...FEATURED_AMOUNT_PAIRS.map((entry) => ({ pair: entry.slug })),
+    ...FEATURED_ZAKAT_GOLD_AMOUNTS.map((entry) => ({ pair: entry.slug })),
   ];
 }
 
@@ -82,6 +87,64 @@ export default async function OgImage({ params }) {
           </div>
           <div style={{ display: "flex", fontSize: 26, marginTop: "auto", opacity: 0.8 }}>
             <span>omnifinportal.com/converters/{baseOnly.code.toLowerCase()}</span>
+          </div>
+        </div>
+      ),
+      { ...size }
+    );
+  }
+
+  // PHASE 4: a "zakat-on-<N>-tola-gold" slug gets its own card — same
+  // "don't silently fall through to the generic USD → PKR placeholder"
+  // fix as the amount branch below.
+  const zakatParsed = parseZakatGoldSlug(params.pair);
+  if (zakatParsed) {
+    const { tolaAmount } = zakatParsed;
+    const grams = tolaAmount * WEIGHT_UNITS.tola;
+    let goldValueDisplay = null;
+    try {
+      const ratesPayload = await getUnifiedRates();
+      const zakatResult = calculateZakat({
+        xauUsdRate: ratesPayload?.metals?.XAU,
+        xagUsdRate: ratesPayload?.metals?.XAG,
+        usdToLocalFx: ratesPayload?.fiat?.PKR,
+        goldGrams: grams,
+        nisabStandard: "gold",
+      });
+      goldValueDisplay = zakatResult ? formatRate(zakatResult.goldValue) : null;
+    } catch {
+      goldValueDisplay = null;
+    }
+
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "70px 80px",
+            background: `linear-gradient(135deg, ${BRAND_800} 0%, ${BRAND_600} 100%)`,
+            color: "#ffffff",
+            fontFamily: "sans-serif",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 30, fontWeight: 800 }}>
+            <span>OmniFin Portal</span>
+          </div>
+          <div style={{ display: "flex", fontSize: 76, fontWeight: 800, marginTop: 56 }}>
+            <span>Zakat on {tolaAmount} Tola Gold</span>
+          </div>
+          <div style={{ display: "flex", fontSize: 32, fontWeight: 500, marginTop: 14, opacity: 0.9 }}>
+            <span>
+              {grams.toFixed(2)}g gold{goldValueDisplay ? ` ≈ ${goldValueDisplay} PKR` : ""} —
+              Live Nisab Reference
+            </span>
+          </div>
+          <div style={{ display: "flex", fontSize: 26, marginTop: "auto", opacity: 0.8 }}>
+            <span>omnifinportal.com/converters/zakat-on-{tolaAmount}-tola-gold</span>
           </div>
         </div>
       ),

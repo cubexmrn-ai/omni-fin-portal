@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { CURRENCIES } from "@/lib/currencies";
 import { CRYPTO_ASSETS } from "@/lib/crypto";
+import UniversalSmartSearch from "@/components/UniversalSmartSearch";
 
 const ACADEMY_LEVELS = [
   { order: 1, titleKey: "level1Title", subKey: "level1Sub", theme: "emerald", locked: false },
@@ -74,6 +75,15 @@ export function Hero({ marketPulse }) {
           <p className="mt-4 text-base text-slate-600 sm:text-lg">
             {t("heroDescription", { currencyCount: CURRENCIES.length, cryptoCount: CRYPTO_ASSETS.length })}
           </p>
+
+          {/* Universal Smart Search — the primary, most prominent way
+              into the site: a single natural-language box that parses
+              currency/amount queries, zakat/gold queries, and tool
+              intent, and hands back a direct, actionable result
+              instead of making the visitor browse to find it
+              themselves. See components/UniversalSmartSearch.jsx. */}
+          <UniversalSmartSearch />
+
           <div className="mt-6 flex flex-wrap gap-3">
             <a
               href="#metals-calculator"
