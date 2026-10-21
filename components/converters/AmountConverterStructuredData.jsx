@@ -55,6 +55,7 @@ export default function AmountConverterStructuredData({
         ? [{ "@type": "PropertyValue", name: "exchangeRateAsOf", value: fetchedAt }]
         : []),
     ],
+    ...(fetchedAt ? { dateModified: fetchedAt } : {}),
     // ExchangeRateSpecification is the schema.org type built
     // specifically for "here's the rate behind this conversion" —
     // nested directly on the FinancialProduct rather than only buried

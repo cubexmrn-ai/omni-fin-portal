@@ -9,10 +9,12 @@
 //
 // Honesty note (same bar as the rest of this project): if `rate` is
 // null (live rate genuinely unavailable right now), the exchangeRate
-// property is simply omitted — never a fabricated or stale-looking
-// number dressed up as current. No aggregateRating/review fields are
-// included anywhere here either, since this project has no real review
-// data to back one.
+// property (and the nested exchangeRateSpecification below) is simply
+// omitted — never a fabricated or stale-looking number dressed up as
+// current. No aggregateRating/review fields are included anywhere
+// here either, since this project has no real review data to back one
+// — a fabricated rating is a Google structured-data guideline
+// violation, not just a style choice.
 export default function ConverterStructuredData({
   from,
   fromClass,
@@ -23,6 +25,8 @@ export default function ConverterStructuredData({
   pageUrl,
   siteUrl,
 }) {
+  const hasRate = Number.isFinite(rate);
+
   const financialProduct = {
     "@type": "FinancialProduct",
     name: `${from.code} to ${to.code} Converter`,
@@ -41,13 +45,33 @@ export default function ConverterStructuredData({
       { "@type": "PropertyValue", name: "quoteAssetClass", value: toClass },
       // Only included when a genuinely live rate was resolved server-side
       // — see the big comment above.
-      ...(Number.isFinite(rate)
+      ...(hasRate
         ? [{ "@type": "PropertyValue", name: "exchangeRate", value: rate }]
         : []),
       ...(fetchedAt
         ? [{ "@type": "PropertyValue", name: "exchangeRateAsOf", value: fetchedAt }]
         : []),
     ],
+    // ExchangeRateSpecification is the schema.org type Google's own
+    // documentation points to for currency-conversion rich results —
+    // this page is the one actually receiving search impressions today
+    // (per the Oct 2026 GSC export), so this is the highest-value spot
+    // in the whole project for it, matching the same nesting pattern
+    // AmountConverterStructuredData.jsx already uses.
+    ...(hasRate
+      ? {
+          exchangeRateSpecification: {
+            "@type": "ExchangeRateSpecification",
+            currency: to.code,
+            currentExchangeRate: {
+              "@type": "UnitPriceSpecification",
+              price: rate,
+              priceCurrency: to.code,
+            },
+          },
+        }
+      : {}),
+    ...(fetchedAt ? { dateModified: fetchedAt } : {}),
   };
 
   const webApplication = {

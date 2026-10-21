@@ -81,6 +81,20 @@ const ASSET_CLASS_NOUN = {
   metals: "metal",
 };
 
+// CTR-OVERHAUL NOTE (Oct 2026 GSC review): the live Search Console
+// export for this project shows near-zero CTR at an average position
+// of ~60 — page 6+, where almost nobody scrolls regardless of how
+// compelling the snippet is. These titles/descriptions are written to
+// win the click once a page actually reaches page 1-2 (the real
+// queries people type: "dollar to pkr today", "euro to pkr today",
+// "42 euro to pkr", "1 euro to pkr"), using honest power words (Live
+// Rate, Today, Updated 2026, Free, Instant, No Sign-Up) — deliberately
+// NOT "0% Fee", which would misread as a money-transfer promise this
+// site doesn't make (it's a free calculator, not a remittance
+// service). CTR copy alone won't move position; see this change's
+// accompanying IndexNow/indexing notes for the other half of that.
+const CURRENT_YEAR = new Date().getFullYear();
+
 export async function generateMetadata({ params }) {
   // PHASE 4: checked before every other parser — "zakat-on-10-tola-gold"
   // doesn't collide with any of the other three slug shapes (no
@@ -90,8 +104,8 @@ export async function generateMetadata({ params }) {
   if (zakatParsed) {
     const { tolaAmount } = zakatParsed;
     return buildMetadata({
-      title: `Zakat on ${tolaAmount} Tola Gold — Live Calculator | OmniFin Portal`,
-      description: `How much zakat is due on ${tolaAmount} tola of gold, checked against the live nisab threshold at today's gold rate — with a full interactive calculator for silver, cash, and other assets.`,
+      title: `Zakat on ${tolaAmount} Tola Gold (${CURRENT_YEAR}) — Free Live Nisab Calculator | OmniFin Portal`,
+      description: `How much zakat is due on ${tolaAmount} tola of gold today? Free instant calculator checked against the live nisab threshold at today's gold rate — covers silver, cash, and other assets too.`,
       path: `/converters/${buildZakatGoldSlug(tolaAmount)}`,
     });
   }
@@ -103,8 +117,8 @@ export async function generateMetadata({ params }) {
   const amountParsed = parseAmountPairSlug(params.pair);
   if (amountParsed) {
     const { amount, from, to } = amountParsed;
-    const title = `${amount} ${from.code} to ${to.code} — ${amount} ${from.name} to ${to.name} | OmniFin Portal`;
-    const description = `${amount} ${from.name} (${from.code}) converted to ${to.name} (${to.code}) at today's live exchange rate, with a quick breakdown table and alternative amounts.`;
+    const title = `${amount} ${from.code} to ${to.code} Today — Live ${from.name} to ${to.name} Rate | OmniFin Portal`;
+    const description = `${amount} ${from.name} (${from.code}) in ${to.name} (${to.code}) right now, calculated from today's live exchange rate. Free instant currency calculator — no sign-up, updated in real time.`;
     return buildMetadata({
       title,
       description,
@@ -116,8 +130,8 @@ export async function generateMetadata({ params }) {
   if (baseOnly) {
     const { code, meta } = baseOnly;
     return buildMetadata({
-      title: `${meta.name} (${code}) Exchange Rate Today — All Currencies | OmniFin Portal`,
-      description: `Live ${meta.name} (${code}) exchange rate against every currency OmniFin Portal supports — a sortable, searchable rate digest table, updated from the same live feed as the rest of the site.`,
+      title: `${meta.name} (${code}) Exchange Rate Today — Live Rates vs All Currencies | OmniFin Portal`,
+      description: `Live ${meta.name} (${code}) exchange rate today against every currency OmniFin Portal supports — a free, instant, sortable rate digest, updated in real time from the same live feed as the rest of the site.`,
       path: `/converters/${code.toLowerCase()}`,
     });
   }
@@ -133,8 +147,8 @@ export async function generateMetadata({ params }) {
   }
 
   const { from, to } = parsed;
-  const title = `${from.code} to ${to.code} Converter — ${from.name} to ${to.name} | OmniFin Portal`;
-  const description = `Convert ${from.name} (${from.code}) to ${to.name} (${to.code}) instantly with OmniFin Portal's free, live converter — covering fiat currencies, crypto and precious metals.`;
+  const title = `${from.code} to ${to.code} Today — Live ${from.name} to ${to.name} Rate (${CURRENT_YEAR}) | OmniFin Portal`;
+  const description = `Live ${from.code} to ${to.code} exchange rate, updated in real time. Free instant converter for ${from.name} to ${to.name} — covers fiat, crypto and precious metals, no sign-up needed.`;
 
   return buildMetadata({
     title,
