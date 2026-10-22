@@ -35,6 +35,8 @@ import { getPairEducationalContent } from "@/components/converters/pairEducation
 import AmountConversionCard from "@/components/converters/AmountConversionCard";
 import AmountConverterStructuredData from "@/components/converters/AmountConverterStructuredData";
 import ZakatGoldStructuredData from "@/components/converters/ZakatGoldStructuredData";
+import RelatedAmountLinks from "@/components/converters/RelatedAmountLinks";
+import BaseDigestStructuredData from "@/components/converters/BaseDigestStructuredData";
 import ZakatCalculator from "@/components/tools/ZakatCalculator";
 import FAQAccordion from "@/components/FAQAccordion";
 import {
@@ -45,6 +47,7 @@ import {
   buildPairSlug,
   buildAmountPairSlug,
   buildZakatGoldSlug,
+  getFeaturedAmountPairsFor,
   FEATURED_PAIRS,
   FEATURED_BASE_CURRENCIES,
   FEATURED_AMOUNT_PAIRS,
@@ -286,6 +289,11 @@ export default async function CurrencyPairSeoPage({ params }) {
           <MiniCalculatorWidget calculatorId={relatedCalculatorId} />
         </div>
 
+        <RelatedAmountLinks
+          amountPairs={getFeaturedAmountPairsFor(fromCode, toCode)}
+          currentSlug={slug}
+        />
+
         <PopularPairs pairs={FEATURED_PAIRS} currentSlug={slug} />
 
         <div className="mt-6">
@@ -453,6 +461,13 @@ async function AmountPairSeoPage({ amountParsed }) {
         </div>
 
         <FAQAccordion title={`${from.code} to ${to.code} — FAQs`} items={faqs} />
+
+        <RelatedAmountLinks
+          amountPairs={getFeaturedAmountPairsFor(fromCode, toCode)}
+          currentSlug={slug}
+          bareHref={`/converters/${buildPairSlug(fromCode, toCode)}`}
+          bareLabel={`Any amount of ${from.code} to ${to.code} — live converter`}
+        />
 
         <PopularPairs pairs={FEATURED_PAIRS} currentSlug={slug} />
 
@@ -649,6 +664,42 @@ async function ZakatGoldSeoPage({ tolaAmount }) {
 
         <FAQAccordion title="Zakat on Gold — FAQs" items={faqs} />
 
+        {/* Internal-linking gap fix (Oct 2026 GSC review): the other
+            tola-amount zakat pages, and the live gold/silver converter
+            pages, were previously never linked from here — only
+            reachable via sitemap.xml, with zero internal-link equity
+            flowing between this cluster of pages. */}
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-card">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Zakat on Other Gold Amounts
+          </h2>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {FEATURED_ZAKAT_GOLD_AMOUNTS.filter((entry) => entry.tolaAmount !== tolaAmount).map(
+              (entry) => (
+                <Link
+                  key={entry.slug}
+                  href={`/converters/${entry.slug}`}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-brand-400 hover:text-brand-700"
+                >
+                  {entry.tolaAmount} Tola
+                </Link>
+              )
+            )}
+            <Link
+              href="/converters/xau-to-pkr"
+              className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:border-brand-400"
+            >
+              Live Gold Rate →
+            </Link>
+            <Link
+              href="/converters/xag-to-pkr"
+              className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:border-brand-400"
+            >
+              Live Silver Rate →
+            </Link>
+          </div>
+        </div>
+
         <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
           <Link href="/converters" className="font-medium text-brand-600 hover:text-brand-700">
             ← Browse all converters
@@ -716,6 +767,14 @@ async function BaseCurrencyDigestPage({ baseOnly }) {
 
   return (
     <>
+      <BaseDigestStructuredData
+        baseCode={baseCode}
+        baseName={baseMeta.name}
+        rows={rows}
+        pageUrl={pageUrl}
+        siteUrl={siteUrl}
+        fetchedAt={fetchedAt}
+      />
       <BreadcrumbStructuredData
         items={[
           { name: "Home", href: "/" },
