@@ -54,7 +54,7 @@ export default function ConvertersSearchBox() {
             trackEvent("converters_search", { query_length: e.target.value.trim().length });
           }
         }}
-        placeholder="Search any currency — e.g. &quot;Japanese Yen&quot; or &quot;JPY&quot;"
+        placeholder='Search any currency — e.g. "Japanese Yen" or "JPY"'
         autoComplete="off"
         className="w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
       />
@@ -71,7 +71,7 @@ export default function ConvertersSearchBox() {
               </Link>
             ))
           ) : (
-            <p className="text-xs text-slate-400">No currency matches "{query}".</p>
+            <p className="text-xs text-slate-400">No currency matches &quot;{query}&quot;.</p>
           )}
         </div>
       )}
