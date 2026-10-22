@@ -23,10 +23,11 @@
 // name below so this allowance is explicit and easy to verify at a
 // glance, rather than relying on the absence of a block — GPTBot
 // (OpenAI/ChatGPT/SearchGPT), PerplexityBot (Perplexity), ClaudeBot
-// (Anthropic/Claude), and Google-Extended (Google's AI-training/
+// (Anthropic/Claude), Google-Extended (Google's AI-training/
 // Gemini-grounding opt-in token, separate from the regular Googlebot
-// token, which the wildcard rule already covers).
-const AI_SEARCH_USER_AGENTS = ["GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended"];
+// token, which the wildcard rule already covers), and Bytespider
+// (ByteDance/TikTok's crawler, added in the Oct 2026 LLMO audit).
+const AI_SEARCH_USER_AGENTS = ["GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended", "Bytespider"];
 
 import { getSiteUrl } from "@/lib/siteUrl";
 

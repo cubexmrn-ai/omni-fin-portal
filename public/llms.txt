@@ -115,5 +115,9 @@ https://llmstxt.org/ for the convention this file follows.
   figures as fact; illustrative examples are labeled as such in the
   guide text itself.
 - robots.txt (https://www.omnifinportal.com/robots.txt) explicitly
-  allows GPTBot, PerplexityBot, ClaudeBot, and Google-Extended.
+  allows GPTBot, PerplexityBot, ClaudeBot, Google-Extended, and
+  Bytespider.
 - Full sitemap: https://www.omnifinportal.com/sitemap.xml
+- Full, exhaustive URL index (every pre-rendered converter/unit/zakat
+  page, lesson, and guide — the llmstxt.org "-full" convention):
+  https://www.omnifinportal.com/llms-full.txt

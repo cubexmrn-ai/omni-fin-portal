@@ -24,6 +24,7 @@ export default function ConverterStructuredData({
   fetchedAt,
   pageUrl,
   siteUrl,
+  faqs,
 }) {
   const hasRate = Number.isFinite(rate);
 
@@ -87,9 +88,31 @@ export default function ConverterStructuredData({
     },
   };
 
+  // FAQPage — previously missing entirely on this page branch (the
+  // amount/zakat pSEO pages already had it) despite this being the
+  // highest-impression page type per the Oct 2026 GSC export, and the
+  // page type most likely to be scraped for an AI Overview / answer-
+  // engine direct answer (Oct 2026 LLMO audit, section 2). Built from
+  // the exact same `faqs` array the page renders into its visible
+  // <FAQAccordion/> below, same pairing convention as every other
+  // structured-data file in this project — the markup can never claim
+  // an answer the page itself doesn't show.
+  const faqPage =
+    faqs && faqs.length > 0
+      ? {
+          "@type": "FAQPage",
+          "@id": `${pageUrl}#faq`,
+          mainEntity: faqs.map((faq) => ({
+            "@type": "Question",
+            name: faq.question,
+            acceptedAnswer: { "@type": "Answer", text: faq.answer },
+          })),
+        }
+      : null;
+
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [financialProduct, webApplication],
+    "@graph": [financialProduct, webApplication, ...(faqPage ? [faqPage] : [])],
   };
 
   return (

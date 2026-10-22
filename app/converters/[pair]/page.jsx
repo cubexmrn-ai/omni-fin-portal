@@ -215,6 +215,7 @@ export default async function CurrencyPairSeoPage({ params }) {
     from,
     to,
   });
+  const faqs = buildBarePairFaqs({ from, to, rate, fetchedAt });
 
   return (
     <>
@@ -227,6 +228,7 @@ export default async function CurrencyPairSeoPage({ params }) {
         fetchedAt={fetchedAt}
         pageUrl={pageUrl}
         siteUrl={siteUrl}
+        faqs={faqs}
       />
       <BreadcrumbStructuredData
         items={[
@@ -289,6 +291,8 @@ export default async function CurrencyPairSeoPage({ params }) {
           <MiniCalculatorWidget calculatorId={relatedCalculatorId} />
         </div>
 
+        <FAQAccordion title={`${from.code} to ${to.code} — FAQs`} items={faqs} />
+
         <RelatedAmountLinks
           amountPairs={getFeaturedAmountPairsFor(fromCode, toCode)}
           currentSlug={slug}
@@ -307,6 +311,34 @@ export default async function CurrencyPairSeoPage({ params }) {
       </section>
     </>
   );
+}
+
+/** Parametric FAQ copy for the bare pair page (e.g.
+ * /converters/usd-to-pkr) — added in the Oct 2026 LLMO audit; this
+ * page branch previously had no FAQ content at all, unlike the
+ * amount/zakat branches, despite being this project's highest-
+ * impression page type. Kept local for the same reason
+ * buildAmountFaqs is: every answer is built directly from this page's
+ * own from/to/rate values. */
+function buildBarePairFaqs({ from, to, rate, fetchedAt }) {
+  const hasRate = Number.isFinite(rate);
+
+  return [
+    {
+      question: `What is ${from.code} to ${to.code} today?`,
+      answer: hasRate
+        ? `1 ${from.name} (${from.code}) is currently worth ${formatNumber(rate, { maximumFractionDigits: 6 })} ${to.name} (${to.code}). Use the converter above to calculate any amount at this live rate.`
+        : `Live rates for this pair are temporarily unavailable — the converter above fetches rates independently and will usually still work even if this figure didn't load.`,
+    },
+    {
+      question: `How is ${from.code} to ${to.code} calculated?`,
+      answer: `The converted amount is your starting amount multiplied by the current ${from.code}/${to.code} exchange rate: amount × rate = result. This is the live mid-market rate, not a quote from any specific bank or money-transfer service, which typically add their own markup.`,
+    },
+    {
+      question: "Does this rate update in real time?",
+      answer: `Yes — this page pulls from the same live rate feed used across OmniFin Portal, refreshed hourly.${fetchedAt ? ` Last refreshed ${new Date(fetchedAt).toUTCString()}.` : ""}`,
+    },
+  ];
 }
 
 /** Parametric FAQ copy for an amount-specific pSEO page — kept local

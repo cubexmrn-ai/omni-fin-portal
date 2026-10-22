@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import ConvertersWorkspace from "@/components/ConvertersWorkspace";
 import ConvertersHero from "@/components/ConvertersHero";
 import ConvertersFAQSection from "@/components/converters/ConvertersFAQSection";
 import ConvertersFAQStructuredData from "@/components/converters/ConvertersFAQStructuredData";
 import BaseCurrencyPills from "@/components/converters/BaseCurrencyPills";
+import ConvertersSearchBox from "@/components/converters/ConvertersSearchBox";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { FEATURED_BASE_CURRENCIES } from "@/lib/pairSlugs";
 import { getCurrency } from "@/lib/currencies";
@@ -38,6 +40,15 @@ export default function ConvertersPage() {
             See one currency against every currency OmniFin Portal supports, in a single
             sortable table.
           </p>
+          {/* Fulfills the WebSite SearchAction promise in
+              components/SiteStructuredData.jsx (urlTemplate
+              "/converters?search={search_term_string}") — wrapped in
+              Suspense because useSearchParams() otherwise opts the
+              whole page out of static rendering; see
+              ConvertersSearchBox.jsx's header comment. */}
+          <Suspense fallback={<div className="mt-3 h-10 rounded-lg bg-slate-100" />}>
+            <ConvertersSearchBox />
+          </Suspense>
           <BaseCurrencyPills
             currencies={FEATURED_BASE_CURRENCIES.map((code) => ({ code, currency: getCurrency(code) })).filter(
               (c) => c.currency
