@@ -18,6 +18,8 @@
 // renders a single, calm "nothing high-impact right now" line instead
 // of an empty section.
 
+import Link from "next/link";
+
 const ASSET_EMOJI = {
   USD: "💵",
   EUR: "💶",
@@ -50,12 +52,26 @@ function ImpactCard({ item }) {
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-card dark:border-slate-700 dark:bg-slate-800">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-bold leading-snug text-slate-900 dark:text-slate-50">
-          {item.link ? (
-            <a href={item.link} target="_blank" rel="noopener noreferrer" className="hover:text-brand-700 dark:hover:text-brand-300">
+          {/* Same dual-link treatment as components/ai-news/NewsWireFeed.jsx's
+              WireRow: headline -> this story's own OmniFin Portal
+              permalink (the internal link Google needs to discover
+              it), small "Source ↗" -> the original article. */}
+          {item.slug ? (
+            <Link href={`/ai-news/${item.slug}`} className="hover:text-brand-700 dark:hover:text-brand-300">
               {item.title}
-            </a>
+            </Link>
           ) : (
             item.title
+          )}
+          {item.link && (
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-1.5 text-xs font-normal text-slate-400 hover:text-brand-600 dark:text-slate-500"
+            >
+              Source ↗
+            </a>
           )}
         </h3>
       </div>

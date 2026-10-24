@@ -6,6 +6,7 @@ import MacroImpactHero from "@/components/ai-news/MacroImpactHero";
 import { getCachedAggregatedNews } from "@/lib/cachedData";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
+import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
 
 const aiNewsMetadata = buildMetadata({
   title: "Financial News & Economic Calendar — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
@@ -73,7 +74,27 @@ export default async function AiNewsPage() {
     ratesData = null; // getCompositeSentiment()/resolveInstrumentPrice handle a null payload gracefully.
   }
 
-  const items = data?.items || [];
+  // Oct 2026: every item now carries a deterministic `.slug` (see
+  // lib/newsSlug.js) so NewsWireFeed and MacroImpactHero below can
+  // link each headline to its own permalink at
+  // /ai-news/[slug] (app/ai-news/[slug]/page.jsx) — computed once
+  // here, not re-derived separately by each child component. Mock
+  // fallback items (only ever shown when every live RSS feed is down)
+  // get `slug: null` from attachNewsItemSlugs() and are otherwise left
+  // untouched — they still render exactly as before (plain,
+  // non-clickable text, same as their missing `.link` already makes
+  // them today), so the "every live feed is down" fallback UI is
+  // unchanged.
+  const items = attachNewsItemSlugs(data?.items || []);
+  const macroImpact = data?.macroImpact
+    ? {
+        ...data.macroImpact,
+        items: (data.macroImpact.items || []).map((item) => ({
+          ...item,
+          slug: buildNewsItemSlug(item),
+        })),
+      }
+    : data?.macroImpact;
 
   return (
     <>
@@ -111,7 +132,7 @@ export default async function AiNewsPage() {
           warnings={data?.warnings}
           ratesData={ratesData}
         >
-          <MacroImpactHero macroImpact={data?.macroImpact} />
+          <MacroImpactHero macroImpact={macroImpact} />
           <div className="mt-10">
             <EconomicCalendar />
           </div>

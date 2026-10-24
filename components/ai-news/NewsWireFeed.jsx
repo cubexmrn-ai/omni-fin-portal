@@ -20,6 +20,7 @@
 // the same whichever view it's shown in.
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 const CATEGORY_BADGE_STYLES = {
   Stocks: "bg-blue-50 text-blue-700",
@@ -99,12 +100,33 @@ function WireRow({ item }) {
         </div>
 
         <h3 className="mt-1 text-sm font-semibold leading-snug text-slate-900">
-          {item.link ? (
-            <a href={item.link} target="_blank" rel="noopener noreferrer" className="hover:text-brand-700">
+          {/* Oct 2026: the headline itself now links to this story's
+              own OmniFin Portal permalink (app/ai-news/[slug]/page.jsx)
+              rather than straight out to the source — that's the
+              actual internal link Google needs to discover and rank
+              the new permalink pages at all. A visitor who wants the
+              original article one click away still gets that via the
+              small "Source ↗" link right after it. Mock/offline
+              fallback items (`item.slug` is null — see
+              lib/newsSlug.js's attachNewsItemSlugs()) fall through to
+              plain, non-clickable text exactly like before this
+              change. */}
+          {item.slug ? (
+            <Link href={`/ai-news/${item.slug}`} className="hover:text-brand-700">
               {item.title}
-            </a>
+            </Link>
           ) : (
             item.title
+          )}
+          {item.link && (
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-1.5 text-xs font-normal text-slate-400 hover:text-brand-600"
+            >
+              Source ↗
+            </a>
           )}
         </h3>
 
