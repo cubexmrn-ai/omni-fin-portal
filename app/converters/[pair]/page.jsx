@@ -119,9 +119,37 @@ export async function generateMetadata({ params }) {
   // ordering is for clarity/efficiency, not correctness.
   const amountParsed = parseAmountPairSlug(params.pair);
   if (amountParsed) {
-    const { amount, from, to } = amountParsed;
-    const title = `${amount} ${from.code} to ${to.code} Today — Live ${from.name} to ${to.name} Rate | OmniFin Portal`;
-    const description = `${amount} ${from.name} (${from.code}) in ${to.name} (${to.code}) right now, calculated from today's live exchange rate. Free instant currency calculator — no sign-up, updated in real time.`;
+    const { amount, from, to, fromClass, fromCode, toClass, toCode } = amountParsed;
+
+    // Oct 24 2026 GSC review: these pages' CTR was 0% despite decent
+    // positions (7-16) for queries like "1.99 usd to ars" — the meta
+    // description never showed the actual converted number, just "the
+    // live rate" as a vague promise. Baking the real computed result
+    // straight into the snippet pre-answers the query right there in
+    // the SERP, which is the single biggest lever available for this
+    // query shape (an app-pricing-tier amount is specific enough that
+    // Google's own built-in currency-converter answer box is much less
+    // likely to intercept the click the way it does for generic "X to
+    // Y" queries — see the bare-pair branch below for that distinction).
+    // getUnifiedRates() is Next's fetch-memoized per request, so this
+    // doesn't add a second real network round trip when the page body
+    // below also calls it.
+    let convertedLabel = "";
+    try {
+      const ratesPayload = await getUnifiedRates();
+      const rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
+      if (Number.isFinite(rate)) {
+        convertedLabel = ` ≈ ${formatNumber(amount * rate, { maximumFractionDigits: 2 })} ${to.code}`;
+      }
+    } catch {
+      // No live rate available right now — fall back to the
+      // non-numeric copy below, same as before this change.
+    }
+
+    const title = `${amount} ${from.code} to ${to.code}${convertedLabel} Today | OmniFin Portal`;
+    const description = convertedLabel
+      ? `${amount} ${from.name} (${from.code}) is${convertedLabel} ${to.name} (${to.code}) right now, at today's live exchange rate. Free instant currency calculator — no sign-up, updated hourly.`
+      : `${amount} ${from.name} (${from.code}) in ${to.name} (${to.code}) right now, calculated from today's live exchange rate. Free instant currency calculator — no sign-up, updated in real time.`;
     return buildMetadata({
       title,
       description,
@@ -149,9 +177,34 @@ export async function generateMetadata({ params }) {
     });
   }
 
-  const { from, to } = parsed;
+  const { from, to, fromClass, fromCode, toClass, toCode } = parsed;
+
+  // Oct 24 2026 GSC review: a generic "X to Y" query (e.g. "dollar to
+  // euro", "cny to tjs") is exactly the shape Google's own built-in
+  // currency-converter answer box tends to intercept directly on the
+  // SERP — this project's export shows pages ranking position 8-20
+  // for queries like this at real impression volume with a flat 0%
+  // CTR, which title/meta copy alone can't fix if Google is already
+  // answering the question before the click. Baking the live rate in
+  // here isn't aimed at beating that box on Google specifically — it's
+  // for the AI answer engines (Perplexity, SearchGPT, Claude) that
+  // have no such box and rely on crawled title/description/schema as
+  // their citation source, where a precise, current number is exactly
+  // what earns the citation.
+  let rateLabel = "";
+  try {
+    const ratesPayload = await getUnifiedRates();
+    const rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
+    if (Number.isFinite(rate)) {
+      rateLabel = `1 ${from.code} = ${formatNumber(rate, { maximumFractionDigits: 6 })} ${to.code}. `;
+    }
+  } catch {
+    // No live rate available right now — description falls back to
+    // the non-numeric copy below, same as before this change.
+  }
+
   const title = `${from.code} to ${to.code} Today — Live ${from.name} to ${to.name} Rate (${CURRENT_YEAR}) | OmniFin Portal`;
-  const description = `Live ${from.code} to ${to.code} exchange rate, updated in real time. Free instant converter for ${from.name} to ${to.name} — covers fiat, crypto and precious metals, no sign-up needed.`;
+  const description = `${rateLabel}Live ${from.code} to ${to.code} exchange rate, updated in real time. Free instant converter for ${from.name} to ${to.name} — covers fiat, crypto and precious metals, no sign-up needed.`;
 
   return buildMetadata({
     title,
