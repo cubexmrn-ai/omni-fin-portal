@@ -22,16 +22,20 @@
 // documented principle components/NewsStructuredData.jsx already
 // follows on the hub page.
 //
-// NO DATABASE, NO NEW DATA SOURCE: this route calls the exact same
-// getCachedAggregatedNews() the hub page already calls (still the
-// 15-minute Data Cache from lib/cachedData.js — no change to that
-// caching or to lib/newsAggregator.js itself) and finds the matching
-// item by recomputing its slug — see lib/newsSlug.js's header comment
-// for why that's safe and stable without any storage. If the headline
-// has rotated out of the live feed window entirely, this calls
-// notFound() — a real 404 via this project's existing branded
-// app/not-found.jsx, never a disguised redirect to the hub (which
-// Google's own guidelines call out as a "soft 404" anti-pattern).
+// STORE-FIRST, LIVE-FALLBACK (added Oct 2026): this route first checks
+// the permanent archive (lib/newsStore.js's `news_items` table) for the
+// slug — that's what makes a permalink Google already indexed stay
+// valid forever even once the headline has rotated out of the live
+// 15-minute RSS window. If the archive isn't configured for this
+// deployment (SUPABASE_SERVICE_ROLE_KEY unset) or genuinely has never
+// seen this slug, this falls back to the exact original approach: call
+// the same getCachedAggregatedNews() the hub page already calls and
+// find the matching item by recomputing its slug (see lib/newsSlug.js's
+// header comment for why that's safe and stable without any storage).
+// Only if BOTH miss does this call notFound() — a real 404 via this
+// project's existing branded app/not-found.jsx, never a disguised
+// redirect to the hub (which Google's own guidelines call out as a
+// "soft 404" anti-pattern).
 
 import { cache } from "react";
 import { notFound } from "next/navigation";
@@ -40,6 +44,7 @@ import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
 import NewsItemStructuredData from "@/components/ai-news/NewsItemStructuredData";
 import AdSlot from "@/components/AdSlot";
 import { getCachedAggregatedNews } from "@/lib/cachedData";
+import { getNewsItemBySlug } from "@/lib/newsStore";
 import { getUnifiedRates } from "@/lib/marketData";
 import { getPairRate } from "@/lib/assetConversion";
 import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
@@ -81,7 +86,20 @@ const loadMatch = cache(async (slug) => {
   // these get the `slug: null` it reserves for them) — needed so
   // `item.slug`/`allItems[].slug` further down are real, comparable
   // strings, not `undefined === undefined` false-matching everything.
+  // "More headlines" always pulls from this live batch regardless of
+  // where the matched item itself came from — a thin related-reads
+  // list is a fine place for this to stay simple.
   const items = attachNewsItemSlugs((data?.items || []).filter((entry) => !entry.isMock));
+
+  // Store-first: getNewsItemBySlug() is a no-op returning null when the
+  // archive isn't configured (see lib/newsStore.js's header comment),
+  // so this call is always safe and cheap to make, deployment or not.
+  const stored = await getNewsItemBySlug(slug);
+  if (stored?.item) {
+    return { item: stored.item, macroImpactItem: stored.macroImpactItem, allItems: items };
+  }
+
+  // Live fallback — the original (pre-archive) lookup, unchanged.
   const item = items.find((entry) => entry.slug === slug) || null;
   const macroImpactItem =
     (data?.macroImpact?.items || [])

@@ -115,6 +115,88 @@ That's it — `lib/supabase.js` picks these up automatically. With them unset
 features fall back to their original localStorage-only behavior rather than
 breaking the page — see `lib/supabase.js`'s header comment.
 
+## 5. (Optional) AI News archive — persistent permalinks + Load More
+
+This turns on two things on `/ai-news`:
+- **Permalinks that never 404.** Without this table, an individual story's
+  URL (`/ai-news/<slug>`) is only valid while that headline is still inside
+  the live 15-minute RSS window (`lib/newsAggregator.js`) — once it rotates
+  out, the URL 404s, which is bad for any search engine that already
+  indexed it. With this table, every headline OmniFin Portal has ever shown
+  gets a permanent row, so its permalink stays valid indefinitely.
+- **"Load More" archive browsing** on `/ai-news`'s news wire, past whatever
+  the current live batch happens to be, plus a "pin the most recent
+  high-impact summaries" fallback for the AI High-Impact News hero on a
+  quiet news day instead of an empty section.
+
+Skip this section entirely if you don't want that yet — same as every
+other table here, nothing else depends on it. Without it, `/ai-news` keeps
+working exactly as it does today (live items only, no archive, no Load
+More past the current batch).
+
+Run this in the Supabase SQL Editor:
+
+```sql
+-- AI News archive — one row per headline OmniFin Portal has ever shown,
+-- keyed by the same deterministic slug lib/newsSlug.js already computes
+-- (source+title+link), so a permalink that's already live and indexed
+-- never changes URL once this table exists. No user_id — these rows come
+-- from the server-side RSS aggregator, never from a visitor, so writes
+-- go through the service-role key (below) and bypass RLS entirely rather
+-- than needing an "owns this row" policy the way trading_journal does.
+create table news_items (
+  slug text primary key,
+  title text not null,
+  link text,
+  source text not null,
+  category text,
+  published_at timestamptz,
+  excerpt text,
+  sentiment text,
+  related_assets jsonb not null default '[]'::jsonb,
+  summary text,
+  summary_status text,
+  summary_provider text,
+  macro_impact jsonb, -- null unless this headline got a directional favorable/unfavorable/note read
+  first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
+create index news_items_published_at_idx on news_items(published_at desc);
+create index news_items_macro_impact_idx on news_items(published_at desc)
+  where macro_impact is not null;
+```
+
+RLS: public-readable (anyone can read a permalink or browse the archive,
+including signed-out visitors via the anon key), but **no insert/update
+policy for the anon role at all** — every write happens server-side via
+`SUPABASE_SERVICE_ROLE_KEY` below, which bypasses RLS by design, so
+there's no path for a client-side key to forge a news item the way there
+would be if this followed `community_posts`'s "insert as yourself" shape.
+
+```sql
+alter table news_items enable row level security;
+
+create policy "news_items_select_all" on news_items
+  for select using (true);
+```
+
+Then add **one more** environment variable (Project Settings → API → the
+**service_role** key, NOT the anon key — this one is secret, grants full
+read/write bypassing RLS, and must never be prefixed `NEXT_PUBLIC_` or it
+would ship to every visitor's browser):
+
+```
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret-key
+```
+
+`lib/newsStore.js` picks this up automatically, server-side only — it's
+never imported by a `"use client"` file, the same boundary
+`lib/supabase.js`'s own header comment draws for the opposite reason
+(that one is deliberately browser-only; this one is deliberately
+server-only). With it unset, every archive feature no-ops and `/ai-news`
+behaves exactly as it does today — nothing breaks, nothing changes.
+
 ## Scope notes (what this does *not* cover)
 
 - **Votes/Bullseye taps** on community posts stay per-browser (not synced to

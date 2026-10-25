@@ -67,7 +67,14 @@ const DEFAULT_GAUGE_INSTRUMENT = "XAU"; // Gold — see header comment.
 // across two separate client components, this accepts `children` and
 // renders it in exactly that slot — the page passes
 // <MacroImpactHero/> and <EconomicCalendar/> in as children.
-export default function MarketInsightsExplorer({ newsItems, loadError, warnings, ratesData, children }) {
+export default function MarketInsightsExplorer({
+  newsItems,
+  loadError,
+  warnings,
+  ratesData,
+  archiveAvailable,
+  children,
+}) {
   const [activeTopic, setActiveTopic] = useState("All");
   const [activeInstrument, setActiveInstrument] = useState(null);
   const displayInstrument = activeInstrument || DEFAULT_GAUGE_INSTRUMENT;
@@ -179,7 +186,7 @@ export default function MarketInsightsExplorer({ newsItems, loadError, warnings,
               No headlines match this filter right now — try a different tab or instrument.
             </p>
           ) : (
-            <NewsWireFeed items={filteredNews} />
+            <NewsWireFeed items={filteredNews} archiveAvailable={archiveAvailable} />
           )}
         </div>
       </div>

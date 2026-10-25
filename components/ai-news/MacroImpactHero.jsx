@@ -14,9 +14,16 @@
 //
 // `macroImpact` is `{ items: [...], enabled, note }` from
 // getAggregatedNews() — `items` can legitimately be empty on a quiet
-// news day (no fabricated cards to fill the space), in which case this
-// renders a single, calm "nothing high-impact right now" line instead
-// of an empty section.
+// news day (no fabricated cards to fill the space); in that case this
+// renders a single, calm "nothing high-impact right now" line.
+//
+// `fallbackItems` (added Oct 2026, same round as lib/newsStore.js):
+// when the live `items` array is empty, app/ai-news/page.jsx passes in
+// the most recent high-impact stories pulled from the permanent
+// archive instead (getLatestWithMacroImpact()) — same card shape, so
+// this just renders them in place of the empty-state message, clearly
+// labeled as pinned recent coverage rather than this cycle's news, so
+// nothing here is ever presented as more current than it is.
 
 import Link from "next/link";
 
@@ -106,8 +113,12 @@ function ImpactCard({ item }) {
   );
 }
 
-export default function MacroImpactHero({ macroImpact }) {
+export default function MacroImpactHero({ macroImpact, fallbackItems = [] }) {
   const items = macroImpact?.items || [];
+  // Only consulted when the live feed truly has nothing this cycle —
+  // never used to pad out or replace a non-empty live list.
+  const usingFallback = items.length === 0 && fallbackItems.length > 0;
+  const displayItems = usingFallback ? fallbackItems : items;
 
   return (
     <div className="mt-6">
@@ -120,13 +131,19 @@ export default function MacroImpactHero({ macroImpact }) {
         </span>
       </div>
 
-      {items.length === 0 ? (
+      {usingFallback && (
+        <p className="mt-2 text-xs font-medium text-slate-400 dark:text-slate-500">
+          No new high-impact headlines this cycle — showing the most recent high-impact coverage.
+        </p>
+      )}
+
+      {displayItems.length === 0 ? (
         <p className="mt-3 rounded-lg border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
           {macroImpact?.note || "No high-impact macro headlines detected right now."}
         </p>
       ) : (
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {items.map((item) => (
+          {displayItems.map((item) => (
             <ImpactCard key={item.id} item={item} />
           ))}
         </div>

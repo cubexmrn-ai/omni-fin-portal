@@ -4,6 +4,7 @@ import AiNewsHero from "@/components/AiNewsHero";
 import MarketInsightsExplorer from "@/components/ai-news/MarketInsightsExplorer";
 import MacroImpactHero from "@/components/ai-news/MacroImpactHero";
 import { getCachedAggregatedNews } from "@/lib/cachedData";
+import { getLatestWithMacroImpact, isNewsStoreConfigured } from "@/lib/newsStore";
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
@@ -96,6 +97,23 @@ export default async function AiNewsPage() {
       }
     : data?.macroImpact;
 
+  // Oct 2026: on a quiet news cycle (macroImpact.items empty), pin the
+  // most recent high-impact stories from the permanent archive instead
+  // of MacroImpactHero showing its empty state — see that component's
+  // header comment. Only ever queried when the live list is actually
+  // empty, so this never touches the DB on a normal, busy cycle; a
+  // no-op query in that case too (getLatestWithMacroImpact() returns
+  // `[]` without configuration or on any error — see
+  // lib/newsStore.js), so this is safe to call unconditionally here.
+  let macroImpactFallback = [];
+  if (!macroImpact?.items || macroImpact.items.length === 0) {
+    try {
+      macroImpactFallback = await getLatestWithMacroImpact(4);
+    } catch {
+      macroImpactFallback = [];
+    }
+  }
+
   return (
     <>
       <NewsStructuredData items={items} />
@@ -131,8 +149,9 @@ export default async function AiNewsPage() {
           loadError={loadError}
           warnings={data?.warnings}
           ratesData={ratesData}
+          archiveAvailable={isNewsStoreConfigured()}
         >
-          <MacroImpactHero macroImpact={macroImpact} />
+          <MacroImpactHero macroImpact={macroImpact} fallbackItems={macroImpactFallback} />
           <div className="mt-10">
             <EconomicCalendar />
           </div>

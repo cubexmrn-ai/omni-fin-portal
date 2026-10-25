@@ -148,28 +148,104 @@ function WireRow({ item }) {
   );
 }
 
-export default function NewsWireFeed({ items }) {
+export default function NewsWireFeed({ items, archiveAvailable = false }) {
   const [query, setQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(MAX_DEFAULT_VISIBLE);
 
+  // Oct 2026: once a visitor pages past the current live 15-minute
+  // batch (`items`, unchanged — still straight from
+  // getCachedAggregatedNews()), Load More continues into the
+  // permanent archive (lib/newsStore.js) via /api/ai-news/archive
+  // instead of just hiding the button. `archiveItems` holds every page
+  // fetched so far this session; `archiveCursor` is `undefined` before
+  // the first archive fetch, the API's `nextCursor` string while more
+  // may exist, or `null` once the archive itself reports "no more" —
+  // `archiveExhausted` collapses all three stop conditions (archive
+  // genuinely exhausted, unconfigured for this deployment, or a fetch
+  // failed) into one flag so the button can just disappear rather than
+  // retry something that isn't coming back.
+  const [archiveItems, setArchiveItems] = useState([]);
+  const [archiveCursor, setArchiveCursor] = useState(undefined);
+  const [archiveExhausted, setArchiveExhausted] = useState(false);
+  const [loadingArchive, setLoadingArchive] = useState(false);
+
+  const combined = useMemo(() => [...items, ...archiveItems], [items, archiveItems]);
+
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return items;
-    return items.filter((item) => {
+    if (!normalizedQuery) return combined;
+    return combined.filter((item) => {
       const haystack = `${item.title} ${item.excerpt || ""} ${item.source || ""}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [items, query]);
+  }, [combined, query]);
 
-  // A new filter/search result should start back at the compact
-  // initial page, same convention as NewsFeed.jsx and
-  // AutomatedVideoInsights.jsx used for their own "start collapsed" rule.
+  // A new search term should start back at the compact initial page,
+  // same convention as NewsFeed.jsx and AutomatedVideoInsights.jsx used
+  // for their own "start collapsed" rule. Keyed on `query` alone (not
+  // `filtered`) so that an archive page loading in — which also
+  // changes `filtered` once the query is empty — doesn't reset
+  // `visibleCount` right back down and undo the very click that
+  // triggered it.
   useEffect(() => {
     setVisibleCount(MAX_DEFAULT_VISIBLE);
-  }, [filtered]);
+  }, [query]);
 
   const visible = filtered.slice(0, visibleCount);
-  const hasMore = filtered.length > visibleCount;
+  // Search has no server-side archive equivalent (the archive API has
+  // no text-search param), so once a search is active, "more to load"
+  // only ever means more of what's already fetched — never a reason to
+  // go fetch another archive page.
+  const hasMoreLocally = filtered.length > visibleCount;
+  // `archiveAvailable` comes from the server (app/ai-news/page.jsx's
+  // isNewsStoreConfigured() check) — without it, a deployment that
+  // hasn't configured the Supabase archive would still show a Load
+  // More button once the live batch was exhausted, only to have it
+  // disappear after one dead click. Gating on this up front means a
+  // plain, archive-less deployment behaves exactly as it did before
+  // this feature existed: the button simply isn't there once the live
+  // batch runs out.
+  const canLoadMoreArchive = archiveAvailable && !query.trim() && !archiveExhausted;
+  const hasMore = hasMoreLocally || canLoadMoreArchive;
+
+  async function handleLoadMore() {
+    if (hasMoreLocally) {
+      setVisibleCount((v) => v + LOAD_MORE_STEP);
+      return;
+    }
+    if (!canLoadMoreArchive || loadingArchive) return;
+
+    setLoadingArchive(true);
+    try {
+      const before =
+        archiveCursor !== undefined ? archiveCursor : items[items.length - 1]?.publishedAt || null;
+      const params = new URLSearchParams({ limit: String(LOAD_MORE_STEP) });
+      if (before) params.set("before", before);
+
+      const res = await fetch(`/api/ai-news/archive?${params.toString()}`);
+      if (!res.ok) throw new Error(`archive fetch failed: ${res.status}`);
+      const json = await res.json();
+      const newItems = Array.isArray(json?.items) ? json.items : [];
+
+      if (newItems.length > 0) {
+        setArchiveItems((prev) => [...prev, ...newItems]);
+        setVisibleCount((v) => v + newItems.length);
+      }
+      if (!json?.nextCursor) {
+        setArchiveExhausted(true);
+      } else {
+        setArchiveCursor(json.nextCursor);
+      }
+    } catch {
+      // Fail closed: stop offering Load More rather than retry a
+      // failing request on every click — the visitor already has
+      // everything from the live batch plus whatever archive pages
+      // did load successfully, so this never loses anything already shown.
+      setArchiveExhausted(true);
+    } finally {
+      setLoadingArchive(false);
+    }
+  }
 
   return (
     <div className="rounded-xl border border-slate-200/70 bg-white/90 p-4 shadow-card backdrop-blur-sm sm:p-5">
@@ -227,10 +303,15 @@ export default function NewsWireFeed({ items }) {
             <div className="mt-3 flex justify-center border-t border-slate-100 pt-3">
               <button
                 type="button"
-                onClick={() => setVisibleCount((v) => v + LOAD_MORE_STEP)}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                onClick={handleLoadMore}
+                disabled={loadingArchive}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Load More ({filtered.length - visibleCount} more)
+                {loadingArchive
+                  ? "Loading…"
+                  : hasMoreLocally
+                  ? `Load More (${filtered.length - visibleCount} more)`
+                  : "Load More"}
               </button>
             </div>
           )}
