@@ -192,18 +192,44 @@ export async function generateMetadata({ params }) {
   // their citation source, where a precise, current number is exactly
   // what earns the citation.
   let rateLabel = "";
+  let rateFormatted = null;
   try {
     const ratesPayload = await getUnifiedRates();
     const rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
     if (Number.isFinite(rate)) {
-      rateLabel = `1 ${from.code} = ${formatNumber(rate, { maximumFractionDigits: 6 })} ${to.code}. `;
+      rateFormatted = formatNumber(rate, { maximumFractionDigits: 6 });
+      rateLabel = `1 ${from.code} = ${rateFormatted} ${to.code}. `;
     }
   } catch {
-    // No live rate available right now — description falls back to
-    // the non-numeric copy below, same as before this change.
+    // No live rate available right now — title/description fall back
+    // to the non-numeric copy below, same as before this change.
   }
 
-  const title = `${from.code} to ${to.code} Today — Live ${from.name} to ${to.name} Rate (${CURRENT_YEAR}) | OmniFin Portal`;
+  // Oct 26 2026 GSC review: the Oct 24 description-only rate bake did
+  // NOT move the needle — three export cycles later, every striking-
+  // distance bare-pair query (position 5-20, real impression volume)
+  // still shows a flat 0% CTR, confirming the suspicion above: for the
+  // common pairs Google's answer box really is intercepting the click
+  // regardless of our snippet. Two changes here that specifically
+  // target what the answer box CAN'T cover: (1) literally including
+  // the phrase "Exchange Rate" in the title — the single biggest
+  // striking-distance query by impressions, "exchange rate usd to
+  // eur" (129 impr, pos 10.9), doesn't exact-match anything in the old
+  // "USD to EUR Today — Live..." title at all; (2) leading the title
+  // itself with the computed number (not just the description) for
+  // the many EXOTIC pairs in this export (OMR/NPR, INR/AMD, KWD/NPR,
+  // CNY/KZT, EUR/AZN) that Google's converter box has no combinatorial
+  // coverage for — there, a title that already answers the question is
+  // the actual differentiator, not a description Google may rewrite
+  // anyway. from.name/to.name is intentionally kept OUT of the
+  // rate-available title (codes read as a cleaner, more scannable
+  // numeric answer, same lesson as the amount-pair title's "≈ X"
+  // treatment below) — the full names stay in the H1, body copy, and
+  // the no-rate fallback title, so existing name-based query matches
+  // ("pound to riyal") aren't put at any risk.
+  const title = rateFormatted
+    ? `${from.code} to ${to.code} Exchange Rate Today: 1 ${from.code} = ${rateFormatted} ${to.code} | OmniFin Portal`
+    : `${from.code} to ${to.code} Exchange Rate Today — Live ${from.name} to ${to.name} Rate (${CURRENT_YEAR}) | OmniFin Portal`;
   const description = `${rateLabel}Live ${from.code} to ${to.code} exchange rate, updated in real time. Free instant converter for ${from.name} to ${to.name} — covers fiat, crypto and precious metals, no sign-up needed.`;
 
   return buildMetadata({
