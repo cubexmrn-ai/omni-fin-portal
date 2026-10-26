@@ -34,10 +34,14 @@ create table trading_journal (
 
 create index trading_journal_user_id_idx on trading_journal(user_id);
 
--- Community Forum — posts are PUBLIC-READABLE, write requires sign-in.
+-- Community Forum — posts are PUBLIC-READABLE. A signed-in user's post
+-- has a real user_id; a guest's post (no sign-in required — see
+-- Section 6 below) is written server-side with a null user_id, which
+-- is why this column isn't `not null` — a guest has no auth.users row
+-- to point at at all.
 create table community_posts (
   id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   author_handle text not null,
   category text not null,
   asset_tags jsonb not null default '[]'::jsonb,
@@ -52,11 +56,13 @@ create table community_posts (
 
 create index community_posts_created_at_idx on community_posts(created_at desc);
 
--- Comments on a community post — also public-readable, write requires sign-in.
+-- Comments on a community post — also public-readable; same nullable
+-- user_id reasoning as community_posts above (a guest comment has one
+-- too, written server-side — see Section 6).
 create table community_comments (
   id uuid primary key default gen_random_uuid(),
   post_id text not null,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   author_handle text not null,
   body text not null,
   created_at timestamptz not null default now()
@@ -199,19 +205,23 @@ behaves exactly as it does today — nothing breaks, nothing changes.
 
 ## 6. (Optional) Friction-free guest Community posting
 
-Only needed if you already ran section 2/3's Community tables above —
-this is a small follow-up migration, not a new table. It removes the
-"sign in to post" requirement entirely: a guest's post or comment now
-reaches the real, publicly-readable `community_posts`/`community_comments`
-tables with just a display handle, no email/password/confirmation step.
-Signing in stays available as an optional upgrade (ties your posts to an
-account across devices) — it's just no longer required to be seen by
-anyone else. See `lib/communityStore.js`'s header comment for the full
-design (why this goes through a server route with the service-role key
-rather than a looser RLS policy).
+This removes the "sign in to post" requirement entirely: a guest's post
+or comment reaches the real, publicly-readable `community_posts`/
+`community_comments` tables with just a display handle, no email/
+password/confirmation step. Signing in stays available as an optional
+upgrade (ties your posts to an account across devices) — it's just no
+longer required to be seen by anyone else. See `lib/communityStore.js`'s
+header comment for the full design (why this goes through a server
+route with the service-role key rather than a looser RLS policy).
 
-Run this in the Supabase SQL Editor — it only relaxes a NOT NULL
-constraint, so it's safe to run even with existing rows:
+If you created the Community tables from Section 2 above as it
+currently reads, this is already in place — `user_id` is nullable
+there specifically so a guest row (written server-side, no sign-in)
+has somewhere to leave it empty, and nothing further to run here.
+
+If your tables predate that (created from an earlier copy of this file,
+back when `user_id` was `not null`), run this once to catch up — it
+only relaxes a constraint, so it's safe with existing rows:
 
 ```sql
 -- A guest-authored row has no real auth.users row to point at, so
@@ -225,10 +235,11 @@ alter table community_posts alter column user_id drop not null;
 alter table community_comments alter column user_id drop not null;
 ```
 
-Skip this section if you'd rather keep posting gated behind sign-in —
-without it, `hooks/useCommunityPosts.js`'s guest path will get an insert
-error from Supabase (NOT NULL violation) and fall back to this guest's
-original browser-local-only behavior, so nothing breaks either way.
+Skip this section entirely if you'd rather keep posting gated behind
+sign-in — without the nullable column, `hooks/useCommunityPosts.js`'s
+guest path will get an insert error from Supabase (NOT NULL violation)
+and fall back to this guest's original browser-local-only behavior, so
+nothing breaks either way.
 
 ## Scope notes (what this does *not* cover)
 
