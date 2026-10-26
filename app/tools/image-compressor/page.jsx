@@ -36,6 +36,16 @@ const FAQS = [
   },
 ];
 
+// Same 4 steps the visible "How to use" list below shows — kept as one
+// array so the schema can never drift from what the page actually
+// displays (Oct 2026 GSC content-depth pass).
+const HOW_TO_STEPS = [
+  { name: "Choose an image", text: "Click to select a JPEG, PNG, or WebP image from your device." },
+  { name: "Set max width and format", text: "Set the max width in pixels and pick an output format (JPEG, WebP, or lossless PNG)." },
+  { name: "Adjust quality", text: "Drag the quality slider to balance file size against visual quality." },
+  { name: "Compress and download", text: "Click \"Compress\", review the before/after file size, then download the result." },
+];
+
 export default function ImageCompressorPage() {
   return (
     <>
@@ -45,6 +55,7 @@ export default function ImageCompressorPage() {
         description="Free client-side image compressor and resizer (JPEG, WebP, PNG) using the Canvas API — no server upload."
         featureList={["Resize to a max width", "Adjustable compression quality", "JPEG, WebP, and PNG output", "Before/after file size comparison", "100% client-side"]}
         faqs={FAQS}
+        howTo={{ name: "How to use the Image Compressor & Resizer", steps: HOW_TO_STEPS }}
         applicationCategory="MultimediaApplication"
       />
 
@@ -70,6 +81,15 @@ export default function ImageCompressorPage() {
         <ImageCompressorTool />
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">How to use the image compressor</h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5">
+            {HOW_TO_STEPS.map((step) => (
+              <li key={step.name}>{step.text}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
           <h2 className="text-base font-bold text-slate-900">How client-side compression works</h2>
           <p className="mt-3">
             The browser decodes your chosen image into memory, draws it onto an off-screen canvas

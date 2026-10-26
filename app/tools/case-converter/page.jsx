@@ -31,6 +31,15 @@ const FAQS = [
   },
 ];
 
+// Same 3 steps the visible "How to use" list below shows — kept as one
+// array so the schema can never drift from what the page actually
+// displays (Oct 2026 GSC content-depth pass).
+const HOW_TO_STEPS = [
+  { name: "Enter your text", text: "Type or paste the text you want to convert into the box." },
+  { name: "Pick a case format", text: "Click any of the 8 format buttons (UPPERCASE, Title Case, camelCase, snake_case, slug, and more) to convert instantly." },
+  { name: "Copy the result", text: "Click \"Copy\" to copy the converted text to your clipboard." },
+];
+
 export default function CaseConverterPage() {
   return (
     <>
@@ -40,6 +49,7 @@ export default function CaseConverterPage() {
         description="Free client-side text case converter: uppercase, lowercase, title case, sentence case, camelCase, PascalCase, snake_case, and slug."
         featureList={["8 case conversion formats", "URL-safe slug generator", "One-click copy", "100% client-side"]}
         faqs={FAQS}
+        howTo={{ name: "How to use the Case Converter", steps: HOW_TO_STEPS }}
         applicationCategory="UtilitiesApplication"
       />
 
@@ -65,6 +75,15 @@ export default function CaseConverterPage() {
         <CaseConverterTool />
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">How to use the case converter</h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5">
+            {HOW_TO_STEPS.map((step) => (
+              <li key={step.name}>{step.text}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
           <h2 className="text-base font-bold text-slate-900">Case format reference</h2>
           <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full min-w-[480px] text-left text-sm">

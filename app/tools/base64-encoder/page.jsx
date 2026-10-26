@@ -36,6 +36,15 @@ const FAQS = [
   },
 ];
 
+// Same 3 steps the visible "How to use" list below shows — kept as one
+// array so the schema can never drift from what the page actually
+// displays (Oct 2026 GSC content-depth pass).
+const HOW_TO_STEPS = [
+  { name: "Choose Encode or Decode", text: "Pick the \"Encode\" or \"Decode\" tab, depending on which direction you need." },
+  { name: "Enter your text", text: "Paste plain text (to encode) or a Base64 string (to decode) into the box." },
+  { name: "Convert and copy", text: "Click the Encode/Decode button, then copy the result with one click." },
+];
+
 export default function Base64EncoderPage() {
   return (
     <>
@@ -45,6 +54,7 @@ export default function Base64EncoderPage() {
         description="Free client-side Base64 encoder/decoder with full Unicode (UTF-8) support."
         featureList={["Encode text to Base64", "Decode Base64 to text", "Full Unicode support", "100% client-side"]}
         faqs={FAQS}
+        howTo={{ name: "How to use the Base64 Encoder & Decoder", steps: HOW_TO_STEPS }}
         applicationCategory="DeveloperApplication"
       />
 
@@ -71,6 +81,15 @@ export default function Base64EncoderPage() {
         <Base64EncoderTool />
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">How to use the Base64 encoder/decoder</h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5">
+            {HOW_TO_STEPS.map((step) => (
+              <li key={step.name}>{step.text}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
           <h2 className="text-base font-bold text-slate-900">How Base64 encoding works</h2>
           <p className="mt-3">
             Base64 takes every 3 bytes of input data and represents them as 4 printable ASCII

@@ -36,6 +36,15 @@ const FAQS = [
   },
 ];
 
+// Same 3 steps the visible "How to use" list below shows — kept as one
+// array so the schema can never drift from what the page actually
+// displays (Oct 2026 GSC content-depth pass).
+const HOW_TO_STEPS = [
+  { name: "Set the length", text: "Drag the length slider to anywhere from 6 to 64 characters." },
+  { name: "Choose character sets", text: "Check or uncheck uppercase, lowercase, numbers, and symbols to include." },
+  { name: "Generate and copy", text: "Click \"Generate new password\" for a new one at any time, then copy it with one click." },
+];
+
 export default function PasswordGeneratorPage() {
   return (
     <>
@@ -45,6 +54,7 @@ export default function PasswordGeneratorPage() {
         description="Free client-side password generator using the Web Crypto API (crypto.getRandomValues) with adjustable length and character sets."
         featureList={["Cryptographically secure randomness", "Adjustable length (6-64 characters)", "Toggle uppercase/lowercase/numbers/symbols", "Strength indicator", "100% client-side"]}
         faqs={FAQS}
+        howTo={{ name: "How to use the Secure Password Generator", steps: HOW_TO_STEPS }}
         applicationCategory="SecurityApplication"
       />
 
@@ -71,6 +81,15 @@ export default function PasswordGeneratorPage() {
         <PasswordGeneratorTool />
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">How to use the password generator</h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5">
+            {HOW_TO_STEPS.map((step) => (
+              <li key={step.name}>{step.text}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
           <h2 className="text-base font-bold text-slate-900">What makes a password strong</h2>
           <p className="mt-3">
             Password strength comes down to two things: length and the size of the character pool

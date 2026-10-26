@@ -8,6 +8,14 @@
 // structured-data file. Honesty note (same bar as those two files): no
 // aggregateRating/review fields, and every tool here is genuinely free
 // (Offer price: "0") — no paid tier exists anywhere on this site.
+//
+// Optional `howTo` (added Oct 2026, GSC content-depth pass): every
+// tool page already has a real, visible "How to use" numbered list on
+// the page (see each app/tools/<slug>/page.jsx) — this just gives that
+// SAME list a matching HowTo entity, so it's never schema describing
+// something the page doesn't actually show. Omitted (no HowTo entity
+// added) for any page that doesn't pass one, rather than ever
+// inventing steps.
 
 import { getSiteUrl } from "@/lib/siteUrl";
 
@@ -18,6 +26,7 @@ import { getSiteUrl } from "@/lib/siteUrl";
  *   description: string,
  *   featureList: string[],
  *   faqs: { question: string, answer: string }[],
+ *   howTo?: { name: string, steps: { name: string, text: string }[] },
  *   applicationCategory?: string, // schema.org SoftwareApplication category
  *                                  // — defaults to "FinanceApplication" since
  *                                  // this component's first 4 callers (the
@@ -35,6 +44,7 @@ export default function ToolStructuredData({
   description,
   featureList,
   faqs,
+  howTo,
   applicationCategory = "FinanceApplication",
 }) {
   const siteUrl = getSiteUrl();
@@ -70,9 +80,23 @@ export default function ToolStructuredData({
         }
       : null;
 
+  const howToEntity =
+    howTo?.steps?.length > 0
+      ? {
+          "@type": "HowTo",
+          "@id": `${url}#howto`,
+          name: howTo.name,
+          step: howTo.steps.map((step) => ({
+            "@type": "HowToStep",
+            name: step.name,
+            text: step.text,
+          })),
+        }
+      : null;
+
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": faqPage ? [softwareApplication, faqPage] : [softwareApplication],
+    "@graph": [softwareApplication, faqPage, howToEntity].filter(Boolean),
   };
 
   return (

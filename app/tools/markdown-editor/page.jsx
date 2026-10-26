@@ -31,6 +31,15 @@ const FAQS = [
   },
 ];
 
+// Same 3 steps the visible "How to use" list below shows — kept as one
+// array so the schema can never drift from what the page actually
+// displays (Oct 2026 GSC content-depth pass).
+const HOW_TO_STEPS = [
+  { name: "Write in Markdown", text: "Type or paste Markdown into the editor pane on the left." },
+  { name: "Check the live preview", text: "Watch the formatted result render instantly in the preview pane on the right." },
+  { name: "Export your file", text: "Click \"Download .md\" for the raw source, or \"Download .html\" for a standalone HTML file." },
+];
+
 export default function MarkdownEditorPage() {
   return (
     <>
@@ -40,6 +49,7 @@ export default function MarkdownEditorPage() {
         description="Free client-side Markdown editor with live preview, exporting to .md or standalone .html."
         featureList={["Live side-by-side preview", "Headings, lists, links, code blocks, blockquotes", "Export as .md or .html", "100% client-side"]}
         faqs={FAQS}
+        howTo={{ name: "How to use the Markdown Editor", steps: HOW_TO_STEPS }}
         applicationCategory="ProductivityApplication"
       />
 
@@ -66,6 +76,15 @@ export default function MarkdownEditorPage() {
         <MarkdownEditorTool />
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
+          <h2 className="text-base font-bold text-slate-900">How to use the Markdown editor</h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5">
+            {HOW_TO_STEPS.map((step) => (
+              <li key={step.name}>{step.text}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
           <h2 className="text-base font-bold text-slate-900">Markdown syntax quick reference</h2>
           <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full min-w-[480px] text-left text-sm">

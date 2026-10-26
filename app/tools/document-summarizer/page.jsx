@@ -36,6 +36,15 @@ const FAQS = [
   },
 ];
 
+// Same 3 steps the visible "How to use the summarizer" list below
+// shows — kept as one array so the schema can never drift from what
+// the page actually displays (Oct 2026 GSC content-depth pass).
+const HOW_TO_STEPS = [
+  { name: "Paste your text", text: "Paste the full text of a document, article, or report into the box." },
+  { name: "Click Summarize", text: "Click the \"Summarize\" button to send the text for AI processing." },
+  { name: "Read the summary", text: "Read the 4-6 bullet-point summary generated from your text." },
+];
+
 export default function DocumentSummarizerPage() {
   return (
     <>
@@ -45,6 +54,7 @@ export default function DocumentSummarizerPage() {
         description="Summarize long documents into concise bullet points using Gemini AI."
         featureList={["AI-generated 4-6 bullet-point summary", "No sign-up required", "Graceful fallback if AI isn't configured"]}
         faqs={FAQS}
+        howTo={{ name: "How to use the AI Document Summarizer", steps: HOW_TO_STEPS }}
         applicationCategory="ProductivityApplication"
       />
 
