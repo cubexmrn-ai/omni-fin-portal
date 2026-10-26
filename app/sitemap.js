@@ -41,9 +41,10 @@ import {
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { getAllLessonsFlat } from "@/lib/academyData";
 import { BLOG_POSTS } from "@/lib/blogPosts";
+import { getArchivedNews } from "@/lib/newsStore";
 import { getSiteUrl } from "@/lib/siteUrl";
 
-export default function sitemap() {
+export default async function sitemap() {
   const siteUrl = getSiteUrl();
   // A single "build time" timestamp shared by every entry below. This
   // sitemap doesn't track true per-page last-edited dates (none of this
@@ -177,6 +178,30 @@ export default function sitemap() {
     priority: 0.6,
   }));
 
+  // /ai-news/<slug> — individual AI News permalinks (app/ai-news/
+  // [slug]/page.jsx), added here now that lib/newsStore.js's permanent
+  // archive (Oct 2026) is what actually makes one of these URLs stable
+  // forever rather than 404ing once its headline rotates out of the
+  // live 15-minute window — listing a URL in a sitemap that can go dead
+  // is exactly the kind of signal this deferred until the archive
+  // existed to back it. getArchivedNews() with no `before` cursor
+  // returns the most recent rows (every item ever upserted is a
+  // candidate, live or historical — see that function's own header
+  // comment), and gracefully returns an empty list — never throws —
+  // on a deployment that hasn't configured the archive yet, so this
+  // sitemap keeps generating normally either way; it just won't list
+  // any /ai-news/<slug> entries until SUPABASE_SETUP.md's AI News
+  // archive section has been run. Capped at 500 — comfortably above
+  // this project's actual headline volume today, revisit if the
+  // archive ever grows past it.
+  const { items: archivedNewsItems } = await getArchivedNews({ limit: 500 });
+  const aiNewsPermalinkRoutes = archivedNewsItems.map((item) => ({
+    url: `${siteUrl}/ai-news/${item.slug}`,
+    lastModified: item.publishedAt ? new Date(item.publishedAt) : now,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+
   return [
     ...staticRoutes,
     ...converterPairRoutes,
@@ -186,5 +211,6 @@ export default function sitemap() {
     ...unitConverterRoutes,
     ...lessonRoutes,
     ...blogRoutes,
+    ...aiNewsPermalinkRoutes,
   ];
 }

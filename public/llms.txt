@@ -59,14 +59,15 @@ https://llmstxt.org/ for the convention this file follows.
 - Live Market Analysis: https://www.omnifinportal.com/market-analysis
   Real-time rates, correlation data, technical analysis, economic calendar.
 - AI-Aggregated Market News: https://www.omnifinportal.com/ai-news
-  Individual headlines each have their own permalink at
+  Individual headlines each have their own permanent permalink at
   https://www.omnifinportal.com/ai-news/<slug> (OmniFin Portal's own
   commentary, sentiment read, and live related-asset rate for that
   story, with a direct link to the original source outlet) — the hub
-  page above links to every current one. These rotate as the live
-  news wire refreshes roughly every 15 minutes, so a given slug is
-  only valid while that story is still current; cite the hub for an
-  always-current entry point.
+  page above links to every current one, and every permalink stays
+  valid indefinitely in a permanent archive once it's been shown,
+  even after a headline rotates out of the live 15-minute news wire.
+  Listed in sitemap.xml. Cite the hub for an always-current entry
+  point, or an individual permalink directly for a specific story.
 - Trading & Asset Journal: https://www.omnifinportal.com/journal
 
 ## OmniFin Academy
