@@ -197,6 +197,39 @@ never imported by a `"use client"` file, the same boundary
 server-only). With it unset, every archive feature no-ops and `/ai-news`
 behaves exactly as it does today — nothing breaks, nothing changes.
 
+## 6. (Optional) Friction-free guest Community posting
+
+Only needed if you already ran section 2/3's Community tables above —
+this is a small follow-up migration, not a new table. It removes the
+"sign in to post" requirement entirely: a guest's post or comment now
+reaches the real, publicly-readable `community_posts`/`community_comments`
+tables with just a display handle, no email/password/confirmation step.
+Signing in stays available as an optional upgrade (ties your posts to an
+account across devices) — it's just no longer required to be seen by
+anyone else. See `lib/communityStore.js`'s header comment for the full
+design (why this goes through a server route with the service-role key
+rather than a looser RLS policy).
+
+Run this in the Supabase SQL Editor — it only relaxes a NOT NULL
+constraint, so it's safe to run even with existing rows:
+
+```sql
+-- A guest-authored row has no real auth.users row to point at, so
+-- user_id has to be allowed to stay null for both tables. The existing
+-- RLS insert policies ("auth.uid() = user_id") are UNCHANGED and still
+-- apply to the anon-key client exactly as before — a guest post never
+-- goes through that path at all; it's written server-side with the
+-- service-role key (which bypasses RLS by design), so there's no new
+-- anon-writable surface here, just a column that can now be null.
+alter table community_posts alter column user_id drop not null;
+alter table community_comments alter column user_id drop not null;
+```
+
+Skip this section if you'd rather keep posting gated behind sign-in —
+without it, `hooks/useCommunityPosts.js`'s guest path will get an insert
+error from Supabase (NOT NULL violation) and fall back to this guest's
+original browser-local-only behavior, so nothing breaks either way.
+
 ## Scope notes (what this does *not* cover)
 
 - **Votes/Bullseye taps** on community posts stay per-browser (not synced to

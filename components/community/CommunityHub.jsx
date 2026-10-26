@@ -43,8 +43,19 @@ function StatCard({ label, value, footnote }) {
 
 export default function CommunityHub() {
   const { t } = useLanguage();
-  const { hydrated, allPosts, addPost, setVote, toggleBullseye, getDisplayCounts, cloudReady, cloudActive, syncError } =
-    useCommunityPosts();
+  const {
+    hydrated,
+    allPosts,
+    addPost,
+    setVote,
+    toggleBullseye,
+    getDisplayCounts,
+    cloudReady,
+    cloudActive,
+    syncError,
+    guestHandle,
+    setGuestHandle,
+  } = useCommunityPosts();
   const { user, signOut } = useSupabaseAuth();
 
   const [activeCategory, setActiveCategory] = useState("all");
@@ -132,19 +143,20 @@ export default function CommunityHub() {
             />
           </div>
 
-          {/* RETENTION UPGRADE: these posts now reach a real
-              `community_posts` table (hooks/useCommunityPosts.js) once
-              Supabase is configured AND the person signs in — this bar
-              says plainly which of the three states applies rather
-              than letting CreatePostModal silently keep posting
-              browser-local-only like it always used to. */}
+          {/* Oct 2026: posting/commenting no longer requires signing
+              in at all (see hooks/useCommunityPosts.js's header
+              comment) — a guest's post reaches the exact same real,
+              publicly-readable table a signed-in post does. This bar
+              now frames signing in as a pure upgrade (ties your posts
+              to an account across devices) rather than a requirement
+              to be seen by anyone else. */}
           {cloudReady && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               {cloudActive ? (
                 <>
                   <p className="text-xs text-slate-500">
-                    Signed in as <strong>{user.email}</strong> — your posts are visible to every
-                    visitor, not just this browser.
+                    Signed in as <strong>{user.email}</strong> — your posts are tied to your account
+                    across devices.
                   </p>
                   <button
                     type="button"
@@ -157,7 +169,8 @@ export default function CommunityHub() {
               ) : (
                 <>
                   <p className="text-xs text-slate-500">
-                    Sign in to publish posts other real visitors can see, and to comment.
+                    Posting and commenting as a guest — no account needed. Sign in to tie your
+                    posts to an account across devices.
                   </p>
                   <button
                     type="button"
@@ -173,7 +186,12 @@ export default function CommunityHub() {
           {syncError && <p className="mt-2 text-xs text-amber-600">{syncError}</p>}
 
           <div className="mt-5">
-            <CreatePostModal onSubmit={addPost} />
+            <CreatePostModal
+              onSubmit={addPost}
+              isSignedIn={cloudActive}
+              guestHandle={guestHandle}
+              onGuestHandleChange={setGuestHandle}
+            />
           </div>
         </header>
 

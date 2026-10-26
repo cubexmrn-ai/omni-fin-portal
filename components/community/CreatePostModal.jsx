@@ -3,16 +3,20 @@
 // components/community/CreatePostModal.jsx
 //
 // "Share Trade Setup / Insight" trigger button + form modal. Submits via
-// hooks/useCommunityPosts.js's addPost(), which prepends the new post to
-// an in-memory + localStorage-backed list so it renders in the feed
-// immediately — no backend required (the "in-memory/local storage
-// submission fallback" the spec calls for).
+// hooks/useCommunityPosts.js's addPost() — signed in, a post goes
+// straight to the real community_posts table; signed out, it now also
+// reaches that same table through a friction-free guest path (Oct
+// 2026 — see that hook's header comment), using just the display
+// handle below, never an email or password. Only on a deployment with
+// no Supabase project configured at all does a post fall back to
+// this browser's own local-only storage.
 
 import { useState } from "react";
 import Modal from "@/components/community/Modal";
 import { CATEGORIES, ASSET_TAGS, BIAS_OPTIONS } from "@/lib/communityData";
 
 const POSTABLE_CATEGORIES = CATEGORIES.filter((c) => c.id !== "all");
+const MAX_HANDLE_LENGTH = 24;
 
 function emptyForm() {
   return {
@@ -33,7 +37,7 @@ function toNullableNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-export default function CreatePostModal({ onSubmit }) {
+export default function CreatePostModal({ onSubmit, isSignedIn, guestHandle, onGuestHandleChange }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
@@ -91,6 +95,25 @@ export default function CreatePostModal({ onSubmit }) {
         widthClassName="max-w-lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isSignedIn && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-600">
+                Post as
+              </label>
+              <input
+                type="text"
+                value={guestHandle || ""}
+                onChange={(e) => onGuestHandleChange?.(e.target.value)}
+                placeholder="Guest1234"
+                maxLength={MAX_HANDLE_LENGTH}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
+              />
+              <p className="mt-1 text-[11px] text-slate-400">
+                No account needed — this display name is remembered on this browser.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-600">
               Title

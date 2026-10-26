@@ -12,13 +12,26 @@
 // existed in the posting browser's own localStorage, so no two
 // visitors ever actually saw each other's posts. When Supabase is
 // configured AND the person is signed in
-// (hooks/useSupabaseAuth.js), new posts now go to the real
-// `community_posts` table (see SUPABASE_SETUP.md), so every signed-in
-// visitor sees the same feed. Guests (not signed in), or any
-// deployment without Supabase configured, keep the exact same
-// localStorage-only behavior this hook always had — a guest can still
-// read everything (seed posts + whatever real cloud posts exist), just
-// can't publish one until they sign in.
+// (hooks/useSupabaseAuth.js), new posts go to the real
+// `community_posts` table (see SUPABASE_SETUP.md) via the browser's
+// own anon-key client, RLS-protected, so every signed-in visitor sees
+// the same feed.
+//
+// FRICTION-FREE GUEST POSTING (Oct 2026): Supabase Auth's email-
+// confirmation step turned "sign in to post" into real drop-off, and
+// the explicit goal here is zero email/password friction while this
+// site is still building search traffic. So a GUEST's post now also
+// reaches the real, publicly-readable table — not through the
+// browser's anon key (RLS there deliberately requires
+// `auth.uid() = user_id`, see lib/communityStore.js's header comment
+// for why that stays strict), but through a small server route
+// (app/api/community/posts|comments) using a service-role client.
+// A guest only needs a display handle (hooks/useGuestIdentity.js),
+// never an account. Only when Supabase isn't configured on this
+// deployment AT ALL does a guest's post fall back to this hook's
+// original browser-local-only behavior (never synced, never seen by
+// anyone else) — that fallback is now the "Supabase isn't set up yet"
+// case, not the normal "didn't sign in" case.
 //
 // SCOPE NOTE — votes/Bullseye stay per-browser, on purpose: migrating
 // those to a real per-user ledger needs a dedicated table with a
@@ -28,16 +41,16 @@
 // toggle), which was already honestly scoped as "this browser's own
 // choice," not a claim of being a tallied global vote.
 //
-// Comments are new in this pass: minimal cloud-only — read-only count/
-// list when Supabase is configured (any visitor, including guests, can
-// read other people's comments), write requires sign-in. No comments
-// feature existed before this file, so there's no local-storage
-// fallback to preserve for them; see fetchComments/addComment below.
+// Comments: read-only count/list when Supabase is configured (any
+// visitor, including guests, can read other people's comments);
+// writing now follows the exact same signed-in-anon-key vs.
+// guest-server-route split as posts above — see addComment().
 
 import { useCallback, useEffect, useState } from "react";
 import { SEED_POSTS } from "@/lib/communityData";
 import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useGuestIdentity } from "@/hooks/useGuestIdentity";
 
 const STORAGE_KEY = "omnifin.community.v1";
 const POSTS_TABLE = "community_posts";
@@ -92,6 +105,10 @@ function fromRow(row) {
     baseBullseyeCount: 0,
     isUserSubmitted: true,
     isCloudPost: true,
+    // user_id is only ever null on a guest-authored row (see
+    // lib/communityStore.js) — a signed-in post always has one via
+    // the RLS-protected `auth.uid() = user_id` insert below.
+    isGuestPost: row.user_id == null,
   };
 }
 
@@ -101,6 +118,7 @@ function handleFromEmail(email) {
 
 export function useCommunityPosts() {
   const { user } = useSupabaseAuth();
+  const { handle: guestHandle, setHandle: setGuestHandle } = useGuestIdentity();
   const cloudReady = isSupabaseConfigured();
   const cloudActive = cloudReady && Boolean(user);
 
@@ -185,11 +203,40 @@ export function useCommunityPosts() {
         return newPost;
       }
 
-      // Guest fallback — identical to this hook's original behavior.
+      // Friction-free guest path (Oct 2026): not signed in, but this
+      // deployment DOES have the Community archive configured — post
+      // through the server route rather than straight to Supabase, so
+      // this guest's post is real and visible to every visitor without
+      // ever touching Supabase Auth. See lib/communityStore.js's header
+      // comment for why this goes through a server route rather than a
+      // looser RLS policy.
+      if (cloudReady) {
+        try {
+          const res = await fetch("/api/community/posts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...post, guestHandle }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (res.ok && json?.post) {
+            setCloudPosts((prev) => [json.post, ...prev]);
+            return json.post;
+          }
+        } catch {
+          // Network failure — fall through to the local-only fallback
+          // below rather than losing the visitor's draft entirely.
+        }
+        setSyncError("Couldn't publish your post right now — saved to this browser only.");
+      }
+
+      // Local-only fallback — only reached when this deployment hasn't
+      // configured the Community archive at all, or the guest-post
+      // request above failed. Identical to this hook's original,
+      // pre-archive behavior.
       const newPost = {
         ...post,
         id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        authorHandle: "@you",
+        authorHandle: guestHandle || "@you",
         createdAt: new Date().toISOString(),
         baseUpvotes: 0,
         baseDownvotes: 0,
@@ -199,7 +246,7 @@ export function useCommunityPosts() {
       setState((prev) => ({ ...prev, userPosts: [newPost, ...prev.userPosts] }));
       return newPost;
     },
-    [cloudActive, user]
+    [cloudActive, cloudReady, user, guestHandle]
   );
 
   const setVote = useCallback((postId, direction) => {
@@ -269,20 +316,47 @@ export function useCommunityPosts() {
 
   const addComment = useCallback(
     async (postId, body) => {
-      if (!cloudActive) return { error: "Sign in to comment." };
-      const supabase = getSupabaseClient();
-      const row = {
-        post_id: postId,
-        user_id: user.id,
-        author_handle: handleFromEmail(user.email),
-        body,
-        created_at: new Date().toISOString(),
-      };
-      const { error } = (await supabase?.from(COMMENTS_TABLE).insert(row)) || {};
-      if (error) return { error: "Couldn't post your comment — try again shortly." };
-      return { error: null, comment: row };
+      if (cloudActive) {
+        const supabase = getSupabaseClient();
+        const row = {
+          post_id: postId,
+          user_id: user.id,
+          author_handle: handleFromEmail(user.email),
+          body,
+          created_at: new Date().toISOString(),
+        };
+        const { error } = (await supabase?.from(COMMENTS_TABLE).insert(row)) || {};
+        if (error) return { error: "Couldn't post your comment — try again shortly." };
+        return { error: null, comment: row };
+      }
+
+      // Friction-free guest path (Oct 2026) — same server-route shape
+      // as addPost() above; see lib/communityStore.js's header comment.
+      if (cloudReady) {
+        try {
+          const res = await fetch("/api/community/comments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ postId, body, guestHandle }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (res.ok && json?.comment) {
+            return { error: null, comment: json.comment };
+          }
+          return { error: json?.error || "Couldn't post your comment — try again shortly." };
+        } catch {
+          return { error: "Couldn't post your comment — try again shortly." };
+        }
+      }
+
+      // This deployment hasn't configured the Community archive at
+      // all (cloudReady is false) — there's nowhere for a comment to
+      // live (comments never had a local-storage-only mode, see this
+      // file's header comment), so this is the one case guest
+      // commenting genuinely can't work yet.
+      return { error: "Comments aren't available on this deployment yet." };
     },
-    [cloudActive, user]
+    [cloudActive, cloudReady, user, guestHandle]
   );
 
   return {
@@ -299,5 +373,11 @@ export function useCommunityPosts() {
     cloudReady,
     cloudActive,
     syncError,
+    // New — this guest's own display handle, editable via
+    // setGuestHandle (hooks/useGuestIdentity.js). Only meaningful when
+    // not signed in; a signed-in post always uses the account's own
+    // handleFromEmail() instead.
+    guestHandle,
+    setGuestHandle,
   };
 }

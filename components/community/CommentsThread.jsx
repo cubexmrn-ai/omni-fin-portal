@@ -10,9 +10,13 @@
 // unconfigured deployment this component simply isn't rendered, so
 // there's no half-working comment box to disclose around.
 //
-// Reading comments needs no sign-in (public community discussion);
-// posting one does, via the same AuthModal used for Journal/Community
-// sign-in elsewhere.
+// Reading comments needs no sign-in (public community discussion).
+// Posting one used to require it too — Oct 2026: a guest can now
+// comment with just their display handle
+// (hooks/useGuestIdentity.js), via addComment()'s server-route guest
+// path (app/api/community/comments, lib/communityStore.js). Signing in
+// (AuthModal) stays available as a separate, optional upgrade — never
+// required just to reply.
 
 import { useEffect, useState } from "react";
 import { useCommunityPosts } from "@/hooks/useCommunityPosts";
@@ -56,10 +60,6 @@ export default function CommentsThread({ postId }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!user) {
-      setAuthModalOpen(true);
-      return;
-    }
     if (!draft.trim()) return;
 
     setSubmitting(true);
@@ -105,7 +105,7 @@ export default function CommentsThread({ postId }) {
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={user ? "Add a comment…" : "Sign in to comment…"}
+          placeholder="Add a comment…"
           className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
         />
         <button
@@ -113,10 +113,23 @@ export default function CommentsThread({ postId }) {
           disabled={submitting}
           className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 disabled:opacity-60"
         >
-          {user ? "Post" : "Sign In"}
+          Post
         </button>
       </form>
       {error && <p className="mt-1 text-xs text-rose-600">{error}</p>}
+      {!user && (
+        <p className="mt-1 text-[11px] text-slate-400">
+          Commenting as a guest.{" "}
+          <button
+            type="button"
+            onClick={() => setAuthModalOpen(true)}
+            className="font-semibold text-brand-600 hover:text-brand-700"
+          >
+            Sign in
+          </button>{" "}
+          to tie your comments to an account.
+        </p>
+      )}
 
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
