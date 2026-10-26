@@ -11,6 +11,7 @@
 import { notFound } from "next/navigation";
 import { ACADEMY_LEVELS, getLesson } from "@/lib/academyData";
 import LessonViewer from "@/components/academy/LessonViewer";
+import LessonStructuredData from "@/components/academy/LessonStructuredData";
 import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
 import { buildMetadata } from "@/lib/pageMetadata";
 
@@ -47,6 +48,12 @@ export default function LessonPage({ params }) {
 
   return (
     <>
+      <LessonStructuredData
+        levelId={params.level}
+        lessonId={params.lesson}
+        level={level}
+        lesson={lesson}
+      />
       <BreadcrumbStructuredData
         items={[
           { name: "Home", href: "/" },

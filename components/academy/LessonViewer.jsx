@@ -407,28 +407,26 @@ export default function LessonViewer({ levelId, lessonId }) {
     }
   }
 
-  if (locked) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">
-          <p className="text-4xl" aria-hidden="true">
-            🔒
-          </p>
-          <h1 className="mt-3 text-xl font-bold text-slate-900">{t("levelStillLockedTitle")}</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            {t("levelStillLockedDesc", { level: levelTitle })}
-          </p>
-          <Link
-            href="/learn"
-            className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.6)] hover:bg-blue-500"
-          >
-            ← {t("backToAcademyLink")}
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
+  // Oct 2026 pSEO/GEO/LLMO audit: this used to swap the ENTIRE lesson
+  // out for a 2-line "🔒 still locked" teaser once `progress.hydrated`
+  // flipped true — which is also the state Google's indexing renderer
+  // (and most answer-engine crawlers) actually captures, since they
+  // wait for the client to settle before taking their content
+  // snapshot. The practical effect: 16 of this Academy's 20 lessons
+  // (everything past Level 1) rendered as a content-free locked teaser
+  // to every crawler that ever visited, with zero real lesson text to
+  // rank or be cited for — confirmed by the GSC export, where only
+  // Rookie-level lessons show any impressions at all.
+  //
+  // The gamified unlock itself is good retention UX and stays — it's
+  // just moved from "hide the content" to "gate the interactive quiz/
+  // progression only" (the `locked` banner further down, in place of
+  // <QuizModule>). Every visitor and every crawler now sees the real,
+  // full lesson body unconditionally; what's actually locked until the
+  // previous level is completed is the Checkpoint Quiz and the
+  // "mark complete, move on" flow — exactly the parts that only matter
+  // to a human working through the course, never to a reader or a
+  // citation.
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
       <section className="border-b border-slate-200 bg-gradient-to-b from-brand-50 via-white to-slate-50">
@@ -471,13 +469,35 @@ export default function LessonViewer({ levelId, lessonId }) {
             {localizedLesson.quiz && (
               <div id="module-quiz" className="pt-4">
                 <h2 className="mb-3 text-lg font-bold text-slate-900">{t("checkpointQuizHeading")}</h2>
-                <QuizModule
-                  questions={localizedLesson.quiz.questions}
-                  passPercent={localizedLesson.quiz.passPercent}
-                  onFinish={handleQuizFinish}
-                  onProceed={handleProceed}
-                  canProceed
-                />
+                {locked ? (
+                  // The gamified gate, now scoped to just the quiz/
+                  // progression (see the header comment above the main
+                  // return below for why) — the lesson content itself,
+                  // above this, is never hidden.
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 text-center">
+                    <p className="text-2xl" aria-hidden="true">
+                      🔒
+                    </p>
+                    <h3 className="mt-2 text-sm font-bold text-slate-900">{t("levelStillLockedTitle")}</h3>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {t("levelStillLockedDesc", { level: levelTitle })}
+                    </p>
+                    <Link
+                      href="/learn"
+                      className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.6)] hover:bg-blue-500"
+                    >
+                      ← {t("backToAcademyLink")}
+                    </Link>
+                  </div>
+                ) : (
+                  <QuizModule
+                    questions={localizedLesson.quiz.questions}
+                    passPercent={localizedLesson.quiz.passPercent}
+                    onFinish={handleQuizFinish}
+                    onProceed={handleProceed}
+                    canProceed
+                  />
+                )}
               </div>
             )}
           </main>
