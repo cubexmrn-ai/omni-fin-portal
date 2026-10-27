@@ -140,17 +140,28 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
       )}
 
       <div className="mt-4">
-        {unlocked ? (
-          <Link
-            href={`/learn/${level.id}/${firstLesson.id}`}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors ${theme.button}`}
-          >
-            {progressPercent > 0 && progressPercent < 100 ? t("continueWord") : t("startWord")} {t("levelWord")} {level.order} →
-          </Link>
-        ) : (
-          <span className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-500">
-            {t("completeLevelFirst", { n: level.order - 1 })}
-          </span>
+        {/* Oct 2026 pSEO/GEO/LLMO audit: a locked level used to render
+            this as an inert <span> with no href at all — a crawler (and
+            a visitor who hasn't finished the previous level's quizzes)
+            had literally no clickable path to 16 of this Academy's 20
+            lessons from this hub, even though every lesson URL is
+            statically pre-rendered and sitemapped. The gamified lock
+            stays (see the "Locked 🔒" badge above and `completeLevelFirst`
+            copy below it), but it's now purely a cosmetic/retention
+            signal — the link itself is always real, so anyone or
+            anything can jump straight to any level on demand. */}
+        <Link
+          href={`/learn/${level.id}/${firstLesson.id}`}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors ${
+            unlocked ? theme.button : "bg-slate-800 hover:bg-slate-700"
+          }`}
+        >
+          {unlocked
+            ? `${progressPercent > 0 && progressPercent < 100 ? t("continueWord") : t("startWord")} ${t("levelWord")} ${level.order} →`
+            : `${t("startWord")} ${t("levelWord")} ${level.order} →`}
+        </Link>
+        {!unlocked && (
+          <p className="mt-1.5 text-[11px] text-slate-500">{t("completeLevelFirst", { n: level.order - 1 })}</p>
         )}
       </div>
     </div>
@@ -158,10 +169,13 @@ function LevelCard({ level, unlocked, mastered, progressPercent }) {
 }
 
 /** A lesson card inside a category track (Forex / Metals / Crypto /
- * Technicals / Personal Finance). Same standard level-locking as the
- * Master Path: if the lesson's level isn't unlocked yet, this renders
- * as an inert, non-clickable card with a "Locked 🔒" badge instead of
- * a Link — browsing a category never bypasses progression. */
+ * Technicals / Personal Finance). The "Locked 🔒" badge is a cosmetic/
+ * gamification signal only (Oct 2026 pSEO/GEO/LLMO audit) — this used
+ * to render a non-clickable <div> with no href at all for a locked
+ * lesson, which meant browsing a category gave a crawler or a visitor
+ * no path to it whatsoever. Every card is a real <Link> now,
+ * regardless of lock state; what's actually gated is still just the
+ * Checkpoint Quiz on the lesson page itself (see LessonViewer.jsx). */
 function FocusedTrackCard({ level, lesson, completed, unlocked }) {
   const { t, language } = useLanguage();
   const theme = LEVEL_THEME[level.theme] || LEVEL_THEME.blue;
@@ -169,43 +183,29 @@ function FocusedTrackCard({ level, lesson, completed, unlocked }) {
   const levelTitle = isLocalized ? getLocalizedLevel(language, level.id, level).title : level.title;
   const lessonTitle = isLocalized ? getLocalizedLesson(language, lesson.id, lesson).title : lesson.title;
 
-  if (!unlocked) {
-    return (
-      <div
-        className="cursor-not-allowed rounded-xl border border-slate-800 bg-slate-900 p-4 text-white opacity-60 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset]"
-        title="Complete the previous level's quizzes to unlock this lesson"
-        aria-disabled="true"
-      >
-        <div className="flex items-center justify-between">
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
-            {t("levelWord")} {level.order} · {levelTitle}
-          </span>
-          <span
-            className="shrink-0 rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] font-bold text-slate-400"
-          >
-            {t("locked")}
-          </span>
-        </div>
-        <p className="mt-2 text-sm font-semibold text-slate-400">{lessonTitle}</p>
-        <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} {t("minWord")}</p>
-      </div>
-    );
-  }
-
   return (
     <Link
       href={`/learn/${level.id}/${lesson.id}`}
-      className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-white shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] transition-all hover:border-slate-700 hover:bg-slate-800"
+      className={`rounded-xl border border-slate-800 bg-slate-900 p-4 text-white shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] transition-all ${
+        unlocked ? "hover:border-slate-700 hover:bg-slate-800" : "opacity-80 hover:border-slate-700 hover:bg-slate-800"
+      }`}
     >
       <div className="flex items-center justify-between">
         <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${theme.chip}`}>
           {t("levelWord")} {level.order} · {levelTitle}
         </span>
-        {completed && (
+        {completed ? (
           <span className="text-emerald-400" aria-hidden="true">
             ✓
           </span>
-        )}
+        ) : !unlocked ? (
+          <span
+            className="shrink-0 rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] font-bold text-slate-400"
+            title="Complete the previous level's quizzes to unlock this lesson's checkpoint quiz"
+          >
+            {t("locked")}
+          </span>
+        ) : null}
       </div>
       <p className="mt-2 text-sm font-semibold text-white">{lessonTitle}</p>
       <p className="mt-1 text-xs text-slate-500">~{lesson.estMinutes} {t("minWord")}</p>

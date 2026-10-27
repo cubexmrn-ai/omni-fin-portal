@@ -294,18 +294,12 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
                     ? getLocalizedLesson(language, roadmapLesson.id, roadmapLesson).title
                     : roadmapLesson.title;
 
-                  if (!unlocked) {
-                    return (
-                      <li
-                        key={roadmapLesson.id}
-                        className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-500"
-                      >
-                        <span className="truncate">{roadmapLessonTitle}</span>
-                        <span aria-hidden="true">🔒</span>
-                      </li>
-                    );
-                  }
-
+                  // Oct 2026 pSEO/GEO/LLMO audit: a locked lesson used
+                  // to render here as a plain <li><span> with no href
+                  // at all — the in-lesson roadmap, same as the hub's
+                  // cards above, gave a crawler (and a visitor ahead of
+                  // schedule) no clickable path forward. The 🔒 is now
+                  // a cosmetic badge only; the Link is always real.
                   return (
                     <li key={roadmapLesson.id}>
                       <Link
@@ -313,15 +307,21 @@ function LessonOutlineSidebar({ level, lessonId, progress }) {
                         className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ${
                           isActive
                             ? "bg-blue-500/15 font-semibold text-blue-300"
-                            : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            : unlocked
+                            ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                            : "text-slate-500 hover:bg-slate-800 hover:text-slate-300"
                         }`}
                       >
                         <span className="truncate">{roadmapLessonTitle}</span>
-                        {completed && !isActive && (
+                        {completed && !isActive ? (
                           <span className="shrink-0 text-emerald-400" aria-hidden="true">
                             ✓
                           </span>
-                        )}
+                        ) : !unlocked ? (
+                          <span className="shrink-0" aria-hidden="true">
+                            🔒
+                          </span>
+                        ) : null}
                       </Link>
                     </li>
                   );
