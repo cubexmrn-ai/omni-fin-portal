@@ -164,15 +164,23 @@ export default async function AiNewsItemPage({ params }) {
         items={[
           { name: "Home", href: "/" },
           { name: "AI News", href: "/ai-news" },
-          // No href for the category crumb: /ai-news's category tabs
+          // The category crumb is intentionally left out of the
+          // breadcrumb trail entirely (rather than included without a
+          // URL) because /ai-news's category tabs
           // (components/ai-news/MarketInsightsExplorer.jsx) are plain
           // client-side state, not driven by a URL query param, so
           // "/ai-news?category=X" would silently do nothing — the same
           // kind of promised-but-missing capability this project's own
           // honesty bar has flagged and fixed before (see
           // components/SiteStructuredData.jsx's SearchAction history).
-          ...(item.category ? [{ name: item.category }] : []),
-          { name: item.title },
+          // Every remaining crumb — including this current-page one —
+          // gets a real, resolvable href: Google Search Console now
+          // flags an itemListElement entry with no "item" URL as an
+          // error ("Missing field 'item'"), even for the final/current
+          // page, so the old "last item can omit item" assumption no
+          // longer holds in practice. `pageUrl` above is already this
+          // exact page's own canonical URL.
+          { name: item.title, href: `/ai-news/${item.slug}` },
         ]}
       />
 
