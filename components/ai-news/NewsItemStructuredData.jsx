@@ -16,22 +16,34 @@
 export default function NewsItemStructuredData({ item, pageUrl, siteUrl }) {
   if (!item?.title) return null;
 
+  const organization = {
+    "@type": "Organization",
+    name: "OmniFin Portal",
+    url: siteUrl,
+  };
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
     url: pageUrl,
     name: `${item.title} — OmniFin Portal AI News`,
     ...(item.summary ? { description: item.summary } : item.excerpt ? { description: item.excerpt } : {}),
+    // datePublished only — no dateModified, since there's no real
+    // edit-tracking for this page's own commentary (the AI summary/
+    // sentiment read is generated once, at the same time the headline
+    // was first seen) and this project's honesty bar doesn't fabricate
+    // a modification date just to fill the field. publishedAt is the
+    // one timestamp this page genuinely has either way it was
+    // resolved (store-first or live-fallback — see app/ai-news/[slug]/
+    // page.jsx's own header comment for that split).
+    ...(item.publishedAt ? { datePublished: item.publishedAt } : {}),
+    author: organization,
     isPartOf: {
       "@type": "WebSite",
       name: "OmniFin Portal",
       url: siteUrl,
     },
-    publisher: {
-      "@type": "Organization",
-      name: "OmniFin Portal",
-      url: siteUrl,
-    },
+    publisher: organization,
     ...(item.link
       ? {
           citation: {
