@@ -109,7 +109,7 @@ const loadMatch = cache(async (slug) => {
 });
 
 export async function generateMetadata({ params }) {
-  const { item } = await loadMatch(params.slug);
+  const { item, macroImpactItem } = await loadMatch(params.slug);
 
   if (!item) {
     return buildMetadata({
@@ -122,7 +122,28 @@ export async function generateMetadata({ params }) {
   }
 
   const title = `${item.title} — ${item.source} | OmniFin Portal AI News`;
-  const description = (item.summary || item.excerpt || item.title).slice(0, 300);
+
+  // Oct 29 2026 GSC review: a dry, institutional headline (e.g. "Aviva
+  // Investors launches tokenized share class...") can rank just as well
+  // as a narrative one and still get 0% CTR — the gap isn't fixable by
+  // editing the real third-party headline (that stays verbatim, same
+  // honesty bar as NewsItemStructuredData.jsx's `citation`), but the
+  // macro impact read below IS OmniFin's own, already-computed data
+  // that was never making it into the snippet. Leading the description
+  // with it gives both a searcher and an AI answer engine a concrete,
+  // factual reason to click/cite beyond a plain restatement of the
+  // headline — same honesty bar as the page body: only real computed
+  // directional reads, never invented ones.
+  const impactClause =
+    macroImpactItem && (macroImpactItem.favorable?.length || macroImpactItem.unfavorable?.length)
+      ? `Likely impact: ${[
+          macroImpactItem.favorable?.length ? `favorable for ${macroImpactItem.favorable.join(", ")}` : null,
+          macroImpactItem.unfavorable?.length ? `unfavorable for ${macroImpactItem.unfavorable.join(", ")}` : null,
+        ]
+          .filter(Boolean)
+          .join("; ")}. `
+      : "";
+  const description = (impactClause + (item.summary || item.excerpt || item.title)).slice(0, 300);
 
   return buildMetadata({
     title,
@@ -329,6 +350,27 @@ export default async function AiNewsItemPage({ params }) {
             </div>
           </div>
         )}
+
+        {/* Oct 29 2026 GSC review: AI News permalinks already link out to
+            the relevant /converters pair above, but never anywhere into
+            the Academy — an evergreen, always-honestly-relevant CTA
+            (financial literacy fundamentals are genuinely useful context
+            for any finance headline, unlike forcing a specific
+            calculator link onto a story it may not actually relate to)
+            closes that gap without stretching the honesty bar. */}
+        <div className="mt-6 rounded-xl border border-brand-100 bg-brand-50/60 p-5 text-sm">
+          <p className="font-semibold text-slate-900">New to the fundamentals behind stories like this?</p>
+          <p className="mt-1 text-slate-600">
+            OmniFin Academy covers money basics, risk management, and reading markets — free, self-paced,
+            no sign-up required.
+          </p>
+          <Link
+            href="/learn"
+            className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800"
+          >
+            Start OmniFin Academy →
+          </Link>
+        </div>
 
         <div className="mt-8">
           <Link href="/ai-news" className="text-sm font-medium text-brand-600 hover:text-brand-700">
