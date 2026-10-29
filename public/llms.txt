@@ -40,6 +40,14 @@ https://llmstxt.org/ for the convention this file follows.
   Gold, silver, cash, and savings checked against the live Nisab threshold.
 - Savings & Inflation Calculator: https://www.omnifinportal.com/tools/savings-inflation-calculator
   Purchasing-power erosion vs. compound savings growth, side by side.
+- Retirement Savings Calculator: https://www.omnifinportal.com/tools/retirement-calculator
+  Projected balance at retirement age, plus a 4%-rule income estimate against your own target.
+- 401(k) vs Roth IRA Calculator: https://www.omnifinportal.com/tools/401k-vs-roth-ira-calculator
+  Compares Traditional and Roth accounts at the same paycheck cost today, not the same nominal amount.
+- Compound Interest Calculator: https://www.omnifinportal.com/tools/compound-interest-calculator
+  Final balance, total contributed, and total growth, with a year-by-year breakdown table.
+- Net Worth Tracker: https://www.omnifinportal.com/tools/net-worth-tracker
+  Assets minus liabilities, saved only to the visitor's own browser.
 
 ## Utility Tools Suite (free, 100% client-side, no sign-up)
 - Word & Character Counter: https://www.omnifinportal.com/tools/word-counter

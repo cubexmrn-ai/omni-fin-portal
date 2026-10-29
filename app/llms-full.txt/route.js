@@ -32,6 +32,7 @@ import {
 import { FEATURED_UNIT_PAIRS } from "@/lib/unitSlugs";
 import { getAllLessonsFlat } from "@/lib/academyData";
 import { BLOG_POSTS } from "@/lib/blogPosts";
+import { HOUSEHOLD_TOOLS } from "@/lib/toolsData";
 import { getSiteUrl } from "@/lib/siteUrl";
 
 export const dynamic = "force-static";
@@ -82,6 +83,20 @@ function buildLlmsFullText() {
   lines.push(`## Unit Conversions (${FEATURED_UNIT_PAIRS.length})`);
   for (const pair of FEATURED_UNIT_PAIRS) {
     lines.push(`- ${pair.title || pair.slug}: ${siteUrl}/converters/unit/${pair.slug}`);
+  }
+  lines.push("");
+
+  // Phase 3 AEO/LLMO pass (Oct 30 2026): previously missing entirely —
+  // app/tools/page.jsx's Household Financial Tools grid had no
+  // equivalent here, so the household calculators (including the 4
+  // just-added Retirement/401(k) vs Roth/Compound Interest/Net Worth
+  // tools) were invisible to this index even though they're genuinely
+  // some of the highest-value, most answer-engine-citable pages on the
+  // site. Sourced from lib/toolsData.js, the same array the hub page
+  // itself renders from, so this can't drift out of sync either.
+  lines.push(`## Household Financial Tools (${HOUSEHOLD_TOOLS.length})`);
+  for (const tool of HOUSEHOLD_TOOLS) {
+    lines.push(`- ${tool.title}: ${siteUrl}${tool.href}`);
   }
   lines.push("");
 

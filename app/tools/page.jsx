@@ -1,6 +1,7 @@
 import Link from "next/link";
 import UtilityDropzone from "@/components/tools/UtilityDropzone";
 import { buildMetadata } from "@/lib/pageMetadata";
+import { HOUSEHOLD_TOOLS } from "@/lib/toolsData";
 
 // Small, dependency-free inline-SVG icons for the Utility Tools grid
 // below (no icon library is installed in this project, so these are
@@ -139,57 +140,6 @@ const UTILITY_TOOLS = [
     title: "PDF Table Extractor",
     description: "Pull tabular data out of a PDF and export it as a CSV file, right in your browser.",
     Icon: PdfTableExtractorIcon,
-  },
-];
-
-const HOUSEHOLD_TOOLS = [
-  {
-    href: "/tools/gold-jewellery-calculator",
-    title: "Gold & Jewellery Price Calculator",
-    description:
-      "Live gold value by tola, gram or karat, plus making charges, GST/VAT, and an old-gold exchange credit.",
-  },
-  {
-    href: "/tools/loan-emi-tax-calculator",
-    title: "Loan EMI & Salary Tax Calculator",
-    description:
-      "Your monthly loan installment and payoff schedule, or a quick Pakistan salary-tax estimate.",
-  },
-  {
-    href: "/tools/zakat-calculator",
-    title: "Zakat Calculator",
-    description:
-      "Gold, silver, cash and savings checked against the live nisab threshold — 2.5% zakat-due estimate.",
-  },
-  {
-    href: "/tools/savings-inflation-calculator",
-    title: "Savings & Inflation Calculator",
-    description:
-      "What inflation does to cash left idle, versus saving and topping it up over time — in plain language.",
-  },
-  {
-    href: "/tools/retirement-calculator",
-    title: "Retirement Savings Calculator",
-    description:
-      "Projected balance at retirement age, plus a 4%-rule income estimate against your own target.",
-  },
-  {
-    href: "/tools/401k-vs-roth-ira-calculator",
-    title: "401(k) vs Roth IRA Calculator",
-    description:
-      "Compare Traditional and Roth accounts at the exact same paycheck cost — see which wins after tax.",
-  },
-  {
-    href: "/tools/compound-interest-calculator",
-    title: "Compound Interest Calculator",
-    description:
-      "Final balance, total contributed, and total growth for any amount plus monthly contributions.",
-  },
-  {
-    href: "/tools/net-worth-tracker",
-    title: "Net Worth Tracker",
-    description:
-      "List your assets and liabilities for an instant net worth figure, saved only to your own browser.",
   },
 ];
 

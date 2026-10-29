@@ -23,8 +23,18 @@
 import Link from "next/link";
 import { trackEvent } from "@/lib/gtag";
 
+// Phase 4 (Oct 30 2026 roadmap round): widened from 3 to 4 destinations
+// now that /tools genuinely warrants one of its own — at launch it was
+// just 4 niche household calculators, not an obviously universal
+// next-step for every visitor; after the Oct 30 round it's 8,
+// including Retirement, 401(k) vs Roth IRA, Compound Interest and Net
+// Worth — broad enough that "manage your own finances" is now a fair,
+// always-relevant fourth option alongside rates, education, and
+// journaling, same honesty bar as the original 3 (every visitor here
+// plausibly cares about at least one of these).
 const DESTINATIONS = [
   { href: "/converters", label: "Currency & Metals Converters", id: "converters" },
+  { href: "/tools", label: "Household Finance Calculators", id: "tools" },
   { href: "/learn", label: "OmniFin Academy", id: "academy" },
   { href: "/journal", label: "Trading & Asset Journal", id: "journal" },
 ];
