@@ -84,7 +84,7 @@ export default function TraditionalVsRothCalculatorPage() {
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-sm leading-relaxed text-slate-600 shadow-card">
           <h2 className="text-base font-bold text-slate-900">
-            Why "same contribution amount" isn't a fair comparison
+            Why &ldquo;same contribution amount&rdquo; isn&apos;t a fair comparison
           </h2>
           <p className="mt-3">
             A Traditional 401(k) or IRA contribution comes out of your paycheck before income tax
