@@ -81,7 +81,7 @@ function PdfTableExtractorIcon(props) {
 export const metadata = buildMetadata({
   title: "Free Online Tools — Household Finance & Utility Tools | OmniFin Portal",
   description:
-    "Free household finance calculators (gold & jewellery, loan EMI, zakat, savings & inflation) plus a full utility tools suite — word counter, JSON formatter, case converter, Base64 encoder, password generator, image compressor, PDF table extractor, and a Markdown editor. All run instantly in your browser.",
+    "Free household finance calculators (gold & jewellery, loan EMI, zakat, savings & inflation, retirement, 401(k) vs Roth IRA, compound interest, net worth) plus a full utility tools suite — word counter, JSON formatter, case converter, Base64 encoder, password generator, image compressor, PDF table extractor, and a Markdown editor. All run instantly in your browser.",
   path: "/tools",
 });
 
@@ -166,6 +166,30 @@ const HOUSEHOLD_TOOLS = [
     title: "Savings & Inflation Calculator",
     description:
       "What inflation does to cash left idle, versus saving and topping it up over time — in plain language.",
+  },
+  {
+    href: "/tools/retirement-calculator",
+    title: "Retirement Savings Calculator",
+    description:
+      "Projected balance at retirement age, plus a 4%-rule income estimate against your own target.",
+  },
+  {
+    href: "/tools/401k-vs-roth-ira-calculator",
+    title: "401(k) vs Roth IRA Calculator",
+    description:
+      "Compare Traditional and Roth accounts at the exact same paycheck cost — see which wins after tax.",
+  },
+  {
+    href: "/tools/compound-interest-calculator",
+    title: "Compound Interest Calculator",
+    description:
+      "Final balance, total contributed, and total growth for any amount plus monthly contributions.",
+  },
+  {
+    href: "/tools/net-worth-tracker",
+    title: "Net Worth Tracker",
+    description:
+      "List your assets and liabilities for an instant net worth figure, saved only to your own browser.",
   },
 ];
 

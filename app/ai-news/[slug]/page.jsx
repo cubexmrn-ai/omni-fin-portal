@@ -49,6 +49,7 @@ import { getNewsItemBySlug } from "@/lib/newsStore";
 import { getUnifiedRates } from "@/lib/marketData";
 import { getPairRate } from "@/lib/assetConversion";
 import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
+import { matchCalculatorCta } from "@/lib/calculatorCtaMatch";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { formatNumber } from "@/lib/formatNumber";
@@ -178,6 +179,16 @@ export default async function AiNewsItemPage({ params }) {
   const relatedHeadlines = allItems
     .filter((i) => i.slug !== item.slug && i.category === item.category)
     .slice(0, 4);
+
+  // Phase 1 roadmap item (Oct 30 2026): a sharper, headline-specific
+  // calculator CTA for the subset of stories whose own text literally
+  // names a matching topic (retirement, 401(k)/Roth, compound
+  // interest, net worth) — see lib/calculatorCtaMatch.js's header
+  // comment for why this is keyword-gated rather than a loose
+  // category guess. Most headlines won't match anything, and for
+  // those the evergreen Academy CTA below remains the only CTA, same
+  // as before this change.
+  const calculatorCta = matchCalculatorCta(item);
 
   return (
     <>
@@ -354,6 +365,23 @@ export default async function AiNewsItemPage({ params }) {
                 </TrackedCtaLink>
               ))}
             </div>
+          </div>
+        )}
+
+        {calculatorCta && (
+          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 text-sm">
+            <p className="font-semibold text-slate-900">
+              This story touches on {calculatorCta.label.toLowerCase()}
+            </p>
+            <p className="mt-1 text-slate-600">{calculatorCta.blurb}</p>
+            <TrackedCtaLink
+              href={calculatorCta.href}
+              eventName="ai_news_calculator_cta_click"
+              eventParams={{ slug: item.slug, calculator: calculatorCta.id }}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              Try the {calculatorCta.label} →
+            </TrackedCtaLink>
           </div>
         )}
 

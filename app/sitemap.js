@@ -62,6 +62,12 @@ export default async function sitemap() {
     { path: "/tools/loan-emi-tax-calculator", changeFrequency: "weekly", priority: 0.8 },
     { path: "/tools/zakat-calculator", changeFrequency: "weekly", priority: 0.8 },
     { path: "/tools/savings-inflation-calculator", changeFrequency: "weekly", priority: 0.8 },
+    // Phase 1 pSEO calculator corridors (Oct 30 2026 strategy round) —
+    // same priority tier as the other Household Financial Tools above.
+    { path: "/tools/retirement-calculator", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/tools/401k-vs-roth-ira-calculator", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/tools/compound-interest-calculator", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/tools/net-worth-tracker", changeFrequency: "weekly", priority: 0.8 },
     // Utility Tools Suite — 100% client-side, zero-friction tools
     // (see components/tools/*.jsx and that section's own header notes).
     { path: "/tools/word-counter", changeFrequency: "monthly", priority: 0.7 },
