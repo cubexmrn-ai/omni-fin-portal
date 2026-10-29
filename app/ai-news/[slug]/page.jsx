@@ -43,6 +43,7 @@ import Link from "next/link";
 import BreadcrumbStructuredData from "@/components/BreadcrumbStructuredData";
 import NewsItemStructuredData from "@/components/ai-news/NewsItemStructuredData";
 import AdSlot from "@/components/AdSlot";
+import TrackedCtaLink from "@/components/TrackedCtaLink";
 import { getCachedAggregatedNews } from "@/lib/cachedData";
 import { getNewsItemBySlug } from "@/lib/newsStore";
 import { getUnifiedRates } from "@/lib/marketData";
@@ -231,14 +232,15 @@ export default async function AiNewsItemPage({ params }) {
           </p>
 
           {item.link && (
-            <a
+            <TrackedCtaLink
               href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
+              external
+              eventName="ai_news_outlet_click"
+              eventParams={{ slug: item.slug, source: item.source }}
               className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 hover:bg-brand-100"
             >
               Read the full story at {item.source} ↗
-            </a>
+            </TrackedCtaLink>
           )}
         </div>
       </section>
@@ -309,11 +311,13 @@ export default async function AiNewsItemPage({ params }) {
                 const rate = ratesPayload
                   ? getPairRate({ ...pair, ratesPayload })
                   : null;
-                const slug = `${pair.fromCode.toLowerCase()}-to-${pair.toCode.toLowerCase()}`;
+                const pairSlug = `${pair.fromCode.toLowerCase()}-to-${pair.toCode.toLowerCase()}`;
                 return (
-                  <Link
+                  <TrackedCtaLink
                     key={asset}
-                    href={`/converters/${slug}`}
+                    href={`/converters/${pairSlug}`}
+                    eventName="ai_news_converter_click"
+                    eventParams={{ slug: item.slug, pair: pairSlug }}
                     className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm hover:border-brand-300 hover:bg-brand-50"
                   >
                     <span className="font-medium text-slate-700">{asset}</span>
@@ -322,7 +326,7 @@ export default async function AiNewsItemPage({ params }) {
                         ? `1 ${pair.fromCode} = ${formatNumber(rate, { maximumFractionDigits: 6 })} ${pair.toCode}`
                         : "View live rate →"}
                     </span>
-                  </Link>
+                  </TrackedCtaLink>
                 );
               })}
             </div>
@@ -338,14 +342,16 @@ export default async function AiNewsItemPage({ params }) {
             </h2>
             <div className="mt-3 space-y-2">
               {relatedHeadlines.map((related) => (
-                <Link
+                <TrackedCtaLink
                   key={related.slug}
                   href={`/ai-news/${related.slug}`}
+                  eventName="ai_news_related_headline_click"
+                  eventParams={{ from_slug: item.slug, to_slug: related.slug }}
                   className="block rounded-lg border border-slate-100 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:border-brand-300 hover:text-brand-700"
                 >
                   {related.title}
                   <span className="ml-1.5 text-xs font-normal text-slate-400">— {related.source}</span>
-                </Link>
+                </TrackedCtaLink>
               ))}
             </div>
           </div>
@@ -364,12 +370,14 @@ export default async function AiNewsItemPage({ params }) {
             OmniFin Academy covers money basics, risk management, and reading markets — free, self-paced,
             no sign-up required.
           </p>
-          <Link
+          <TrackedCtaLink
             href="/learn"
+            eventName="ai_news_academy_cta_click"
+            eventParams={{ slug: item.slug }}
             className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-800"
           >
             Start OmniFin Academy →
-          </Link>
+          </TrackedCtaLink>
         </div>
 
         <div className="mt-8">

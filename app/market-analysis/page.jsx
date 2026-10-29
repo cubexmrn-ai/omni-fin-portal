@@ -9,6 +9,7 @@ import WatchlistStrip from "@/components/market-analysis/WatchlistStrip";
 import CorrelationMatrix from "@/components/market-analysis/CorrelationMatrix";
 import AdSlot from "@/components/AdSlot";
 import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
+import GoDeeperStrip from "@/components/GoDeeperStrip";
 import { getUnifiedRates } from "@/lib/marketData";
 import { getWatchlistSnapshot } from "@/lib/marketPulse";
 import { buildMetadata } from "@/lib/pageMetadata";
@@ -130,6 +131,10 @@ export default async function MarketAnalysisPage() {
       </section>
 
       <MarketOverviewBoard />
+
+      <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 lg:px-8">
+        <GoDeeperStrip source="market_analysis" />
+      </div>
 
       {/* AdSense & Monetization Readiness: bottom banner slot — see
           components/AdSlot.jsx. */}

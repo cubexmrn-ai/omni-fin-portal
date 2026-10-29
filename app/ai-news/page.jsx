@@ -8,6 +8,7 @@ import { getLatestWithMacroImpact, isNewsStoreConfigured } from "@/lib/newsStore
 import { getUnifiedRates } from "@/lib/marketData";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
+import GoDeeperStrip from "@/components/GoDeeperStrip";
 
 const aiNewsMetadata = buildMetadata({
   title: "Financial News & Economic Calendar — Forex, Crypto, Commodities & Stocks | OmniFin Portal",
@@ -156,6 +157,10 @@ export default async function AiNewsPage() {
             <EconomicCalendar />
           </div>
         </MarketInsightsExplorer>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-10 sm:px-6 lg:px-8">
+        <GoDeeperStrip source="ai_news_hub" />
       </section>
     </>
   );

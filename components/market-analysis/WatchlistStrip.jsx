@@ -17,9 +17,28 @@
 // page reload and no prop-drilling between the two components: they
 // only share a URL.
 
+import Link from "next/link";
 import { useInstrumentParam, TECHNICAL_TO_CANONICAL } from "@/lib/instrumentParam";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 import { trackEvent } from "@/lib/gtag";
+
+// Oct 29 2026 GA4 review: /market-analysis is the site's #2 page by
+// views with zero exit ramp into the pSEO converter pages — mirrors
+// the fix already shipped on AI News permalinks (components/ai-news/
+// NewsItemStructuredData.jsx's sibling, app/ai-news/[slug]/page.jsx's
+// "Live rate right now" widget). Deliberately an explicit map, not a
+// generic code-to-slug deriver: lib/pairSlugs.js's ASSET_CLASSES is
+// only ["fiat", "crypto", "metals"] — there is no commodities class,
+// so WTI crude oil has no real /converters page to link to, and DXY
+// is a calculated proxy index, not a tradable asset with a converter
+// pair at all. Only the 3 rows that genuinely resolve to a real,
+// existing converter page get one; the other 2 just don't render a
+// link, rather than pointing at something that 404s or doesn't exist.
+const WATCHLIST_CONVERTER_SLUG = {
+  XAU: "xau-to-usd",
+  BTC: "btc-to-usd",
+  EURUSD: "eur-to-usd",
+};
 
 const BIAS_TONE = {
   Bullish: "text-emerald-600 bg-emerald-50 border-emerald-200",
@@ -129,6 +148,25 @@ export default function WatchlistStrip({ rows }) {
           );
         })}
       </div>
+
+      {rows.some((row) => WATCHLIST_CONVERTER_SLUG[row.code]) && (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
+          {rows
+            .filter((row) => WATCHLIST_CONVERTER_SLUG[row.code])
+            .map((row) => (
+              <Link
+                key={row.code}
+                href={`/converters/${WATCHLIST_CONVERTER_SLUG[row.code]}`}
+                onClick={() =>
+                  trackEvent("watchlist_converter_click", { instrument: row.code })
+                }
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-slate-300 hover:border-brand-400/40 hover:text-brand-300"
+              >
+                Full {row.label} converter →
+              </Link>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

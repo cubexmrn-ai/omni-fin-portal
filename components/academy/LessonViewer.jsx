@@ -54,6 +54,7 @@ import QuizModule from "@/components/academy/QuizModule";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { getLocalizedLevel, getLocalizedLesson } from "@/lib/i18n/academyLocalized";
 import { getLocalizedLessonContent } from "@/lib/i18n/academyBodyContent";
+import { trackEvent } from "@/lib/gtag";
 
 // Light-surface chip variant of each level's accent color, used on the
 // (light) lesson header and top bar — the dark-card chip variant for
@@ -345,6 +346,17 @@ export default function LessonViewer({ levelId, lessonId }) {
 
   useEffect(() => {
     if (resolved) progress.setLastActive(levelId, lessonId);
+    // Oct 29 2026 GA4 review: Academy had zero event tracking of any
+    // kind — no way to tell whether the Oct 27 navigation un-gating
+    // actually translated into more lessons being opened, let alone
+    // completed. `lesson_view` is the funnel's top: fired once per
+    // lesson visited, independent of whether its level is locked
+    // (matches the lesson content itself, which also renders
+    // unconditionally — see the header comment above this component's
+    // return below).
+    if (resolved) {
+      trackEvent("lesson_view", { level_id: levelId, lesson_id: lessonId });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelId, lessonId]);
 
@@ -392,11 +404,16 @@ export default function LessonViewer({ levelId, lessonId }) {
   const localizedLesson = isLocalized ? getLocalizedLessonContent(language, lesson) : lesson;
 
   function handleQuizFinish({ score, total }) {
-    progress.recordQuizResult(levelId, lessonId, {
+    const { percent, passed } = progress.recordQuizResult(levelId, lessonId, {
       score,
       total,
       passPercent: localizedLesson.quiz?.passPercent ?? 80,
     });
+    // The funnel's actual conversion event — a lesson is only
+    // "Mastered" (and the next level unlocked) once this fires with
+    // passed: true, so this is the one event that answers "are people
+    // actually completing the Academy" rather than just opening it.
+    trackEvent("quiz_result", { level_id: levelId, lesson_id: lessonId, percent, passed });
   }
 
   function handleProceed() {
