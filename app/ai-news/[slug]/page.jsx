@@ -282,6 +282,35 @@ export default async function AiNewsItemPage({ params }) {
           )}
         </div>
 
+        {/* Oct 31 2026 GA4 engagement review: this block used to sit
+            below the ad slot and related-headlines list — far enough
+            down that on the exact headline type it's most relevant for
+            (the retirement/401(k) human-interest stories driving this
+            page's best clicks), GA4 showed visitors bouncing at ~7-10s,
+            almost certainly before ever scrolling this far. Promoted to
+            directly follow the "take" card — the first thing visible
+            after the hero — so the in-site next-step is on-screen
+            immediately for exactly the stories where it's genuinely
+            relevant (see lib/calculatorCtaMatch.js: this still only
+            renders when the headline's own text names the topic, same
+            honesty gate as before, just surfaced earlier). */}
+        {calculatorCta && (
+          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 text-sm">
+            <p className="font-semibold text-slate-900">
+              This story touches on {calculatorCta.label.toLowerCase()}
+            </p>
+            <p className="mt-1 text-slate-600">{calculatorCta.blurb}</p>
+            <TrackedCtaLink
+              href={calculatorCta.href}
+              eventName="ai_news_calculator_cta_click"
+              eventParams={{ slug: item.slug, calculator: calculatorCta.id }}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              Try the {calculatorCta.label} →
+            </TrackedCtaLink>
+          </div>
+        )}
+
         {macroImpactItem && (
           <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-card">
             <h2 className="text-sm font-semibold text-slate-900">Likely macro impact</h2>
@@ -365,23 +394,6 @@ export default async function AiNewsItemPage({ params }) {
                 </TrackedCtaLink>
               ))}
             </div>
-          </div>
-        )}
-
-        {calculatorCta && (
-          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 text-sm">
-            <p className="font-semibold text-slate-900">
-              This story touches on {calculatorCta.label.toLowerCase()}
-            </p>
-            <p className="mt-1 text-slate-600">{calculatorCta.blurb}</p>
-            <TrackedCtaLink
-              href={calculatorCta.href}
-              eventName="ai_news_calculator_cta_click"
-              eventParams={{ slug: item.slug, calculator: calculatorCta.id }}
-              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
-            >
-              Try the {calculatorCta.label} →
-            </TrackedCtaLink>
           </div>
         )}
 
