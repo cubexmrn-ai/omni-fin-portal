@@ -50,6 +50,7 @@ import { getUnifiedRates } from "@/lib/marketData";
 import { getPairRate } from "@/lib/assetConversion";
 import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
 import { matchCalculatorCta } from "@/lib/calculatorCtaMatch";
+import MiniCalculatorPreview from "@/components/ai-news/MiniCalculatorPreview";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { formatNumber } from "@/lib/formatNumber";
@@ -293,21 +294,27 @@ export default async function AiNewsItemPage({ params }) {
             immediately for exactly the stories where it's genuinely
             relevant (see lib/calculatorCtaMatch.js: this still only
             renders when the headline's own text names the topic, same
-            honesty gate as before, just surfaced earlier). */}
+            honesty gate as before, just surfaced earlier).
+
+            Nov 1 2026 retention round: the plain "Try the X Calculator
+            →" link out to the full /tools/* page is now followed by an
+            actually-interactive mini-preview (MiniCalculatorPreview,
+            below) so the FIRST interaction happens inline, with zero
+            navigation — the full tool page is still one click away via
+            its own CTA inside that component, for anyone who wants the
+            complete breakdown. */}
         {calculatorCta && (
           <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 text-sm">
             <p className="font-semibold text-slate-900">
               This story touches on {calculatorCta.label.toLowerCase()}
             </p>
             <p className="mt-1 text-slate-600">{calculatorCta.blurb}</p>
-            <TrackedCtaLink
-              href={calculatorCta.href}
-              eventName="ai_news_calculator_cta_click"
-              eventParams={{ slug: item.slug, calculator: calculatorCta.id }}
-              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
-            >
-              Try the {calculatorCta.label} →
-            </TrackedCtaLink>
+
+            <MiniCalculatorPreview
+              calculatorCta={calculatorCta}
+              headlineText={`${item.title} ${item.summary || item.excerpt || ""}`}
+              slug={item.slug}
+            />
           </div>
         )}
 
