@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import TranslationDisclaimerModal from "@/components/TranslationDisclaimerModal";
 import ComplianceDisclaimerModal from "@/components/ComplianceDisclaimerModal";
 import StickyBottomTicker from "@/components/StickyBottomTicker";
+import PwaInstallBanner from "@/components/PwaInstallBanner";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { getSiteUrl } from "@/lib/siteUrl";
 import "./globals.css";
@@ -206,6 +207,7 @@ export default function RootLayout({ children }) {
             </main>
             <SiteFooter />
             <StickyBottomTicker />
+            <PwaInstallBanner />
           </BaseCurrencyProvider>
         </LanguageProvider>
       </body>

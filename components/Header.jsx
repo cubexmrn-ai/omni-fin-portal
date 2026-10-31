@@ -57,6 +57,7 @@ import { CURRENCIES, POPULAR_CURRENCY_CODES, getCurrency } from "@/lib/currencie
 import { useBaseCurrency } from "@/lib/baseCurrencyContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { LANGUAGES } from "@/lib/i18n/translations";
+import PwaInstallHeaderButton from "@/components/PwaInstallHeaderButton";
 
 // FINANCIAL_TOOLS_LINKS — unchanged from before the Utility Tools Suite
 // launch (see ToolsCalculatorsDropdown's header note below for how
@@ -484,6 +485,11 @@ export default function Header() {
             <BaseCurrencySelect />
             <LanguageSelect />
           </div>
+
+          {/* Persistent "Install App" entry point — self-hides via its
+              own hook whenever installing isn't currently possible, so
+              it's safe to always render here. */}
+          <PwaInstallHeaderButton />
 
           {/* Primary action — untouched, still a direct shortcut to the
               Metals Calculator, independent of the dropdown above. */}
