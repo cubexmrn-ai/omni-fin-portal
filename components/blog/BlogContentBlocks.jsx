@@ -2,17 +2,35 @@
 //
 // Generic renderer for the `blocks` array in lib/blogPosts.js — see
 // that file's header comment for the content model (heading /
-// paragraph / list / table / formula blocks, each paragraph/list item
-// built from "runs" that are either plain strings or internal
-// { link, text } objects). Kept as one small, dependency-free
-// renderer rather than pulling in a markdown library, since every
-// post's content already lives in this project's own data file, not
-// in files that need parsing.
+// paragraph / list / table / formula / calculator blocks, each
+// paragraph/list item built from "runs" that are either plain strings
+// or internal { link, text } objects). Kept as one small,
+// dependency-free renderer rather than pulling in a markdown library,
+// since every post's content already lives in this project's own data
+// file, not in files that need parsing.
 //
-// Pure server component — no client state, so it costs nothing on
-// every /blog/[slug] page it renders into.
+// This file itself stays a server component — it costs nothing on
+// every /blog/[slug] page it renders into — but a "calculator" block
+// renders one of the existing "use client" tool components directly
+// (Next.js allows a server component to render a client component as
+// a child without itself becoming one), so the interactive widget
+// drops straight into the article body rather than just linking out.
 
 import Link from "next/link";
+import RetirementSavingsCalculator from "@/components/tools/RetirementSavingsCalculator";
+import TraditionalVsRothCalculator from "@/components/tools/TraditionalVsRothCalculator";
+import CompoundInterestCalculator from "@/components/tools/CompoundInterestCalculator";
+import NetWorthTracker from "@/components/tools/NetWorthTracker";
+
+// Keyed by the same short id used elsewhere (lib/calculatorCtaMatch.js,
+// lib/toolsData.js) so a { type: "calculator", id: "..." } block never
+// needs its own bespoke identifier scheme.
+const CALCULATORS = {
+  retirement: RetirementSavingsCalculator,
+  "401k-vs-roth-ira": TraditionalVsRothCalculator,
+  "compound-interest": CompoundInterestCalculator,
+  "net-worth": NetWorthTracker,
+};
 
 function renderRun(run, i) {
   if (typeof run === "string") return run;
@@ -98,6 +116,20 @@ export default function BlogContentBlocks({ blocks }) {
             return <TableBlock key={i} {...block} />;
           case "formula":
             return <FormulaBlock key={i} {...block} />;
+          case "calculator": {
+            const Calculator = CALCULATORS[block.id];
+            if (!Calculator) return null;
+            return (
+              <div key={i} className="!my-6 not-prose">
+                {block.caption && (
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {block.caption}
+                  </p>
+                )}
+                <Calculator />
+              </div>
+            );
+          }
           default:
             return null;
         }
