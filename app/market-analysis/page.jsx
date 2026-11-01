@@ -14,10 +14,19 @@ import { getUnifiedRates } from "@/lib/marketData";
 import { getWatchlistSnapshot } from "@/lib/marketPulse";
 import { buildMetadata } from "@/lib/pageMetadata";
 
+// Nov 2 2026 GSC round: this page sits at ~position 8.5 with real
+// impressions (113 in the last export) but a flat 0% CTR — unlike the
+// /converters/* pages, there's no Google SERP widget intercepting this
+// query, so a title/description rewrite has a real shot at converting
+// those impressions into clicks. The old copy buried "free, no login"
+// at the very end of the description and led the title with a dry
+// feature list rather than the value prop — this version front-loads
+// "Free" and the specific, concrete instruments (Gold, Bitcoin, S&P
+// 500, EUR/USD) likely to match a searcher's actual query terms.
 export const metadata = buildMetadata({
-  title: "Live Market Charts & AI Technical Analysis | OmniFin Portal",
+  title: "Free Live Market Analysis & AI Technical Charts | OmniFin Portal",
   description:
-    "A live market snapshot (S&P 500, Nasdaq, Gold, Bitcoin, EUR/USD), a full interactive TradingView chart, and on-demand rule-based technical analysis (Price Action, Support/Resistance, Fibonacci, RSI/EMA, Gann Theory) — free, no login required.",
+    "Free, no-signup live market analysis: real-time Gold, Bitcoin, S&P 500 and EUR/USD charts plus instant AI-powered technical analysis (RSI, Fibonacci, Support/Resistance).",
   path: "/market-analysis",
 });
 
