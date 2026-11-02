@@ -7,11 +7,17 @@ import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
 import AeoCallout from "@/components/blog/AeoCallout";
 import { buildMetadata } from "@/lib/pageMetadata";
 
+// Nov 2 2026 GSC round: "what is home loan emi" surfaced at position
+// 12 — a genuine definitional-intent query (not widget-capped like a
+// currency pair) that the old calculator-framed title didn't directly
+// answer. Title/description/H1 now lead with the plain-language
+// definition itself before the calculator value prop, same pattern as
+// the /market-analysis CTR fix earlier this round.
 export const metadata = {
   ...buildMetadata({
-    title: "Loan EMI & Salary Tax Calculator | OmniFin Portal",
+    title: "What Is Home Loan EMI? Free EMI & Salary Tax Calculator | OmniFin Portal",
     description:
-      "Free loan EMI calculator with a year-by-year payoff schedule, plus an illustrative Pakistan salary tax estimate — two of the most-searched household finance calculators, in one tool.",
+      "Home loan EMI is your fixed monthly payment (principal + interest). Calculate yours free, plus a year-by-year payoff schedule and a Pakistan salary tax estimate.",
     path: "/tools/loan-emi-tax-calculator",
   }),
   keywords: [
@@ -68,11 +74,12 @@ export default function LoanEmiTaxCalculatorPage() {
             <span className="text-slate-500">Loan EMI &amp; Salary Tax</span>
           </nav>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Loan EMI &amp; Salary Tax Calculator
+            What Is Home Loan EMI? Free EMI &amp; Salary Tax Calculator
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Your monthly loan installment and payoff schedule, or a quick salary-tax estimate — two
-            of the most-searched household finance calculators, in one tool.
+            Home loan EMI is your fixed monthly payment covering both principal and interest.
+            Calculate yours free, plus a quick Pakistan salary-tax estimate — two of the
+            most-searched household finance calculators, in one tool.
           </p>
         </div>
       </section>
