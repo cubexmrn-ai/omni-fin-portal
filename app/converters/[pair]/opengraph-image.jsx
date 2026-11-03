@@ -30,7 +30,7 @@ import {
   FEATURED_ZAKAT_GOLD_AMOUNTS,
 } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
-import { getUnifiedRates } from "@/lib/marketData";
+import { getUnifiedRates, PSEO_STATIC_PAGE_REVALIDATE_SECONDS } from "@/lib/marketData";
 import { WEIGHT_UNITS } from "@/lib/conversionMath";
 import { calculateZakat } from "@/lib/zakatCalculator";
 
@@ -103,7 +103,7 @@ export default async function OgImage({ params }) {
     const grams = tolaAmount * WEIGHT_UNITS.tola;
     let goldValueDisplay = null;
     try {
-      const ratesPayload = await getUnifiedRates();
+      const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
       const zakatResult = calculateZakat({
         xauUsdRate: ratesPayload?.metals?.XAU,
         xagUsdRate: ratesPayload?.metals?.XAG,
@@ -163,7 +163,7 @@ export default async function OgImage({ params }) {
     const { amount, from, to, fromClass, fromCode: aFromCode, toClass, toCode: aToCode } = amountParsed;
     let convertedDisplay = null;
     try {
-      const ratesPayload = await getUnifiedRates();
+      const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
       const rate = getPairRate({ fromClass, fromCode: aFromCode, toClass, toCode: aToCode, ratesPayload });
       convertedDisplay = Number.isFinite(rate) ? formatRate(amount * rate) : null;
     } catch {
@@ -223,7 +223,7 @@ export default async function OgImage({ params }) {
   let rateDisplay = null;
   if (parsed) {
     try {
-      const ratesPayload = await getUnifiedRates();
+      const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
       const rate = getPairRate({
         fromClass: parsed.fromClass,
         fromCode: parsed.fromCode,

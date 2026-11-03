@@ -54,7 +54,7 @@ import {
   FEATURED_ZAKAT_GOLD_AMOUNTS,
 } from "@/lib/pairSlugs";
 import { getPairRate } from "@/lib/assetConversion";
-import { getUnifiedRates } from "@/lib/marketData";
+import { getUnifiedRates, PSEO_STATIC_PAGE_REVALIDATE_SECONDS } from "@/lib/marketData";
 import { getSiteUrl } from "@/lib/siteUrl";
 import { formatNumber } from "@/lib/formatNumber";
 import { buildMetadata } from "@/lib/pageMetadata";
@@ -136,7 +136,7 @@ export async function generateMetadata({ params }) {
     // below also calls it.
     let convertedLabel = "";
     try {
-      const ratesPayload = await getUnifiedRates();
+      const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
       const rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
       if (Number.isFinite(rate)) {
         convertedLabel = ` ≈ ${formatNumber(amount * rate, { maximumFractionDigits: 2 })} ${to.code}`;
@@ -194,7 +194,7 @@ export async function generateMetadata({ params }) {
   let rateLabel = "";
   let rateFormatted = null;
   try {
-    const ratesPayload = await getUnifiedRates();
+    const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
     const rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
     if (Number.isFinite(rate)) {
       rateFormatted = formatNumber(rate, { maximumFractionDigits: 6 });
@@ -265,7 +265,7 @@ export default async function CurrencyPairSeoPage({ params }) {
   let rate = null;
   let fetchedAt = null;
   try {
-    const ratesPayload = await getUnifiedRates();
+    const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
     rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
     fetchedAt = ratesPayload?.fetchedAt || null;
   } catch {
@@ -470,7 +470,7 @@ async function AmountPairSeoPage({ amountParsed }) {
   let rate = null;
   let fetchedAt = null;
   try {
-    const ratesPayload = await getUnifiedRates();
+    const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
     rate = getPairRate({ fromClass, fromCode, toClass, toCode, ratesPayload });
     fetchedAt = ratesPayload?.fetchedAt || null;
   } catch {
@@ -646,7 +646,7 @@ async function ZakatGoldSeoPage({ tolaAmount }) {
 
   let zakatResult = null;
   try {
-    const ratesPayload = await getUnifiedRates();
+    const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
     zakatResult = calculateZakat({
       xauUsdRate: ratesPayload?.metals?.XAU,
       xagUsdRate: ratesPayload?.metals?.XAG,
@@ -843,7 +843,7 @@ async function BaseCurrencyDigestPage({ baseOnly }) {
   let rows = [];
   let fetchedAt = null;
   try {
-    const ratesPayload = await getUnifiedRates();
+    const ratesPayload = await getUnifiedRates({ revalidateSeconds: PSEO_STATIC_PAGE_REVALIDATE_SECONDS });
     fetchedAt = ratesPayload?.fetchedAt || null;
     rows = CURRENCIES.filter((c) => c.code !== baseCode).map((c) => ({
       code: c.code,

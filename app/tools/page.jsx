@@ -3,6 +3,17 @@ import UtilityDropzone from "@/components/tools/UtilityDropzone";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { HOUSEHOLD_TOOLS } from "@/lib/toolsData";
 
+// Nov 3 2026 Vercel ISR-quota round: these calculator pages do no
+// server-side data fetching at all (the math runs entirely client-side
+// in the "use client" calculator component each page wraps) and have
+// no generateStaticParams fan-out — so there's nothing here that ever
+// needs to regenerate. Explicit `revalidate = false` locks in that
+// already-correct default behavior rather than leaving it as an
+// accidental omission a future edit could silently change (e.g. by
+// adding a fetch() call without noticing it would start consuming ISR
+// writes on every one of this project's /tools/* pages).
+export const revalidate = false;
+
 // Small, dependency-free inline-SVG icons for the Utility Tools grid
 // below (no icon library is installed in this project, so these are
 // hand-drawn outline icons matching the rest of the codebase's

@@ -7,6 +7,17 @@ import FinancialDisclaimerNote from "@/components/FinancialDisclaimerNote";
 import AeoCallout from "@/components/blog/AeoCallout";
 import { buildMetadata } from "@/lib/pageMetadata";
 
+// Nov 3 2026 Vercel ISR-quota round: these calculator pages do no
+// server-side data fetching at all (the math runs entirely client-side
+// in the "use client" calculator component each page wraps) and have
+// no generateStaticParams fan-out — so there's nothing here that ever
+// needs to regenerate. Explicit `revalidate = false` locks in that
+// already-correct default behavior rather than leaving it as an
+// accidental omission a future edit could silently change (e.g. by
+// adding a fetch() call without noticing it would start consuming ISR
+// writes on every one of this project's /tools/* pages).
+export const revalidate = false;
+
 export const metadata = {
   ...buildMetadata({
     title: "Savings & Inflation Calculator | OmniFin Portal",
