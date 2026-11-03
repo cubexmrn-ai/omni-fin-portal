@@ -50,6 +50,7 @@ import { getUnifiedRates } from "@/lib/marketData";
 import { getPairRate } from "@/lib/assetConversion";
 import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
 import { matchCalculatorCta } from "@/lib/calculatorCtaMatch";
+import { matchPillarGuide } from "@/lib/pillarGuideMatch";
 import MiniCalculatorPreview from "@/components/ai-news/MiniCalculatorPreview";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -191,6 +192,17 @@ export default async function AiNewsItemPage({ params }) {
   // as before this change.
   const calculatorCta = matchCalculatorCta(item);
 
+  // Nov 3 2026 traffic-concentration round: a second, separate
+  // evidence-gated match (see lib/pillarGuideMatch.js's header
+  // comment) pointing a headline at the single evergreen /blog/
+  // deep-dive that actually covers its topic — closing the GSC-
+  // observed gap where the 2 viral 401(k)/retirement human-interest
+  // stories drove 83% of all clicks while every evergreen guide sat
+  // at 0, with nothing on those permalinks pointing a reader toward
+  // them. Independent of calculatorCta above: a story can earn
+  // either, both, or neither.
+  const pillarGuide = matchPillarGuide(item);
+
   return (
     <>
       <NewsItemStructuredData item={item} pageUrl={pageUrl} siteUrl={siteUrl} />
@@ -315,6 +327,29 @@ export default async function AiNewsItemPage({ params }) {
               headlineText={`${item.title} ${item.summary || item.excerpt || ""}`}
               slug={item.slug}
             />
+          </div>
+        )}
+
+        {/* Nov 3 2026 traffic-concentration round: a contextual link
+            into the matching evergreen /blog/ guide — see
+            lib/pillarGuideMatch.js. Separate block from the
+            calculator CTA above (both can render for the same
+            story) because this is pointing at a full deep-dive
+            article, not an inline interactive tool, and reads better
+            as its own distinct card rather than crowded into the
+            calculator one. */}
+        {pillarGuide && (
+          <div className="mt-6 rounded-xl border border-indigo-200 bg-indigo-50/60 p-5 text-sm">
+            <p className="font-semibold text-slate-900">Go deeper: {pillarGuide.label}</p>
+            <p className="mt-1 text-slate-600">{pillarGuide.blurb}</p>
+            <TrackedCtaLink
+              href={pillarGuide.href}
+              eventName="ai_news_pillar_guide_click"
+              eventParams={{ slug: item.slug, guide: pillarGuide.id }}
+              className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:text-indigo-800"
+            >
+              Read the full guide →
+            </TrackedCtaLink>
           </div>
         )}
 
