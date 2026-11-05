@@ -21,15 +21,21 @@ import RetirementSavingsCalculator from "@/components/tools/RetirementSavingsCal
 import TraditionalVsRothCalculator from "@/components/tools/TraditionalVsRothCalculator";
 import CompoundInterestCalculator from "@/components/tools/CompoundInterestCalculator";
 import NetWorthTracker from "@/components/tools/NetWorthTracker";
+import LoanEmiTaxCalculator from "@/components/tools/LoanEmiTaxCalculator";
 
 // Keyed by the same short id used elsewhere (lib/calculatorCtaMatch.js,
 // lib/toolsData.js) so a { type: "calculator", id: "..." } block never
 // needs its own bespoke identifier scheme.
+//
+// "loan-emi" added Nov 5 2026 for the housing-market pillar guide —
+// no prior blog post embedded the EMI calculator inline, only linked
+// out to it, so this id didn't exist here yet.
 const CALCULATORS = {
   retirement: RetirementSavingsCalculator,
   "401k-vs-roth-ira": TraditionalVsRothCalculator,
   "compound-interest": CompoundInterestCalculator,
   "net-worth": NetWorthTracker,
+  "loan-emi": LoanEmiTaxCalculator,
 };
 
 function renderRun(run, i) {
