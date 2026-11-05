@@ -22,6 +22,7 @@ import TraditionalVsRothCalculator from "@/components/tools/TraditionalVsRothCal
 import CompoundInterestCalculator from "@/components/tools/CompoundInterestCalculator";
 import NetWorthTracker from "@/components/tools/NetWorthTracker";
 import LoanEmiTaxCalculator from "@/components/tools/LoanEmiTaxCalculator";
+import RiskRewardCalculator from "@/components/calculators/RiskRewardCalculator";
 
 // Keyed by the same short id used elsewhere (lib/calculatorCtaMatch.js,
 // lib/toolsData.js) so a { type: "calculator", id: "..." } block never
@@ -30,12 +31,19 @@ import LoanEmiTaxCalculator from "@/components/tools/LoanEmiTaxCalculator";
 // "loan-emi" added Nov 5 2026 for the housing-market pillar guide —
 // no prior blog post embedded the EMI calculator inline, only linked
 // out to it, so this id didn't exist here yet.
+//
+// "risk-reward" added Nov 5 2026 for the elections/yields/gold-
+// rotation guide — pulled from components/calculators/ (the Trading
+// Calculator Suite), not components/tools/ like the others above;
+// it's the same self-contained "use client" card either way, just a
+// different directory, so it drops in the same way.
 const CALCULATORS = {
   retirement: RetirementSavingsCalculator,
   "401k-vs-roth-ira": TraditionalVsRothCalculator,
   "compound-interest": CompoundInterestCalculator,
   "net-worth": NetWorthTracker,
   "loan-emi": LoanEmiTaxCalculator,
+  "risk-reward": RiskRewardCalculator,
 };
 
 function renderRun(run, i) {
