@@ -23,6 +23,7 @@ import CompoundInterestCalculator from "@/components/tools/CompoundInterestCalcu
 import NetWorthTracker from "@/components/tools/NetWorthTracker";
 import LoanEmiTaxCalculator from "@/components/tools/LoanEmiTaxCalculator";
 import RiskRewardCalculator from "@/components/calculators/RiskRewardCalculator";
+import GoldJewelleryCalculator from "@/components/tools/GoldJewelleryCalculator";
 
 // Keyed by the same short id used elsewhere (lib/calculatorCtaMatch.js,
 // lib/toolsData.js) so a { type: "calculator", id: "..." } block never
@@ -44,6 +45,7 @@ const CALCULATORS = {
   "net-worth": NetWorthTracker,
   "loan-emi": LoanEmiTaxCalculator,
   "risk-reward": RiskRewardCalculator,
+  "gold-jewellery": GoldJewelleryCalculator,
 };
 
 function renderRun(run, i) {
