@@ -51,6 +51,7 @@ import { getPairRate } from "@/lib/assetConversion";
 import { attachNewsItemSlugs, buildNewsItemSlug } from "@/lib/newsSlug";
 import { matchCalculatorCta } from "@/lib/calculatorCtaMatch";
 import { matchPillarGuide } from "@/lib/pillarGuideMatch";
+import { BLOG_POSTS } from "@/lib/blogPosts";
 import MiniCalculatorPreview from "@/components/ai-news/MiniCalculatorPreview";
 import { buildMetadata } from "@/lib/pageMetadata";
 import { getSiteUrl } from "@/lib/siteUrl";
@@ -203,6 +204,28 @@ export default async function AiNewsItemPage({ params }) {
   // either, both, or neither.
   const pillarGuide = matchPillarGuide(item);
 
+  // Nov 9 2026 round: the GSC audit identified these AI News permalinks
+  // as literally the highest-crawl-frequency pages on the entire site
+  // (every GSC pull this window shows the 401(k)/retirement human-
+  // interest headlines carrying 80%+ of all clicks), yet the ONLY path
+  // from here into the evergreen /blog/ guides was the pillarGuide card
+  // above — which only renders when this specific headline's own text
+  // happens to match one guide's topic. Most headlines don't match
+  // anything, so most of this page's crawl/link equity was going
+  // nowhere. This is a second, deliberately UNCONDITIONAL block —
+  // always renders, independent of topical match — so every single
+  // permalink on the site's highest-traffic page type feeds crawl
+  // priority into the guides, same evergreen/generic intent as
+  // components/HomeSections.jsx's LatestGuidesSection (always the most
+  // recently published posts, not hardcoded to today's 4). Excludes
+  // whichever guide the topical pillarGuide card above already linked,
+  // so a reader never sees the exact same guide offered twice on one
+  // page.
+  const unconditionalGuides = [...BLOG_POSTS]
+    .filter((post) => !pillarGuide || `/blog/${post.slug}` !== pillarGuide.href)
+    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+    .slice(0, 3);
+
   return (
     <>
       <NewsItemStructuredData item={item} pageUrl={pageUrl} siteUrl={siteUrl} />
@@ -350,6 +373,29 @@ export default async function AiNewsItemPage({ params }) {
             >
               Read the full guide →
             </TrackedCtaLink>
+          </div>
+        )}
+
+        {/* Nov 9 2026 round: unconditional static link block — see the
+            unconditionalGuides comment above for why this always
+            renders, distinct from the topically-gated pillarGuide card
+            above it. */}
+        {unconditionalGuides.length > 0 && (
+          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+            <h2 className="text-sm font-semibold text-slate-900">From the OmniFin Academy guides</h2>
+            <div className="mt-3 space-y-2">
+              {unconditionalGuides.map((post) => (
+                <TrackedCtaLink
+                  key={post.slug}
+                  href={`/blog/${post.slug}`}
+                  eventName="ai_news_static_guide_click"
+                  eventParams={{ slug: item.slug, guide: post.slug }}
+                  className="block rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  {post.title}
+                </TrackedCtaLink>
+              ))}
+            </div>
           </div>
         )}
 

@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { CURRENCIES } from "@/lib/currencies";
 import { CRYPTO_ASSETS } from "@/lib/crypto";
+import { BLOG_POSTS } from "@/lib/blogPosts";
 import UniversalSmartSearch from "@/components/UniversalSmartSearch";
 
 const ACADEMY_LEVELS = [
@@ -451,6 +452,70 @@ export function AcademyRoadmapSection() {
               )}
             </div>
           </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Nov 9 2026 round: the GSC audit found the homepage — almost
+// certainly the most frequently crawled page on the whole site — had
+// NO link into /blog at all. New guides were technically reachable
+// (sitemap.xml, the /blog index, and each post's auto-generated
+// "related posts" list all already included them), but "technically
+// reachable" and "fed crawl priority from the site's highest-traffic
+// page" are different things, and the 4 newest pillar guides had zero
+// of the latter. This closes that gap generically — it always shows
+// the most recently published posts, not just today's 4, so it keeps
+// doing this job for whatever gets published next, not only this
+// batch.
+//
+// English-only heading copy, deliberately not run through t(): the
+// guides themselves (lib/blogPosts.js) are English-only content, same
+// as EcosystemStructuredData elsewhere on this page — see that
+// component's own header comment for the established precedent.
+export function LatestGuidesSection() {
+  const latestGuides = [...BLOG_POSTS]
+    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+    .slice(0, 4);
+
+  if (latestGuides.length === 0) return null;
+
+  return (
+    <section
+      aria-labelledby="latest-guides-heading"
+      className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 id="latest-guides-heading" className="text-lg font-bold text-slate-900">
+            Latest Guides
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
+            Fresh, deep-dive personal finance guides — straight from the newest additions to the OmniFin Academy.
+          </p>
+        </div>
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50"
+        >
+          View all guides <CtaArrow />
+        </Link>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {latestGuides.map((post) => (
+          <Link
+            key={post.slug}
+            href={`/blog/${post.slug}`}
+            className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-lg"
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-blue-600">
+              {post.category}
+            </span>
+            <h3 className="mt-2 line-clamp-2 text-sm font-bold text-slate-900">{post.title}</h3>
+            <p className="mt-1.5 line-clamp-2 text-xs text-slate-500">{post.description}</p>
+          </Link>
         ))}
       </div>
     </section>

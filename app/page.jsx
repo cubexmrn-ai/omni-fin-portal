@@ -6,6 +6,7 @@ import {
   PopularToolsSection,
   UnifiedSuiteSection,
   AcademyRoadmapSection,
+  LatestGuidesSection,
   MarketCommunitySection,
   SupportedCurrencies,
 } from "@/components/HomeSections";
@@ -161,6 +162,7 @@ export default async function HomePage() {
       <PopularToolsSection />
       <UnifiedSuiteSection />
       <AcademyRoadmapSection />
+      <LatestGuidesSection />
       <MarketCommunitySection />
       <SupportedCurrencies />
     </>
