@@ -48,6 +48,7 @@ import {
   buildAmountPairSlug,
   buildZakatGoldSlug,
   getFeaturedAmountPairsFor,
+  isConfirmedAmountPair,
   FEATURED_PAIRS,
   FEATURED_BASE_CURRENCIES,
   FEATURED_AMOUNT_PAIRS,
@@ -154,6 +155,13 @@ export async function generateMetadata({ params }) {
       title,
       description,
       path: `/converters/${buildAmountPairSlug(amount, amountParsed.fromCode, amountParsed.toCode)}`,
+      // Nov 2026 indexing-drop audit: this amount is still a fully
+      // working page either way (noindex ≠ removed) — it just isn't
+      // asking Google to index it unless lib/pairSlugs.js's
+      // AMOUNT_PAIR_CANDIDATES has a real GSC citation backing it. See
+      // that file's FEATURED_AMOUNT_PAIRS/isConfirmedAmountPair comment
+      // for the full reasoning.
+      noIndex: !isConfirmedAmountPair(amount, amountParsed.fromCode, amountParsed.toCode),
     });
   }
 
@@ -288,13 +296,17 @@ export default async function CurrencyPairSeoPage({ params }) {
   const relatedCalculatorId = isForexPair ? "pip-value" : "margin";
 
   const breadcrumbCrumbLabel = fromClass === toClass ? fromNoun : `${fromNoun} / ${toNoun}`;
-  const { intro: pairIntro, formulaNote } = getPairEducationalContent({
+  const { intro: pairIntro, formulaNote, pairFaqs } = getPairEducationalContent({
     fromClass,
     toClass,
     from,
     to,
   });
-  const faqs = buildBarePairFaqs({ from, to, rate, fetchedAt });
+  // Pair-specific FAQs (components/converters/pairEducationalContent.js)
+  // come first — they're the genuinely unique content for this exact
+  // pair, so they lead rather than trail the generic parametric FAQs
+  // below, which are the same shape on every bare pair page.
+  const faqs = [...pairFaqs, ...buildBarePairFaqs({ from, to, rate, fetchedAt })];
 
   return (
     <>
@@ -487,14 +499,16 @@ async function AmountPairSeoPage({ amountParsed }) {
   const isForexPair = fromClass === "fiat" || toClass === "fiat";
   const relatedCalculatorId = isForexPair ? "pip-value" : "margin";
 
-  const { intro: pairIntro, formulaNote } = getPairEducationalContent({
+  const { intro: pairIntro, formulaNote, pairFaqs } = getPairEducationalContent({
     fromClass,
     toClass,
     from,
     to,
   });
 
-  const faqs = buildAmountFaqs({ amount, from, to, rate, fetchedAt });
+  // Same lead-with-the-specific-content ordering as the bare pair page
+  // above — see that call site's comment.
+  const faqs = [...pairFaqs, ...buildAmountFaqs({ amount, from, to, rate, fetchedAt })];
 
   return (
     <>
