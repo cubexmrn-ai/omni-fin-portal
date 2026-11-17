@@ -248,6 +248,225 @@ const PAIR_SPECIFIC_CONTENT = {
       },
     ],
   },
+
+  // --- Nov 17 2026 GSC export: next batch of real-evidence pairs ------
+  // These weren't guessed — they're the highest-impression,
+  // zero-click pairs in that date's live Pages.csv export (see
+  // /areas/omnifin-portal.md), the same category of evidence that
+  // justified the batch above. USD-EUR in particular is the reverse
+  // direction of the already-curated EUR-USD — NOT the same page (this
+  // map is explicitly non-bidirectional, per this file's own header
+  // comment) and was sitting uncurated despite more impressions
+  // (1,101) than almost every other pair on the site.
+  "USD-EUR": {
+    context:
+      "This is the reverse direction of the world's most-traded currency pair, and it's searched by a different audience than EUR/USD: mainly US-based travellers, students and businesses converting dollars into Euros for European spending or invoicing, rather than Europeans pricing things in dollars. The underlying rate is identical either way — only which side of the divide the search is coming from differs.",
+    faqs: [
+      {
+        question: "Is USD to EUR a different rate from EUR to USD?",
+        answer:
+          "No — it's mathematically the same exchange rate, just expressed from the other side: USD/EUR is simply 1 divided by EUR/USD. This page exists separately because people converting dollars into Euros for a trip or invoice naturally search \"dollars to euros,\" not the other way around.",
+      },
+    ],
+  },
+  "EUR-SEK": {
+    context:
+      "Sweden is a long-standing EU member but, unlike most of the eurozone, has kept the Krona rather than adopting the Euro, so anyone trading, travelling or invoicing between Sweden and the eurozone — its largest trading partner bloc — needs this conversion regularly. The Krona floats freely and is set by the Riksbank's own monetary policy, which can diverge from the European Central Bank's, so this pair often moves on Swedish-specific rate decisions and inflation data as much as on anything happening in the eurozone.",
+    faqs: [
+      {
+        question: "Why doesn't Sweden just use the Euro like its neighbors?",
+        answer:
+          "Sweden is an EU member but never adopted the Euro — a 2003 referendum rejected membership in the currency, and Sweden has stayed outside the eurozone since, keeping its own currency and its own central bank setting independent interest-rate policy.",
+      },
+    ],
+  },
+  "CNY-VND": {
+    context:
+      "China is Vietnam's largest trading partner, and heavy cross-border trade through Vietnam's northern provinces — plus a large volume of Chinese cross-border e-commerce reselling into Vietnam — keeps genuine, recurring demand behind this pair. The Vietnamese Dong is a high-denomination currency (it takes thousands of Dong to equal a single Yuan), which is why the numbers on this page look large even for everyday amounts.",
+    faqs: [
+      {
+        question: "Why are Vietnamese Dong amounts always such large numbers?",
+        answer:
+          "The Dong has never been redenominated despite decades of past inflation, so its unit value stayed small — it now takes thousands of Dong to equal roughly one US cent. That's purely a matter of how the currency's unit is sized, not a sign of unusual current instability.",
+      },
+    ],
+  },
+  "EUR-INR": {
+    context:
+      "The European Union is one of India's largest trading-partner blocs, and a sizeable Indian diaspora working across Germany, the Netherlands, France and other eurozone countries sends Euro-denominated remittances home — both of which drive real, recurring demand for this pair beyond the more commonly covered USD/INR.",
+    faqs: [
+      {
+        question: "Is Euro to INR more or less stable than Dollar to INR?",
+        answer:
+          "Broadly similar — both are managed by the Reserve Bank of India's own interventions on the Rupee side, so EUR/INR mostly reflects the same Rupee dynamics as USD/INR, layered with whatever EUR/USD is doing independently on any given day.",
+      },
+    ],
+  },
+  "USD-PHP": {
+    context:
+      "The Philippines has one of the largest overseas-worker remittance economies in the world, with millions of OFWs (Overseas Filipino Workers) based in the US sending wages home regularly, which makes this one of the most practically important pairs on this site rather than a pair watched mainly by traders.",
+    faqs: [
+      {
+        question: "Why is the US Dollar to Philippine Peso rate checked so often by ordinary people, not just traders?",
+        answer:
+          "Remittances from the millions of Overseas Filipino Workers abroad, a large share of them in the US, make up a significant part of the Philippine economy — families back home checking this rate before a transfer arrives is one of the single biggest real-world uses of any currency pair on this site.",
+      },
+    ],
+  },
+  "AED-EUR": {
+    context:
+      "The UAE Dirham has been pegged to the US Dollar for decades, so AED/EUR effectively just tracks EUR/USD from the other side — this pair is checked mainly by the large European expatriate community in Dubai and Abu Dhabi, and by UAE businesses invoicing with eurozone partners.",
+    faqs: [
+      {
+        question: "Does AED to EUR move independently of the Dollar?",
+        answer:
+          "Not really — because the Dirham is pegged to the US Dollar, AED/EUR's movement is almost entirely a reflection of EUR/USD. If this rate moves, the more informative question is usually what the Euro is doing against the Dollar that day.",
+      },
+    ],
+  },
+  "USD-ILS": {
+    context:
+      "The Israeli Shekel floats freely and is one of the more actively managed developed-market currencies by its own central bank, but what really keeps this pair relevant is the scale of US-Israel economic ties — heavy US venture-capital investment into Israeli technology companies, substantial bilateral trade, and an American-Israeli diaspora moving money in both directions.",
+    faqs: [
+      {
+        question: "Why does USD to ILS get meaningful search volume for a relatively small economy?",
+        answer:
+          "Israel's technology sector draws outsized US investment relative to the country's size, and that cross-border capital flow — alongside trade and a sizeable American-Israeli community sending money both ways — creates genuine, recurring demand for this conversion well beyond what the economy's size alone would suggest.",
+      },
+    ],
+  },
+  "USD-IDR": {
+    context:
+      "Indonesia is Southeast Asia's largest economy and a major commodity exporter, so the Rupiah — managed by Bank Indonesia in a loose float — tends to move with global commodity price cycles and US interest-rate expectations as much as with anything domestic. Like the Vietnamese Dong, the Rupiah is a high-denomination currency, so converted amounts look large in everyday use.",
+    faqs: [
+      {
+        question: "Why does the Indonesian Rupiah trade at thousands per US Dollar?",
+        answer:
+          "The Rupiah has never undergone a redenomination despite a history of high inflation decades ago, so its per-unit value stayed small — it now takes thousands of Rupiah to equal a single US Dollar, which is a legacy of currency unit sizing, not a current-day instability signal on its own.",
+      },
+    ],
+  },
+  "INR-CAD": {
+    context:
+      "Canada hosts one of the largest populations of Indian international students and recent immigrants outside India itself, and this is the direction they search in: people in India estimating what Canadian tuition, living costs or a money transfer to Canada will actually cost in Rupees, rather than the reverse.",
+    faqs: [
+      {
+        question: "Why check Indian Rupees to Canadian Dollars instead of the other way around?",
+        answer:
+          "Most of the real-world need runs from India toward Canada — students and families in India budgeting for Canadian tuition, living costs or a transfer abroad — so this page is built around the direction people actually search in, even though the underlying rate works identically either way.",
+      },
+    ],
+  },
+  "USD-AED": {
+    context:
+      "The UAE Dirham has been fixed to the US Dollar at the same rate since 1997, making this one of the most predictable, lowest-volatility conversions anywhere on this site — useful precisely because travellers, remittance senders and UAE-based businesses can treat the rate as essentially constant rather than something that needs daily checking for surprises.",
+    faqs: [
+      {
+        question: "Does the US Dollar to UAE Dirham rate ever actually change?",
+        answer:
+          "Only within a very narrow technical band — the Dirham has been formally pegged to the Dollar since 1997, so day-to-day movement here is minimal compared with a freely floating currency. Any meaningful change would reflect a deliberate policy decision by the UAE central bank, not ordinary market fluctuation.",
+      },
+    ],
+  },
+  "EUR-PHP": {
+    context:
+      "Alongside the larger USD/PHP remittance corridor, a significant number of Overseas Filipino Workers are based across the eurozone — in healthcare, shipping and domestic work roles particularly — which keeps real demand behind the Euro side of the same remittance story.",
+    faqs: [
+      {
+        question: "Is the Euro to Philippine Peso corridor as large as the Dollar one?",
+        answer:
+          "Smaller, but still substantial — the US hosts more Overseas Filipino Workers than any single eurozone country, but the eurozone collectively is still home to a meaningful share of the OFW population, enough to make this a real, actively-used remittance pair rather than a niche one.",
+      },
+    ],
+  },
+  "AED-GBP": {
+    context:
+      "Dubai and the wider UAE host one of the largest British expatriate communities in the Gulf, and because the Dirham is pegged to the US Dollar while the Pound floats freely, this cross-rate effectively moves with GBP/USD — a British expat's Dirham salary buys more or fewer Pounds back home depending on what the Pound is doing against the Dollar, not on anything happening to the Dirham itself.",
+    faqs: [
+      {
+        question: "Why does AED to GBP move even though the Dirham is pegged?",
+        answer:
+          "The peg is only between the Dirham and the US Dollar — the British Pound still floats freely against the Dollar, so this cross-rate moves whenever GBP/USD does, even though the Dirham side of the equation stays effectively fixed.",
+      },
+    ],
+  },
+  "EUR-AZN": {
+    context:
+      "Azerbaijan is a significant oil and natural gas exporter to Europe, including via the Southern Gas Corridor pipeline route, which ties its economy closely to European energy demand and investment even though the Manat itself is managed in a tight band against the US Dollar by Azerbaijan's central bank.",
+    faqs: [
+      {
+        question: "What drives demand for the Euro to Azerbaijani Manat rate?",
+        answer:
+          "Mostly Azerbaijan's energy trade with Europe — it's a meaningful gas and oil supplier to European markets — plus European investment tied to that energy sector, rather than retail currency trading, since the Manat itself is closely managed rather than freely floating.",
+      },
+    ],
+  },
+  "USD-MXN": {
+    context:
+      "USD/MXN is one of the most actively traded emerging-market currency pairs in the world, reflecting the sheer scale of US-Mexico trade under their free-trade agreement and one of the largest remittance corridors globally, as millions of Mexican workers in the US send wages home. The Peso is also unusually liquid for an emerging-market currency, which keeps its spreads tighter than most EM peers.",
+    faqs: [
+      {
+        question: "Why is the Mexican Peso more liquid than most other emerging-market currencies?",
+        answer:
+          "The sheer volume of US-Mexico trade and investment under their free-trade agreement, combined with one of the world's largest remittance corridors, means USD/MXN trades in far greater volume than most other emerging-market pairs — which is exactly what keeps its bid-ask spreads tighter and the rate more continuously liquid.",
+      },
+    ],
+  },
+  "SAR-PHP": {
+    context:
+      "Saudi Arabia hosts the largest Overseas Filipino Worker population of any single country, concentrated in healthcare, domestic work and construction, which makes this corridor's search volume driven almost entirely by remittances rather than trade or investment flows.",
+    faqs: [
+      {
+        question: "Why is this pair searched so much relative to how small Saudi-Philippine trade actually is?",
+        answer:
+          "It isn't trade driving this — Saudi Arabia is home to more Overseas Filipino Workers than any other single country, and this page exists mainly to serve that remittance-checking need, the same pattern as this site's other Gulf-to-home-country currency pairs.",
+      },
+    ],
+  },
+  "INR-GBP": {
+    context:
+      "The United Kingdom has a large, long-established Indian diaspora and remains a top destination for Indian students, so — like INR/CAD — this page is built around people in India budgeting for UK tuition, living costs or a transfer abroad in Rupee terms, rather than the reverse direction.",
+    faqs: [
+      {
+        question: "Why does this page focus on converting Rupees into Pounds rather than Pounds into Rupees?",
+        answer:
+          "The larger real-world need runs from India toward the UK — students and families budgeting for UK costs in familiar Rupee terms — which is the direction this page and its default amount are built around, even though the same live rate works for converting in either direction.",
+      },
+    ],
+  },
+  "USD-NGN": {
+    context:
+      "Nigeria's Naira has gone through several major managed devaluations and policy shifts in recent years as the Central Bank of Nigeria worked to narrow the historical gap between its official and parallel-market rates, and Nigeria's oil-export-dependent economy means the Naira is sensitive to global oil prices as well as domestic monetary policy. A large Nigerian diaspora in the US sending remittances home adds further steady demand for this pair.",
+    faqs: [
+      {
+        question: "Why has the US Dollar to Naira rate been so volatile in recent years?",
+        answer:
+          "Nigeria's central bank has made several significant policy changes aimed at unifying its official exchange rate with the rate seen in parallel currency markets, and as an oil-export-dependent economy the Naira is also exposed to swings in global oil prices — both of which have driven larger, more frequent rate moves than in a typical pegged or tightly-managed currency.",
+      },
+    ],
+  },
+  "GBP-PKR": {
+    context:
+      "The United Kingdom is home to one of the largest Pakistani diaspora communities in the world, heavily concentrated in cities like Birmingham, Bradford and parts of London, and this pair serves the same remittance-checking need as USD/PKR and the Gulf-to-Pakistan corridors on this site — just from UK-based senders instead.",
+    faqs: [
+      {
+        question: "Does GBP to PKR move the same way as USD to PKR?",
+        answer:
+          "Broadly in the same direction over time, since both ultimately reflect the Pakistani Rupee's own managed float, but not identically day-to-day — GBP/PKR also carries whatever GBP/USD is doing independently, so the two rates can diverge noticeably over short periods even while trending together longer-term.",
+      },
+    ],
+  },
+  "USD-EGP": {
+    context:
+      "The Egyptian Pound has undergone several large, deliberate devaluations in recent years as part of IMF-backed economic reform programs, moving from a long-managed peg toward a more flexible rate — a shift driven by Egypt's reliance on dollar-denominated imports, tourism revenue and external financing. That history is exactly why checking the current live rate matters more here than for a stable pegged currency.",
+    faqs: [
+      {
+        question: "Why has the Egyptian Pound lost so much value against the Dollar in recent years?",
+        answer:
+          "Egypt moved away from a long-standing managed peg toward a more market-determined rate as part of IMF-supported reform programs, in steps rather than gradually — each step produced a sharp one-time devaluation rather than a smooth decline, which is why the rate's history looks like a staircase rather than a steady slope.",
+      },
+    ],
+  },
 };
 
 /**
