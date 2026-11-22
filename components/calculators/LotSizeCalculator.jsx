@@ -11,6 +11,7 @@
 import { useMemo, useState } from "react";
 import { calculateLotSize } from "@/lib/tradingCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 // See lib/formatNumber.js's header comment for why this delegates
 // rather than calling toLocaleString directly — a `decimals` value
@@ -35,6 +36,15 @@ export default function LotSizeCalculator() {
         pipValuePerStandardLot: pipValuePerLot,
       }),
     [balance, riskPercent, stopPips, pipValuePerLot]
+  );
+
+  // Analytics: one debounced `calculate_lot_size` GA4 event per
+  // settled result (see hooks/useTrackCalculation.js) — avoids firing
+  // on every keystroke while inputs are live-recalculating.
+  useTrackCalculation(
+    "calculate_lot_size",
+    result ? `${balance}:${riskPercent}:${stopPips}:${pipValuePerLot}` : null,
+    { tool_name: "lot_size_calculator" }
   );
 
   return (

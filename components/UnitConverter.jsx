@@ -8,6 +8,7 @@ import {
   getCategoryMeta,
 } from "@/lib/conversionMath";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 const CATEGORY_KEYS = getCategoryKeys(); // length, area, weight, volume, speed, data, temperature
 
@@ -66,6 +67,16 @@ export default function UnitConverter({
     // Shows the inverse rate ("1 toUnit = X fromUnit") for context.
     return convertUnit(category, 1, toUnit, fromUnit);
   }, [category, fromUnit, toUnit]);
+
+  // Analytics: one debounced `convert_unit` GA4 event per settled
+  // result (see hooks/useTrackCalculation.js) — fromUnit/toUnit swaps
+  // and typed amounts both recompute `result` live, so this avoids
+  // firing on every keystroke.
+  useTrackCalculation(
+    "convert_unit",
+    Number.isFinite(result) ? `${category}:${fromUnit}:${toUnit}:${inputValue}` : null,
+    { category, from_unit: fromUnit, to_unit: toUnit }
+  );
 
   function handleCategoryChange(nextCategory) {
     const [f, t] = firstTwoUnits(nextCategory);

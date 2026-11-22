@@ -22,6 +22,14 @@ export const metadata = buildMetadata({
   description:
     "Free online JSON formatter and validator — pretty-print, minify, and validate JSON instantly in your browser, with clear error messages for invalid syntax. No upload, no server round-trip.",
   path: "/tools/json-formatter",
+  // Topical-focus pass (Nov 2026): this is a generic, finance-
+  // unrelated utility (not an evergreen finance calculator), kept
+  // live for existing bookmarks/links but deliberately kept out of
+  // Google's index so it doesn't dilute the site's finance topical
+  // authority signal ahead of AdSense review. See app/sitemap.js
+  // (removed from the sitemap) and components/Header.jsx (already
+  // not in the primary nav) for the matching de-emphasis moves.
+  noIndex: true,
 });
 
 const FAQS = [

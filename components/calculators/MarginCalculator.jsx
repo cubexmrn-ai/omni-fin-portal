@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { calculateMargin } from "@/lib/tradingCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 const LEVERAGE_PRESETS = [50, 100, 200, 300, 400, 500];
 
@@ -28,6 +29,14 @@ export default function MarginCalculator() {
   const result = useMemo(
     () => calculateMargin({ accountBalance: balance, leverage, positionSizeUsd: positionSize }),
     [balance, leverage, positionSize]
+  );
+
+  // Analytics: one debounced `calculate_margin` GA4 event per settled
+  // result (see hooks/useTrackCalculation.js).
+  useTrackCalculation(
+    "calculate_margin",
+    result ? `${balance}:${leverage}:${positionSize}` : null,
+    { tool_name: "margin_calculator" }
   );
 
   function handleLeverageSelect(value) {

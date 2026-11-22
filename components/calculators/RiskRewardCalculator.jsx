@@ -11,6 +11,7 @@
 import { useMemo, useState } from "react";
 import { calculateRiskReward } from "@/lib/tradingCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 // See lib/formatNumber.js's header comment for why this delegates
 // rather than calling toLocaleString directly.
@@ -27,6 +28,14 @@ export default function RiskRewardCalculator() {
   const result = useMemo(
     () => calculateRiskReward({ entry, stopLoss, takeProfit, positionSize }),
     [entry, stopLoss, takeProfit, positionSize]
+  );
+
+  // Analytics: one debounced `calculate_risk_reward` GA4 event per
+  // settled result (see hooks/useTrackCalculation.js).
+  useTrackCalculation(
+    "calculate_risk_reward",
+    result ? `${entry}:${stopLoss}:${takeProfit}:${positionSize}` : null,
+    { tool_name: "risk_reward_calculator" }
   );
 
   return (

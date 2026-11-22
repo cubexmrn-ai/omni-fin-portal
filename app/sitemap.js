@@ -68,21 +68,18 @@ export default async function sitemap() {
     { path: "/tools/401k-vs-roth-ira-calculator", changeFrequency: "weekly", priority: 0.8 },
     { path: "/tools/compound-interest-calculator", changeFrequency: "weekly", priority: 0.8 },
     { path: "/tools/net-worth-tracker", changeFrequency: "weekly", priority: 0.8 },
-    // Utility Tools Suite — 100% client-side, zero-friction tools
-    // (see components/tools/*.jsx and that section's own header notes).
-    { path: "/tools/word-counter", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/tools/json-formatter", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/tools/case-converter", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/tools/base64-encoder", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/tools/password-generator", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/tools/image-compressor", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/tools/markdown-editor", changeFrequency: "monthly", priority: 0.7 },
-    // The one AI-backed tool in the suite (app/api/ai/process) — still
-    // indexable/linkable even on a deployment without GEMINI_API_KEY
-    // configured, since the page itself always renders (see that
-    // route's and this tool's own graceful-fallback handling).
-    { path: "/tools/document-summarizer", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/tools/pdf-table-extractor", changeFrequency: "monthly", priority: 0.7 },
+    // Utility Tools Suite (word-counter, json-formatter, case-converter,
+    // base64-encoder, password-generator, image-compressor, markdown-
+    // editor, document-summarizer, pdf-table-extractor) intentionally
+    // left out of the sitemap as of the Nov 2026 topical-focus pass —
+    // these are generic, finance-unrelated utilities, not evergreen
+    // finance calculators, and listing them here was diluting the
+    // site's finance topical-authority signal ahead of AdSense review.
+    // Routes stay live (noIndex: true in each page's own metadata —
+    // see lib/pageMetadata.js) for anyone who already bookmarked/
+    // linked one; they're just no longer offered to Google for
+    // crawling/indexing priority. See components/Header.jsx for the
+    // matching nav de-emphasis.
     { path: "/market-analysis", changeFrequency: "daily", priority: 0.9 },
     // NOT /market-analysis/ai-news — that route is a 308 permanent
     // redirect to /ai-news now (see app/market-analysis/ai-news/
@@ -94,7 +91,11 @@ export default async function sitemap() {
     { path: "/embed", changeFrequency: "monthly", priority: 0.5 },
     { path: "/learn", changeFrequency: "weekly", priority: 0.8 },
     { path: "/learn/lab", changeFrequency: "weekly", priority: 0.7 },
-    { path: "/community", changeFrequency: "daily", priority: 0.8 },
+    // /community intentionally left out of the sitemap as of the Nov
+    // 2026 topical-focus pass — a real feature (see app/community/
+    // page.jsx's own noIndex note), just still thin on genuine posts
+    // pre-launch. Route stays live; re-add here once post volume
+    // builds up.
     { path: "/dashboard", changeFrequency: "weekly", priority: 0.5 },
     { path: "/journal", changeFrequency: "weekly", priority: 0.5 },
     { path: "/blog", changeFrequency: "weekly", priority: 0.7 },

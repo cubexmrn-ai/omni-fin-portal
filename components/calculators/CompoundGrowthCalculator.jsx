@@ -27,6 +27,7 @@ import {
   buildDripScenarioTakeaway,
 } from "@/lib/personalCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 // See lib/formatNumber.js's header comment for why this delegates
 // rather than calling toLocaleString directly.
@@ -121,6 +122,18 @@ export default function CompoundGrowthCalculator() {
   );
 
   const result = dripMode ? dripResult : plainResult;
+
+  // Analytics: one debounced `calculate_compound_growth` GA4 event
+  // per settled result (see hooks/useTrackCalculation.js). Named
+  // distinctly from the /tools/compound-interest-calculator page's
+  // own `calculate_compound_interest` event.
+  useTrackCalculation(
+    "calculate_compound_growth",
+    result
+      ? `${dripMode}:${initialAmount}:${monthlyContribution}:${annualReturn}:${years}:${dividendYield}:${payoutFrequency}:${reinvestDividends}`
+      : null,
+    { tool_name: "compound_growth_calculator", drip_mode: dripMode }
+  );
 
   const realPurchasingPower = useMemo(
     () =>

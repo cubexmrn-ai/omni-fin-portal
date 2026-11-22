@@ -178,7 +178,35 @@ export default function ToolsHubPage() {
       <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         <UtilityDropzone />
 
-        <h2 className="mt-10 text-xl font-bold text-slate-900">Utility Tools</h2>
+        {/* Topical-focus pass (Nov 2026): Household Financial Tools
+            promoted above the generic Utility Tools grid below (was
+            the other way around) — this page's h1/description are
+            finance-first, and leading with the on-topic calculators
+            keeps the strongest topical signal highest on the page for
+            both users and crawlers. Utility Tools themselves are
+            unchanged (still live, still linked) — see each tool's own
+            page.jsx for why they're now noIndex'd. */}
+        <h2 className="mt-10 text-xl font-bold text-slate-900">Household Financial Tools</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Everyday calculators for the household, not just the trading desk.
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {HOUSEHOLD_TOOLS.map((tool) => (
+            <Link
+              key={tool.href}
+              href={tool.href}
+              className="block rounded-xl border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-lg"
+            >
+              <h3 className="text-base font-bold text-slate-900">{tool.title}</h3>
+              <p className="mt-1.5 text-sm text-slate-600">{tool.description}</p>
+              <span className="mt-3 inline-block text-sm font-semibold text-brand-600">
+                Open calculator →
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        <h2 className="mt-12 text-xl font-bold text-slate-900">Utility Tools</h2>
         <p className="mt-1 text-sm text-slate-500">
           Fast, zero-friction browser tools for everyday text, data, and media tasks.
         </p>
@@ -196,26 +224,6 @@ export default function ToolsHubPage() {
               <p className="mt-1.5 text-sm text-slate-600">{tool.description}</p>
               <span className="mt-3 inline-block text-sm font-semibold text-brand-600">
                 Open tool →
-              </span>
-            </Link>
-          ))}
-        </div>
-
-        <h2 className="mt-12 text-xl font-bold text-slate-900">Household Financial Tools</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Everyday calculators for the household, not just the trading desk.
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          {HOUSEHOLD_TOOLS.map((tool) => (
-            <Link
-              key={tool.href}
-              href={tool.href}
-              className="block rounded-xl border border-slate-200 bg-white p-5 shadow-card transition-shadow hover:shadow-lg"
-            >
-              <h3 className="text-base font-bold text-slate-900">{tool.title}</h3>
-              <p className="mt-1.5 text-sm text-slate-600">{tool.description}</p>
-              <span className="mt-3 inline-block text-sm font-semibold text-brand-600">
-                Open calculator →
               </span>
             </Link>
           ))}

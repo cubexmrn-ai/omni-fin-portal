@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { calculateMarginMarkup } from "@/lib/personalCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 // See lib/formatNumber.js's header comment for why this delegates
 // rather than calling toLocaleString directly.
@@ -22,6 +23,14 @@ export default function ProfitMarginCalculator() {
   const [sellingPrice, setSellingPrice] = useState(100);
 
   const result = useMemo(() => calculateMarginMarkup({ cost, sellingPrice }), [cost, sellingPrice]);
+
+  // Analytics: one debounced `calculate_profit_margin` GA4 event per
+  // settled result (see hooks/useTrackCalculation.js).
+  useTrackCalculation(
+    "calculate_profit_margin",
+    result ? `${cost}:${sellingPrice}` : null,
+    { tool_name: "profit_margin_calculator" }
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">

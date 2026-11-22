@@ -22,6 +22,14 @@ export const metadata = buildMetadata({
   description:
     "Free online Base64 encoder and decoder with full Unicode support — encode text to Base64 or decode Base64 back to readable text, entirely in your browser.",
   path: "/tools/base64-encoder",
+  // Topical-focus pass (Nov 2026): this is a generic, finance-
+  // unrelated utility (not an evergreen finance calculator), kept
+  // live for existing bookmarks/links but deliberately kept out of
+  // Google's index so it doesn't dilute the site's finance topical
+  // authority signal ahead of AdSense review. See app/sitemap.js
+  // (removed from the sitemap) and components/Header.jsx (already
+  // not in the primary nav) for the matching de-emphasis moves.
+  noIndex: true,
 });
 
 const FAQS = [

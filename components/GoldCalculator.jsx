@@ -11,6 +11,7 @@ import { fetchRates } from "@/lib/fetchRates";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
 import { CURRENCIES, FALLBACK_RATES as FIAT_FALLBACK_RATES } from "@/lib/currencies";
 import { useBaseCurrency } from "@/lib/baseCurrencyContext";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 // ---------------------------------------------------------------------------
 // Static reference data (UI-level — the math itself lives in lib/conversionMath.js)
@@ -236,6 +237,20 @@ export default function GoldCalculator() {
       totalLocal: totalRaw,
     };
   }, [baseUsdPrice, exchangeRate, unitCode, karatCode, quantity, isCommodity, isGold]);
+
+  // Analytics: one debounced `calculate_metals_price` GA4 event per
+  // settled result (see hooks/useTrackCalculation.js) — this widget
+  // recalculates on every keystroke/slider move, so tracking directly
+  // off `result` would spam events while someone is mid-input.
+  useTrackCalculation(
+    "calculate_metals_price",
+    result.totalLocal ? `${assetCode}:${currencyCode}:${unitCode}:${karatCode}:${quantity}` : null,
+    {
+      tool_name: "metals_commodities_calculator",
+      asset: assetCode,
+      currency: currencyCode,
+    }
+  );
 
   const statusCopy = {
     loading: { text: "Fetching live rates…", dot: "bg-amber-400" },

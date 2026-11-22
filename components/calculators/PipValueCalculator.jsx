@@ -39,6 +39,7 @@ import {
 import { fetchRates } from "@/lib/fetchRates";
 import { FALLBACK_RATES } from "@/lib/currencies";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 const LOT_LABELS = {
   standard: "Standard",
@@ -145,6 +146,14 @@ export default function PipValueCalculator() {
   const result = useMemo(
     () => calculatePipValue({ pairId: pair.id, lotType, pipSize, rates }),
     [pair.id, lotType, pipSize, rates]
+  );
+
+  // Analytics: one debounced `calculate_pip_value` GA4 event per
+  // settled result (see hooks/useTrackCalculation.js).
+  useTrackCalculation(
+    "calculate_pip_value",
+    result ? `${pair.id}:${lotType}:${pipSize}` : null,
+    { tool_name: "pip_value_calculator", pair: pair.id }
   );
 
   const statusCopy = {

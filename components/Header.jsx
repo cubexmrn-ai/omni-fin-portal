@@ -140,12 +140,17 @@ const UTILITY_TOOLS_LINKS = [
 // `label` stays as the English fallback/default for anywhere this
 // array is read without a translator (there is none currently, but
 // it keeps the array self-describing).
+// "Community" deliberately left out of primary nav as of the Nov 2026
+// topical-focus pass — a real, Supabase-backed feature, just still
+// thin on genuine posts pre-launch (see app/community/page.jsx's own
+// noIndex note). The route stays live and is still linked from the
+// homepage's MarketCommunitySection preview card; re-add it here once
+// post volume builds up.
 const OTHER_NAV_LINKS = [
   { label: "Market Analysis", labelKey: "marketAnalysis", href: "/market-analysis" },
   { label: "News", labelKey: "news", href: "/ai-news" },
   { label: "Academy", labelKey: "academy", href: "/learn" },
   { label: "Journal", labelKey: "journal", href: "/journal" },
-  { label: "Community", labelKey: "community", href: "/community" },
   { label: "About", labelKey: "about", href: "/about" },
 ];
 

@@ -11,6 +11,7 @@
 import { useMemo, useState } from "react";
 import { calculateInflation } from "@/lib/personalCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -28,6 +29,17 @@ export default function InflationCalculator() {
   const result = useMemo(
     () => calculateInflation({ pastAmount, startYear, annualRatePercent: annualRate }),
     [pastAmount, startYear, annualRate]
+  );
+
+  // Analytics: one debounced `calculate_inflation_impact` GA4 event
+  // per settled result (see hooks/useTrackCalculation.js). Named
+  // distinctly from the /tools/savings-inflation-calculator page's
+  // own `calculate_savings_inflation` event — same theme, different
+  // tool, different inputs.
+  useTrackCalculation(
+    "calculate_inflation_impact",
+    result ? `${pastAmount}:${startYear}:${annualRate}` : null,
+    { tool_name: "inflation_calculator" }
   );
 
   return (

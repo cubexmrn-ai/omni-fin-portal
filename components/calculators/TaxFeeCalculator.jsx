@@ -15,6 +15,7 @@
 import { useMemo, useState } from "react";
 import { estimateIncomeTax, estimateFlatRateFee } from "@/lib/taxFeeCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 function formatNumber(value, decimals = 2) {
   return formatNumberSafe(value, { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
@@ -32,6 +33,18 @@ export default function TaxFeeCalculator() {
   const flatResult = useMemo(
     () => estimateFlatRateFee({ amount: flatAmount, ratePercent: flatRate }),
     [flatAmount, flatRate]
+  );
+
+  // Analytics: one debounced `calculate_tax_fee` GA4 event per
+  // settled result (see hooks/useTrackCalculation.js) — only the
+  // active mode's inputs feed the signature, so switching tabs
+  // without touching inputs doesn't fire a stale event.
+  useTrackCalculation(
+    "calculate_tax_fee",
+    mode === "income"
+      ? (incomeResult ? `income:${annualIncome}` : null)
+      : (flatResult ? `flat:${flatAmount}:${flatRate}` : null),
+    { tool_name: "tax_fee_calculator", mode }
   );
 
   return (

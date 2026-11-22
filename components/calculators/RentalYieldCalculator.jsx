@@ -19,6 +19,7 @@ import {
   buildRentalCashFlowVerdict,
 } from "@/lib/realEstateCalculators";
 import { formatNumber as formatNumberSafe } from "@/lib/formatNumber";
+import { useTrackCalculation } from "@/hooks/useTrackCalculation";
 
 function formatNumber(value, decimals = 2) {
   return formatNumberSafe(value, { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
@@ -75,6 +76,18 @@ export default function RentalYieldCalculator() {
   const cashFlowVerdict = useMemo(
     () => buildRentalCashFlowVerdict({ yieldResult, mortgageResult, annualRatePercent: mortgageRate }),
     [yieldResult, mortgageResult, mortgageRate]
+  );
+
+  // Analytics: one debounced `calculate_rental_yield` GA4 event per
+  // settled result (see hooks/useTrackCalculation.js). Both the yield
+  // and mortgage results are always computed regardless of which tab
+  // is active, so both feed the signature together.
+  useTrackCalculation(
+    "calculate_rental_yield",
+    yieldResult && mortgageResult
+      ? `${propertyValue}:${monthlyRent}:${annualOperatingCosts}:${loanAmount}:${mortgageRate}:${loanYears}`
+      : null,
+    { tool_name: "rental_yield_calculator", mode }
   );
 
   return (
