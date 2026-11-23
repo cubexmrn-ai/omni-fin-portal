@@ -89,6 +89,15 @@ export const metadata = {
     title: SITE_NAME,
     statusBarStyle: "black-translucent",
   },
+  // Google's separate site-ownership-verification meta tag for
+  // AdSense — distinct from the adsbygoogle.js script tag in
+  // components/AdSense.jsx (that one loads ads; this one is purely a
+  // <meta> ownership signal AdSense's own onboarding flow checks for).
+  // Harmless to have both; some AdSense accounts are only offered one
+  // or the other as the "add this to your site" step.
+  other: {
+    "google-adsense-account": "ca-pub-6715010917684796",
+  },
 };
 
 // Next.js 14 moved theme-color/color-scheme out of `metadata` into
