@@ -1,14 +1,9 @@
 # ads.txt — Authorized Digital Sellers, omnifinportal.com
 #
-# This project doesn't have a live Google AdSense publisher ID yet
-# (see env.example's NEXT_PUBLIC_ADSENSE_CLIENT_ID and
-# components/AdSense.jsx). Left empty/commented-out rather than
-# published with a fake "pub-" value, since an invalid entry here can
-# itself cause ad-serving or verification problems once AdSense
-# review does check this file.
-#
-# Once the AdSense account is approved, uncomment the line below and
-# replace pub-XXXXXXXXXXXXXXXX with the account's real publisher ID
-# (Account → Account information, in the AdSense dashboard):
-#
-# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+# Approved AdSense publisher ID, added 2026-11-23. "DIRECT" means
+# omnifinportal.com itself (not an intermediary/reseller) has a direct
+# relationship with Google to sell this site's ad inventory.
+# f08c47fec0942fa0 is Google's own fixed, public certification
+# authority ID for AdSense/Ad Manager — not a secret, the same value
+# every AdSense publisher's ads.txt uses.
+google.com, pub-6715010917684796, DIRECT, f08c47fec0942fa0

@@ -184,6 +184,14 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
         />
+        {/* Google AdSense account-verification / auto-ads script —
+            deliberately placed here in <head> (not in <body> with
+            GoogleAnalytics below), matching Google's own guidance for
+            this specific snippet. It's still a safe no-op if
+            NEXT_PUBLIC_ADSENSE_CLIENT_ID + the hardcoded fallback were
+            both ever removed — see components/AdSense.jsx's header
+            comment. */}
+        <AdSense />
       </head>
       <body className="flex min-h-screen flex-col bg-slate-50">
         {/* Mounted once, globally, outside every provider below — GA4
@@ -193,9 +201,6 @@ export default function RootLayout({ children }) {
             and why (it's a safe no-op if NEXT_PUBLIC_GA_MEASUREMENT_ID
             isn't configured in this environment). */}
         <GoogleAnalytics />
-        {/* Same no-op-if-unconfigured pattern as GoogleAnalytics above —
-            see components/AdSense.jsx's header comment. */}
-        <AdSense />
         <LanguageProvider>
           <BaseCurrencyProvider>
             <TranslationDisclaimerModal />
