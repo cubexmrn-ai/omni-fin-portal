@@ -63,16 +63,16 @@ const ECOSYSTEM_MODULES = [
     description:
       "Real-time TradingView charts for gold, forex, major indices, crude oil and crypto, plus AI-read technical analysis and instrument sentiment.",
   },
-  {
-    title: "Community",
-    href: "/community",
-    description:
-      "A trader community forum for sharing trade setups, market calls and discussion across forex, crypto, metals and commodities.",
-  },
+  // "Community" (/community) was removed from this list on 2026-11-24:
+  // that page is `noIndex: true` (844a12e topical-focus cleanup, empty
+  // forum), so this ItemList was actively telling Google to treat a
+  // deliberately-noindexed, empty page as a key structured site
+  // module — directly contradicting the noindex. Don't re-add a page
+  // here that's noindexed for content reasons.
 ];
 
 /** JSON-LD ItemList for the "Explore OmniFin Ecosystem" section — lets
- * search engines index the 5 modules as a structured list of the
+ * search engines index the 4 modules as a structured list of the
  * site's own tools, in the same order they appear on the page. Same
  * honesty bar as components/ConverterStructuredData.jsx: no fabricated
  * rating/review fields, just the real module list. */

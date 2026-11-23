@@ -273,27 +273,28 @@ function PopularPdfTableIcon(props) {
     </svg>
   );
 }
-function PopularImageCompressorIcon(props) {
+function PopularCompoundGrowthIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <rect x="3.5" y="5" width="17" height="14" rx="2" />
-      <circle cx="9" cy="10" r="1.6" />
-      <path d="M4.5 17.5 9 13l2.5 2.5L15 12l4.5 5" />
+      <path d="M3 18 8 12l4 3 6-8" />
+      <path d="M17 7h4v4" />
     </svg>
   );
 }
-function PopularJsonFormatterIcon(props) {
+function PopularCompareColumnsIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M8 4c-2 0-3 1-3 3v2c0 1-.5 2-2 2.5 1.5.5 2 1.5 2 2.5v2c0 2 1 3 3 3M16 4c2 0 3 1 3 3v2c0 1 .5 2 2 2.5-1.5.5-2 1.5-2 2.5v2c0 2-1 3-3 3" />
+      <rect x="3.5" y="4" width="7" height="16" rx="1.5" />
+      <rect x="13.5" y="8" width="7" height="12" rx="1.5" />
+      <path d="M7 9v.01M17 12v.01" />
     </svg>
   );
 }
-function PopularPasswordIcon(props) {
+function PopularNetWorthIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <circle cx="8" cy="15" r="4" />
-      <path d="M11 12l9-9M17 6l2 2M14 9l2 2" />
+      <path d="M4 7h16M4 7l2 10h12l2-10M4 7l3-3h10l3 3" />
+      <path d="M9.5 11v3M14.5 11v3" />
     </svg>
   );
 }
@@ -306,12 +307,21 @@ function PopularZakatGoldIcon(props) {
   );
 }
 
+// Nov 24 2026: this showcase used to be 5 generic off-topic utilities
+// (document summarizer, PDF table extractor, image compressor, JSON
+// formatter, password generator — all `noIndex: true` as of the
+// 844a12e topical-focus cleanup) plus 1 finance tool. noindexing those
+// pages stops Google from indexing *them*, but did nothing to stop
+// this homepage showcase from still prominently linking to them —
+// exactly the "pure finance site" inconsistency an AdSense reviewer
+// (or any visitor) sees on the homepage itself, regardless of what's
+// in Google's index. All 6 are now genuine finance calculators.
 const POPULAR_TOOLS = [
-  { href: "/tools/document-summarizer", titleKey: "popularTool1Title", descKey: "popularTool1Desc", Icon: PopularDocSummarizerIcon },
-  { href: "/tools/pdf-table-extractor", titleKey: "popularTool2Title", descKey: "popularTool2Desc", Icon: PopularPdfTableIcon },
-  { href: "/tools/image-compressor", titleKey: "popularTool3Title", descKey: "popularTool3Desc", Icon: PopularImageCompressorIcon },
-  { href: "/tools/json-formatter", titleKey: "popularTool4Title", descKey: "popularTool4Desc", Icon: PopularJsonFormatterIcon },
-  { href: "/tools/password-generator", titleKey: "popularTool5Title", descKey: "popularTool5Desc", Icon: PopularPasswordIcon },
+  { href: "/tools/retirement-calculator", titleKey: "popularTool1Title", descKey: "popularTool1Desc", Icon: PopularDocSummarizerIcon },
+  { href: "/tools/loan-emi-tax-calculator", titleKey: "popularTool2Title", descKey: "popularTool2Desc", Icon: PopularPdfTableIcon },
+  { href: "/tools/compound-interest-calculator", titleKey: "popularTool3Title", descKey: "popularTool3Desc", Icon: PopularCompoundGrowthIcon },
+  { href: "/tools/401k-vs-roth-ira-calculator", titleKey: "popularTool4Title", descKey: "popularTool4Desc", Icon: PopularCompareColumnsIcon },
+  { href: "/tools/net-worth-tracker", titleKey: "popularTool5Title", descKey: "popularTool5Desc", Icon: PopularNetWorthIcon },
   { href: "/tools/zakat-calculator", titleKey: "popularTool6Title", descKey: "popularTool6Desc", Icon: PopularZakatGoldIcon },
 ];
 
@@ -524,10 +534,15 @@ export function LatestGuidesSection() {
 
 export function MarketCommunitySection() {
   const { t } = useLanguage();
+  // Nov 24 2026: dropped the 3rd card, which linked to /community — a
+  // noindexed, empty page (same AdSense-optics problem as
+  // PopularToolsSection above: noindex doesn't stop a homepage
+  // showcase from still promoting the page). card3Title/Desc/Cta stay
+  // in lib/i18n/translations.js, just unused now, rather than ripping
+  // out 17 languages' worth of strings for a 2-line change.
   const PREVIEW_CARDS = [
     { titleKey: "card1Title", descKey: "card1Desc", ctaKey: "card1Cta", href: "/market-analysis", kind: "chart" },
     { titleKey: "card2Title", descKey: "card2Desc", ctaKey: "card2Cta", href: "/market-analysis", kind: "sentiment" },
-    { titleKey: "card3Title", descKey: "card3Desc", ctaKey: "card3Cta", href: "/community", kind: "discussion" },
   ];
 
   return (
@@ -540,7 +555,7 @@ export function MarketCommunitySection() {
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-slate-500">{t("marketCommunityDesc")}</p>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {PREVIEW_CARDS.map((card) => (
           <Link
             key={card.titleKey}
@@ -561,13 +576,6 @@ export function MarketCommunitySection() {
                     <div className="h-2 w-2/3 rounded-full bg-emerald-400" />
                   </div>
                   <span className="text-[11px] font-semibold text-emerald-400">{t("bullish")}</span>
-                </div>
-              )}
-              {card.kind === "discussion" && (
-                <div className="flex w-full flex-col gap-1.5">
-                  <span className="h-2 w-5/6 rounded-full bg-white/15" />
-                  <span className="h-2 w-2/3 rounded-full bg-white/10" />
-                  <span className="h-2 w-3/4 rounded-full bg-white/10" />
                 </div>
               )}
             </div>
